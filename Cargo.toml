@@ -1,0 +1,19 @@
+[package]
+name = "php-buildpack"
+version = "0.0.0"
+publish = false
+edition = "2021"
+rust-version = "1.65"
+
+[dependencies]
+flate2 = { version = "1.0.24", default-features = false, features = ["zlib"] }
+libcnb = "0.11.1"
+libherokubuildpack = "0.11.1"
+serde = "1.0.147"
+sha2 = "0.10.6"
+shell-words = "1.1.0"
+tar = "0.4.38"
+ureq = { version = "2.5.0", default-features = false, features = ["tls"] }
+
+[dev-dependencies]
+libcnb-test = "0.11.1"

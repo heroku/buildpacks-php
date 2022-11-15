@@ -1,0 +1,19 @@
+api = "0.8"
+
+[buildpack]
+id = "heroku/php"
+version = "0.1.0"
+name = "PHP"
+homepage = "https://github.com/heroku/buildpacks-php"
+description = "Heroku's official PHP Cloud Native Buildpack."
+keywords = ["php", "heroku"]
+clear-env = true
+
+[[buildpack.licenses]]
+type = "BSD-3-Clause"
+
+[[stacks]]
+id = "heroku-20"
+
+[[stacks]]
+id = "heroku-22"
