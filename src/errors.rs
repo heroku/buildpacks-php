@@ -1,4 +1,5 @@
 use crate::layers::bootstrap::BootstrapLayerError;
+use crate::layers::composer_env::ComposerEnvLayerError;
 use crate::layers::php::PhpLayerError;
 use crate::platform::PlatformGeneratorError;
 
@@ -6,6 +7,7 @@ use crate::platform::PlatformGeneratorError;
 pub(crate) enum PhpBuildpackError {
     BootstrapLayer(BootstrapLayerError),
     PhpLayer(PhpLayerError),
+    ComposerEnvLayer(ComposerEnvLayerError),
     Platform(PlatformGeneratorError),
 }
 

@@ -1,18 +1,19 @@
-use crate::utils::{self, CommandError};
+use crate::utils::{self};
 use crate::{PhpBuildpack, PhpBuildpackError};
+
 
 use libcnb::build::BuildContext;
 use libcnb::data::buildpack::StackId;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
+
 use libcnb::{Buildpack, Env};
-use libherokubuildpack::log::{log_header, log_info};
-use serde::Deserialize;
-use serde::Serialize;
-use std::fs::OpenOptions;
-use std::fs::{self, File};
-use std::io::Write;
+use libherokubuildpack::log::{log_header};
+use serde::de::{Error, Unexpected};
+use serde::{Deserialize, Deserializer, Serialize};
+use std::fs::File;
+use std::io::{BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -25,6 +26,49 @@ pub(crate) struct PhpLayer {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub(crate) struct PhpLayerMetadata {
     stack: StackId,
+}
+
+#[derive(Deserialize, Debug)]
+struct LayerEnvValue {
+    #[serde(deserialize_with = "scope_from_string")]
+    scope: Scope,
+    #[serde(deserialize_with = "modification_behavior_from_string")]
+    modification_behavior: ModificationBehavior,
+    name: String,
+    value: String,
+}
+
+fn scope_from_string<'de, D>(deserializer: D) -> Result<Scope, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: String = Deserialize::deserialize(deserializer)?;
+    Ok(match s.as_ref() {
+        "build" => Scope::Build,
+        "launch" => Scope::Launch,
+        "all" => Scope::All,
+        process => Scope::Process(process.to_string()),
+    })
+}
+
+fn modification_behavior_from_string<'de, D>(
+    deserializer: D,
+) -> Result<ModificationBehavior, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: String = Deserialize::deserialize(deserializer)?;
+    match s.as_ref() {
+        "append" => Ok(ModificationBehavior::Append),
+        "default" => Ok(ModificationBehavior::Default),
+        "delimiter" => Ok(ModificationBehavior::Delimiter),
+        "override" => Ok(ModificationBehavior::Override),
+        "prepend" => Ok(ModificationBehavior::Prepend),
+        _ => Err(D::Error::invalid_value(
+            Unexpected::Str(&s),
+            &"one of: append, default, delimiter, override, prepend",
+        )),
+    }
 }
 
 impl Layer for PhpLayer {
@@ -46,10 +90,13 @@ impl Layer for PhpLayer {
     ) -> Result<LayerResult<Self::Metadata>, <Self::Buildpack as Buildpack>::Error> {
         log_header("Installing platform packages");
 
-        let mut platform_json = File::create(layer_path.join("composer.json")).unwrap();
+        let mut platform_json = File::create(layer_path.join("composer.json"))
+            .map_err(PhpLayerError::PlatformJsonCreate)?;
         platform_json
             .write_all(self.platform_json.as_ref())
-            .unwrap();
+            .map_err(PhpLayerError::PlatformJsonWrite)?;
+
+        let layer_env_file_path = layer_path.join("layer_env");
 
         utils::run_command(
             Command::new("composer")
@@ -60,99 +107,30 @@ impl Layer for PhpLayer {
                     "--no-interaction",
                     //"--no-progress",
                 ])
-                //.env_clear()
                 .envs(&self.bootstrap_env) // we're invoking 'composer' from the bootstrap layer
-                .env("COMPOSER_HOME", &self.composer_cache_layer_path), // ... but we want any caching to happen in the cache layer
+                .env("COMPOSER_HOME", &self.composer_cache_layer_path) // ... but we want any caching to happen in the cache layer
+                .env("layer_env_file_path", &layer_env_file_path),
         )
         .expect("platform install failed");
 
-        // the package we just installed was built with a different './configure --prefix'
-        // we're first fetching the prefix value from the php-config "program" (it's a script)
-        // then we're replacing that value throughout the php-config script
-        let php_config_bin = layer_path.join("bin/php-config");
-        let configured_prefix = Command::new(&php_config_bin)
-            .args(["--prefix"])
-            .env_clear()
-            //.envs(&layer_env.apply_to_empty(Scope::Build))
-            .output()
-            .expect("Failed to execute php-config --prefix");
-        let configured_prefix = String::from_utf8_lossy(&configured_prefix.stdout);
-
-        log_info(format!(
-            "Rewriting PHP installation configure prefix from '{}' to '{}'",
-            configured_prefix.trim(),
-            &layer_path.to_string_lossy(),
-        ));
-
-        {
-            let contents = fs::read_to_string(&php_config_bin).expect("Failed to read php-config");
-            // FIXME: this is pretty blunt - should maybe not replace in --configure-options, and maybe as regex to anchor on leading non-word-non-slash character
-            let new = contents.replace(configured_prefix.trim(), &layer_path.to_string_lossy());
-            let mut php_config = OpenOptions::new()
-                .write(true)
-                .truncate(true)
-                .open(&php_config_bin)
-                .expect("Failed to open php-config for writing");
-            php_config
-                .write(new.as_bytes())
-                .expect("Failed to write php-config");
-        } // so the file handle closes when this scope returns
-
-        let php_ini_path = Command::new(&php_config_bin)
-            .env_clear()
-            .args(["--ini-path"])
-            .output()
-            .expect("Failed to execute php-config --ini-path");
-        let php_ini_path = String::from_utf8_lossy(&php_ini_path.stdout);
-        let php_ini_path = PathBuf::from(&*php_ini_path.trim()).join("php.ini");
-
-        let extension_dir = Command::new(&php_config_bin)
-            .env_clear()
-            .args(["--extension-dir"])
-            .output()
-            .expect("Failed to execute php-config --extension-dir");
-        let extension_dir = String::from_utf8_lossy(&extension_dir.stdout);
-
-        let mut php_ini = OpenOptions::new()
-            .append(true)
-            .open(&php_ini_path)
-            .expect("Failed to open php.ini");
-        writeln!(php_ini, "extension_dir = {}", extension_dir.trim())
-            .expect("Failed to modify php.ini");
-
-        let php_ini_scan_dir = Command::new(&php_config_bin)
-            .env_clear()
-            .args(["--ini-dir"])
-            .output()
-            .expect("Failed to execute php-config --ini-dir");
-        let php_ini_scan_dir = String::from_utf8_lossy(&php_ini_scan_dir.stdout);
-
-        let layer_env = LayerEnv::new()
-            .chainable_insert(Scope::All, ModificationBehavior::Delimiter, "PATH", ":")
-            .chainable_insert(
-                Scope::All,
-                ModificationBehavior::Prepend,
-                "PATH",
-                &layer_path.join("sbin"),
-            )
-            .chainable_insert(
-                Scope::All,
-                ModificationBehavior::Delimiter,
-                "PHP_INI_SCAN_DIR",
-                ":",
-            )
-            .chainable_insert(
-                Scope::All,
-                ModificationBehavior::Prepend,
-                "PHP_INI_SCAN_DIR",
-                &php_ini_scan_dir.trim(),
-            )
-            .chainable_insert(
-                Scope::All,
-                ModificationBehavior::Override,
-                "PHPRC",
-                &php_ini_path,
+        // our platform installer plugin writes out a JSON file with env vars that we have to set
+        // this is because many packages add to the path, set env var defaults, etc, and we cannot hard-code those in here
+        // the values are pre-assembled in case of prepend/append, since only a single value may be set per env var in these cases
+        let layer_env_values: Vec<LayerEnvValue> = serde_json::from_reader(BufReader::new(
+            File::open(&layer_env_file_path).expect("Failed to open layer_env_file_path"),
+        ))
+        .expect("Failed to parse layer_env_file_path JSON");
+        // populate our layer with these variables
+        let mut layer_env = LayerEnv::new();
+        for data in layer_env_values {
+            layer_env.insert(
+                data.scope,
+                data.modification_behavior,
+                data.name,
+                data.value,
             );
+        }
+
         let layer_metadata = generate_layer_metadata(&context.stack_id);
         LayerResultBuilder::new(layer_metadata)
             .env(layer_env)
@@ -168,7 +146,8 @@ fn generate_layer_metadata(stack_id: &StackId) -> PhpLayerMetadata {
 
 #[derive(Debug)]
 pub(crate) enum PhpLayerError {
-    Command(CommandError),
+    PlatformJsonCreate(std::io::Error),
+    PlatformJsonWrite(std::io::Error),
 }
 
 impl From<PhpLayerError> for PhpBuildpackError {

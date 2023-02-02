@@ -15,8 +15,8 @@ use std::path::Path;
 
 const PHP_VERSION: &str = "8.1.12";
 const COMPOSER_VERSION: &str = "2.4.4";
-const INSTALLER_VERSION: &str = "227";
-pub(crate) const INSTALLER_SUBDIR: &str = "heroku-buildpack-php-227";
+const INSTALLER_VERSION: &str = "heads/cnb-installer";
+pub(crate) const INSTALLER_SUBDIR: &str = "heroku-buildpack-php-cnb-installer";
 const PLATFORM_PHP_SCRIPT: &str = include_str!("../../util/platform.php");
 
 pub(crate) struct BootstrapLayer;
@@ -37,7 +37,7 @@ impl Layer for BootstrapLayer {
     fn types(&self) -> LayerTypes {
         LayerTypes {
             build: false,
-            cache: true,
+            cache: false, // disabled until installer "archive" is stable
             launch: false,
         }
     }
@@ -58,7 +58,7 @@ impl Layer for BootstrapLayer {
             context.stack_id, COMPOSER_VERSION
         );
         let installer_archive_url = format!(
-            "https://github.com/heroku/heroku-buildpack-php/archive/refs/tags/v{}.tar.gz",
+            "https://github.com/heroku/heroku-buildpack-php/archive/refs/{}.tar.gz",
             INSTALLER_VERSION
         );
 

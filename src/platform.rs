@@ -40,7 +40,7 @@ pub(crate) fn generate_platform_json(
                 message: String::from_utf8_lossy(&output.stderr).into(),
             }),
             Some(code) => Err(PlatformGeneratorError::Unknown {
-                code: code,
+                code,
                 message: String::from_utf8_lossy(&output.stderr).into(),
             }),
             None => Err(PlatformGeneratorError::Terminated),
@@ -49,6 +49,7 @@ pub(crate) fn generate_platform_json(
 }
 
 #[derive(Debug)]
+#[allow(unused)]
 pub(crate) enum PlatformGeneratorError {
     Parse {
         // 1

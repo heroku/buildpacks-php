@@ -691,6 +691,7 @@ dependencies = [
  "libcnb-test",
  "libherokubuildpack",
  "serde",
+ "serde_json",
  "sha2",
  "shell-words",
  "tar",
