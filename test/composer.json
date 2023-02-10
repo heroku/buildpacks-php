@@ -1,0 +1,20 @@
+{
+	"require": {
+		"php": "8.1.*",
+		"ext-gmp": "*",
+		"ext-intl": "*",
+		"ext-mbstring": "*",
+		"ext-redis": "*",
+		"ext-sqlite3": "*",
+		"ext-ldap": "*",
+		"ext-imap": "*",
+		"ext-pq": "*",
+		"monolog/monolog": "^3.0",
+		"bramus/monolog-colored-line-formatter": "^3.1.1",
+		"alrik11es/cowsayphp": "^1.2",
+		"symfony/polyfill-mbstring": "*"
+	},
+	"config":{
+		"bin-dir": "sbin"
+	}
+}
