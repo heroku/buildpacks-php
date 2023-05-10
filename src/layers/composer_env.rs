@@ -56,13 +56,13 @@ impl Layer for ComposerEnvLayer {
                         Scope::All,
                         ModificationBehavior::Append,
                         "PATH",
-                        &context.app_dir.join(composer_bin_dir),
+                        context.app_dir.join(composer_bin_dir),
                     )
                     .chainable_insert(
                         Scope::All,
                         ModificationBehavior::Prepend,
                         "PATH",
-                        &self.php_layer_path.join("vendor/bin"),
+                        self.php_layer_path.join("vendor/bin"), // FIXME: dynamic lookup
                     )
                     .chainable_insert(Scope::All, ModificationBehavior::Delimiter, "PATH", ":"),
             )

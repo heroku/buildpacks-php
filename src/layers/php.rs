@@ -1,7 +1,6 @@
 use crate::utils::{self};
 use crate::{PhpBuildpack, PhpBuildpackError};
 
-
 use libcnb::build::BuildContext;
 use libcnb::data::buildpack::StackId;
 use libcnb::data::layer_content_metadata::LayerTypes;
@@ -9,7 +8,7 @@ use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 
 use libcnb::{Buildpack, Env};
-use libherokubuildpack::log::{log_header};
+use libherokubuildpack::log::log_header;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fs::File;

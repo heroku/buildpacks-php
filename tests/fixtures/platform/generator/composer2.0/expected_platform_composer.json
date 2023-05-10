@@ -1,0 +1,56 @@
+{
+    "config": {
+        "allow-plugins": {
+            "heroku/installer-plugin": true
+        },
+        "cache-files-ttl": 0,
+        "discard-changes": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": false,
+    "provide": {
+        "heroku-sys\/heroku": "20."
+    },
+    "require": {
+        "heroku/installer-plugin": "*",
+        "heroku-sys\/apache": "^2.4.10",
+        "heroku-sys\/nginx": "^1.8.0",
+        "heroku-sys\/composer": "*",
+        "heroku-sys\/composer-plugin-api": "~2.2.0",
+        "heroku/heroku-buildpack-php": "dev-master",
+        "heroku-sys\/php": "7.4.*",
+        "heroku-sys\/ext-gmp": "*",
+        "heroku-sys\/ext-intl": "*",
+        "heroku-sys\/ext-mbstring": "*",
+        "heroku-sys\/ext-redis": "*",
+        "heroku-sys\/ext-sqlite3": "*",
+        "heroku-sys\/ext-ldap": "*",
+        "heroku-sys\/ext-imap": "*",
+        "heroku-sys\/ext-blackfire": "*"
+    },
+    "repositories": [
+        {
+            "packagist.org": false
+        },
+        {
+            "type": "path",
+            "url": "..\/..\/support\/installer",
+            "options": {
+                "symlink": false
+            }
+        },
+        {
+            "type": "path",
+            "url": "../../support/installer/../..",
+            "options": {
+                "symlink": false,
+                "versions": {
+                    "heroku/heroku-buildpack-php": "dev-master"
+                }
+            }
+        },
+        {
+            "type": "composer",
+            "url": "https:\/\/lang-php.s3.us-east-1.amazonaws.com\/dist-heroku-20-cnb\/packages.json"
+        }    ]
+}
