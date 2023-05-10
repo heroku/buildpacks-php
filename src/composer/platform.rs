@@ -1,0 +1,904 @@
+use crate::composer::*;
+
+use std::collections::HashSet;
+use std::str::FromStr;
+use std::string::ToString;
+
+use chrono::offset::Utc;
+use regex::Regex;
+use serde_json::json;
+use url::Url;
+
+#[derive(Debug)]
+pub(crate) enum RepoUrlsError {
+    SplitError(shell_words::ParseError),
+    ParseError(url::ParseError),
+}
+impl From<shell_words::ParseError> for RepoUrlsError {
+    fn from(err: shell_words::ParseError) -> Self {
+        Self::SplitError(err)
+    }
+}
+impl From<url::ParseError> for RepoUrlsError {
+    fn from(err: url::ParseError) -> Self {
+        Self::ParseError(err)
+    }
+}
+
+enum UrlListEntry {
+    Reset,
+    Url(Url),
+}
+impl FromStr for UrlListEntry {
+    type Err = url::ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.as_ref() {
+            "-" => Ok(Self::Reset),
+            v => Url::parse(v).map(Self::Url),
+        }
+    }
+}
+
+pub(crate) fn repos_from_defaults_and_list(
+    default_urls: &[Url],
+    extra_urls_list: impl AsRef<str>,
+) -> Result<Vec<Url>, RepoUrlsError> {
+    let extra_urls_splits = shell_words::split(extra_urls_list.as_ref())?;
+    default_urls
+        .into_iter()
+        .cloned()
+        .map(UrlListEntry::Url)
+        .map(Ok)
+        .chain(extra_urls_splits.into_iter().map(|v| v.parse()))
+        .collect::<Result<Vec<_>, _>>()
+        .map(|repos| normalize_url_list(&repos).into_iter().cloned().collect())
+        .map_err(RepoUrlsError::ParseError)
+}
+
+fn normalize_url_list(urls: &[UrlListEntry]) -> Vec<&Url> {
+    // we now have a list of URLs
+    // some of these entries might be UrlListEntry::Reset, used to re-set anything to their left (i.e. typically the default repo)
+    // we want all entries after the last UrlListEntry::Reset
+    urls.rsplit(|url_entry| matches!(url_entry, UrlListEntry::Reset))
+        .next() // this iterator is never empty because rsplit() will always return at least an empty slice
+        .expect("Something is rotten in the state of Denmark.") // cannot happen
+        .into_iter()
+        .map(|url_entry| match url_entry {
+            UrlListEntry::Url(url) => url,
+            UrlListEntry::Reset => {
+                panic!("If you can see this message, you broke the rsplit a few lines up.")
+            } // cannot happen
+        })
+        .collect()
+}
+
+#[derive(strum_macros::Display, Debug, Eq, PartialEq)]
+pub(crate) enum MakePlatformJsonError {
+    EmptyPlatformRepositoriesList,
+    InvalidRepositoryFilter,
+    InvalidStackIdentifier,
+    InvalidPlatformApiVersion,
+    RuntimeRequirementInRequireDevButNotRequire,
+}
+#[derive(strum_macros::Display, Debug, Eq, Hash, PartialEq)]
+pub(crate) enum MakePlatformJsonNotice {
+    NoComposerPluginApiVersionInLock(String),
+    ComposerPluginApiVersionConfined(String, String),
+    RuntimeRequirementInserted(String),
+    RuntimeRequirementFromDependencies,
+}
+pub(crate) fn make_platform_json(
+    lock: &ComposerLock,
+    stack: &str,
+    installer_path: &Path,
+    platform_repositories: &Vec<Url>,
+    dev: bool,
+) -> Result<(ComposerRootPackage, HashSet<MakePlatformJsonNotice>), MakePlatformJsonError> {
+    if platform_repositories.is_empty() {
+        return Err(MakePlatformJsonError::EmptyPlatformRepositoriesList);
+    };
+
+    let mut notices = HashSet::new();
+
+    let config = match json!({
+        "cache-files-ttl": 0,
+        "discard-changes": true,
+        "allow-plugins": {
+            "heroku/installer-plugin": true,
+        },
+    }) {
+        Value::Object(x) => x,
+        _ => panic!("You've got some debugging to do, my friend."),
+    };
+
+    let caps = Regex::new(r"^([^-]+)(?:-([0-9]+))?$")
+        .expect("A certain somebody broke the stack parsing regex. Yes, I am looking at you.")
+        .captures(stack)
+        .ok_or(MakePlatformJsonError::InvalidStackIdentifier)?;
+    let stack_provide = (
+        format!("heroku-sys/{}", String::from(caps.get(1).unwrap().as_str())),
+        format!(
+            "{}.{}",
+            caps.get(2).map_or("1", |m| m.as_str()),
+            Utc::now().format("%Y.%0m.%0d")
+        ),
+    );
+
+    let mut requires: HashMap<String, String> = [
+        // our installer plugin - individual platform packages also require it, but hey
+        ("heroku/installer-plugin", "*"),
+        ("heroku-sys/apache", "^2.4.10"),
+        ("heroku-sys/nginx", "^1.8.0"),
+        // we want the latest Composer...
+        ("heroku-sys/composer", "*"),
+    ]
+    .iter()
+    .map(|v| (v.0.into(), v.1.into()))
+    .collect();
+
+    let mut dev_requires: HashMap<String, String> = HashMap::new();
+
+    // ... that supports the major plugin API version from the lock file (which corresponds to the Composer version series, so e.g. all 2.3.x releases have 2.3.0)
+    // if the lock file says "2.99.0", we generally still want to select "^2", and not "^2.99.0"
+    // this is so the currently available Composer version can install lock files generated by brand new or pre-release Composer versions, as this stuff is generally forward compatible
+    // otherwise, builds would fail the moment e.g. 2.6.0 comes out and people try it, even though 2.5 could install the project just fine
+    requires.insert(
+        "heroku-sys/composer-plugin-api".into(),
+        match lock.plugin_api_version.as_deref() {
+            // no rule without an exception, of course:
+            // there are quite a lot of BC breaks for plugins in Composer 2.3
+            // if the lock file was generated with 2.0, 2.1 or 2.2, we play it safe and install 2.2.x (which is LTS)
+            // this is mostly to ensure any plugins that have an open enough version selector do not break with all the 2.3 changes
+            // also ensures plugins are compatible with other libraries Composer bundles (e.g. various Symfony components), as those got big version bumps in 2.3
+            Some(v @ ("2.0.0" | "2.1.0" | "2.2.0")) => {
+                let r = "~2.2.0".to_string();
+                notices.insert(MakePlatformJsonNotice::ComposerPluginApiVersionConfined(
+                    v.to_string(),
+                    r.clone(),
+                ));
+                r
+            }
+            // just "^2" or similar so we get the latest we have, see comment earlier
+            Some(v) => format!(
+                "^{}",
+                v.split_once('.')
+                    .ok_or(MakePlatformJsonError::InvalidPlatformApiVersion)?
+                    .0
+            ),
+            // nothing means it's pre-v1.10, in which case we want to just use v1
+            None => {
+                let r = "^1.0.0".to_string();
+                notices.insert(MakePlatformJsonNotice::NoComposerPluginApiVersionInLock(
+                    r.clone(),
+                ));
+                r
+            }
+        },
+    );
+
+    let mut repositories = vec![
+        ComposerRepository::Disabled(HashMap::from([("packagist.org".into(), MustBe!(false))])),
+        // our heroku/installer-plugin
+        ComposerRepository::from(installer_path),
+    ];
+
+    // for now, we need the web server boot scripts and configs from the classic buildpack
+    // so we install it as a package from a relative location - it's "above" the installer path
+    requires.insert("heroku/heroku-buildpack-php".into(), "dev-master".into());
+    let mut classic_buildpack_repo =
+        ComposerRepository::from(installer_path.join("../..").as_ref());
+    if let ComposerRepository::Path {
+        ref mut options, ..
+    } = classic_buildpack_repo
+    {
+        options.get_or_insert(Default::default()).insert(
+            "versions".into(),
+            json!({"heroku/heroku-buildpack-php": "dev-master"}),
+        );
+    }
+    repositories.push(classic_buildpack_repo);
+
+    let mut composer_repositories = platform_repositories
+        .into_iter()
+        .map(|url| {
+            ComposerRepository::try_from(url.clone()) // FIXME: erp
+                .map_err(|_| MakePlatformJsonError::InvalidRepositoryFilter)
+        })
+        // repositories are passed in in ascending order of precedence
+        // typically our default repo first, then user-supplied repos after that
+        // by default, repositories are canonical, so lookups will not happen in later repos if a package is found in an earlier repo
+        // (even if the later repo has newer, or better matching for other requirements, versions)
+        // so we reverse the list to allow later repositories to overwrite packages from earlier ones
+        // users can still have Composer fall back to e.g. the default repo for newer versions using ?composer-repository-canonical=false
+        .rev()
+        .collect::<Result<Vec<ComposerRepository>, _>>()?;
+
+    repositories.append(&mut composer_repositories);
+
+    // platform.php used to take all requirements from platform(-dev) and move them into a "composer.json/composer.lock(-require-dev)" root package
+    // ^ this package gets those requirements as its "require"s with heroku-sys/ prefix
+    // ^ and dev-${content-hash} as the version
+    // ^ this was done because if the root package required "heroku-sys/php" and "heroku-sys/ext-mbstring", no install event would be fired for "ext-mbstring",
+    //   because that package was declared as "replace"d by "heroku-sys/php", no install event would be triggered for it
+    //   but it did require an install event, as the Composer Installer Plugin needed to write an INI config bit to load the dynamic .so module
+    // > now, "ext-mbstring" is its own package (with a dummy "dist" entry, so no download actually takes place)
+    //
+    // platform.php used to fetch all platform(-dev) requires and check if there is a stability-flags entry for it
+    // ^ if so, create a dummy require(-dev) for that package with just @beta etc
+    // ^ we did that because the actual require of the package will be in that "composer.json/composer.lock" package mentioned earlier,
+    //   but stability flags are ignored in requirements that are not in the root package's require section
+    // > now, we can simply copy over the root platform requirements from the "platform" key, they contain the original string with stability flags etc
+    //
+    // for all packages(-dev), create a type=metapackage for the package repo
+    // ^ with name and version copied
+    // ^ with require, replace, provide and conflict entries that reference a platform package rewritten with heroku-sys/ prefix
+    //
+    // even without dev installs, we process all platform-dev and packages-dev packages so we can tell at the end if there is no version requirement in all of require, but in require-dev
+    // ^ to ensure folks get the same PHP version etc as locally/CI
+    // ^ but we will not write the collected requirements into require-dev, because "composer update" has to check "require-dev" packages to ensure lock file consistency even if "--no-dev" is used
+    //   (--no-dev only affects dependency installation, not overall dependency resolution)
+    //   (and people frequently have e.g. ext-xdebug as a dev requirement)
+    //
+    // through all this, record whether we've seen a "php" entry yet for "platform/packages" and "platform-dev/packages-dev"
+    // ^ if no for "platform/packages" but yes for "platform-dev/packages-dev", fail with error
+    // ^ otherwise, insert a default require
+    // ^ but notice if no require in the root, only dependencies
+    // ^ TODO: if no, but have seen `php-…` variants like `php-ipv6` or `php-zts`, should we warn or fail?
+
+    let mut seen_runtime_requirement = false;
+    let mut seen_runtime_dev_requirement = false;
+
+    fn is_platform_package(name: impl AsRef<str>) -> bool {
+        let name = name.as_ref();
+        // same regex used by Composer as well
+        Regex::new(r"^(?i)(?:php(?:-64bit|-ipv6|-zts|-debug)?|hhvm|(?:ext|lib)-[a-z0-9](?:[_.-]?[a-z0-9]+)*|composer(?:-(?:plugin|runtime)-api)?)$")
+            .expect(
+                "You've got a typo in that regular expression. No, it was not broken before. Yes, I am sure.",
+            )
+            .is_match(name)
+            // ext-….native packages are ours, and ours alone - virtual packages to later force installation of native extensions in case of userland "provide"s 
+            && !(name.starts_with("ext-") && name.ends_with(".native"))
+            // we ignore those for the moment - they're not in package metadata (yet), and if they were, the versions are "frozen" at build time, but stack images get updates...
+            && !name.starts_with("lib-")
+            // not currently in package metadata
+            && name != "composer-runtime-api"
+    }
+
+    fn has_runtime_requirement(requires: &HashMap<String, String>) -> bool {
+        requires.contains_key("heroku-sys/php")
+    }
+
+    requires.extend(extract_platform_links_with_heroku_sys(&lock.platform).unwrap_or_default());
+    seen_runtime_requirement |= has_runtime_requirement(&requires);
+
+    dev_requires
+        .extend(extract_platform_links_with_heroku_sys(&lock.platform_dev).unwrap_or_default());
+    seen_runtime_dev_requirement |= has_runtime_requirement(&dev_requires);
+
+    fn extract_platform_links_with_heroku_sys(
+        links: &HashMap<String, String>,
+    ) -> Option<HashMap<String, String>> {
+        let ret = links
+            .iter()
+            .filter(|(k, _)| is_platform_package(k))
+            .map(|(k, v)| (ensure_heroku_sys_prefix(k), v.clone()))
+            .collect::<HashMap<_, _>>();
+
+        ret.is_empty().not().then_some(ret)
+    }
+
+    for (packages, requires, marker) in [
+        (&lock.packages, &mut requires, &mut seen_runtime_requirement),
+        (
+            &lock.packages_dev,
+            &mut dev_requires,
+            &mut seen_runtime_dev_requirement,
+        ),
+    ] {
+        let metapaks = packages
+            .iter()
+            .filter_map(|package| {
+                let require = package
+                    .package
+                    .require
+                    .as_ref()
+                    .and_then(extract_platform_links_with_heroku_sys);
+
+                let provide = package
+                    .package
+                    .provide
+                    .as_ref()
+                    .and_then(extract_platform_links_with_heroku_sys);
+
+                let conflict = package
+                    .package
+                    .conflict
+                    .as_ref()
+                    .and_then(extract_platform_links_with_heroku_sys);
+
+                let replace = package
+                    .package
+                    .replace
+                    .as_ref()
+                    .and_then(extract_platform_links_with_heroku_sys);
+
+                let has_links = [&require, &provide, &conflict, &replace]
+                    .into_iter()
+                    .any(Option::is_some);
+                has_links.then(|| ComposerPackage {
+                    name: package.name.clone(),
+                    version: package.version.clone(),
+                    package: ComposerBasePackage {
+                        kind: Some("metapackage".into()),
+                        require,
+                        provide,
+                        conflict,
+                        replace,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                })
+            })
+            .collect::<Vec<ComposerPackage>>();
+
+        if metapaks.is_empty().not() {
+            *marker |= metapaks.iter().any(|package| {
+                package
+                    .package
+                    .require
+                    .as_ref()
+                    .filter(|requires| has_runtime_requirement(&requires))
+                    .is_some()
+            });
+
+            // now insert a dependency into the root for each require
+            for package in &metapaks {
+                requires.insert(package.name.clone(), package.version.clone());
+            }
+            repositories.push(metapaks.into());
+        }
+    }
+
+    if !seen_runtime_requirement {
+        if seen_runtime_dev_requirement {
+            return Err(MakePlatformJsonError::RuntimeRequirementInRequireDevButNotRequire);
+        }
+        let r = "*".to_string(); // TODO: is * the right value? we used to depend on stack version
+        notices.insert(MakePlatformJsonNotice::RuntimeRequirementInserted(
+            r.clone(),
+        ));
+        requires.insert("heroku-sys/php".into(), r);
+    } else if !requires.contains_key("heroku-sys/php") {
+        // runtime requirements from dependencies will be used
+        notices.insert(MakePlatformJsonNotice::RuntimeRequirementFromDependencies);
+    }
+
+    Ok((
+        ComposerRootPackage {
+            config: Some(config),
+            minimum_stability: Some(lock.minimum_stability.clone()),
+            prefer_stable: Some(lock.prefer_stable.clone()),
+            package: ComposerBasePackage {
+                provide: Some(HashMap::from([stack_provide])),
+                replace: None, // TODO: blackfire
+                repositories: Some(repositories),
+                require: Some(requires),
+                // TODO: maybe we should always return these, but on `composer install` failure, have the caller warn, then re-try without them?
+                require_dev: (dev && !dev_requires.is_empty()).then_some(dev_requires),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        notices,
+    ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assert_json_diff::{assert_json_matches_no_panic, CompareMode, Config};
+    use std::collections::HashSet;
+    use std::{env, fs};
+
+    use figment::providers::{Format, Serialized, Toml};
+    use figment::{value::magic::RelativePathBuf, Figment};
+
+    #[derive(Deserialize, Serialize)]
+    struct ComposerLockTestCaseConfig {
+        name: Option<String>,
+        description: Option<String>,
+        lock: Option<RelativePathBuf>, // FIXME: better?
+        stack: String,
+        expected_result: Option<RelativePathBuf>,
+        expected_notices: Option<Vec<String>>, // TODO: can we use MakePlatformJsonError?
+        expect_failure: Option<String>,        // TODO: can we use MakePlatformJsonError?
+        install_dev: bool,
+        repositories: Vec<Url>, // TODO: change to url::Url?
+    }
+
+    impl Default for ComposerLockTestCaseConfig {
+        fn default() -> Self {
+            let stack = "heroku-20";
+            Self {
+                name: None,
+                description: None,
+                lock: None,
+                stack: stack.to_string(),
+                expected_result: None,
+                expected_notices: None,
+                expect_failure: None,
+                install_dev: false,
+                repositories: vec![Url::parse(&*format!(
+                    "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-cnb/packages.json",
+                    stack,
+                ))
+                .unwrap()],
+            }
+        }
+    }
+
+    impl<P: AsRef<Path>> From<P> for ComposerLockTestCaseConfig {
+        fn from(p: P) -> Self {
+            let dir = p.as_ref();
+            let lock = dir.join("composer.lock");
+            let expected_result = dir.join("expected_platform_composer.json");
+            Self {
+                name: Some(dir.file_name().unwrap().to_string_lossy().to_string()),
+                lock: lock.try_exists().unwrap().then_some(lock.into()),
+                expected_result: expected_result
+                    .try_exists()
+                    .unwrap()
+                    .then_some(expected_result.into()),
+                ..Default::default()
+            }
+        }
+    }
+
+    #[test]
+    fn make_platform_json_with_fixtures() {
+        let installer_path = &PathBuf::from("../../support/installer");
+
+        fs::read_dir(&Path::new("tests/fixtures/platform/generator"))
+            .unwrap()
+            .filter(|der| der.as_ref().unwrap().metadata().unwrap().is_dir())
+            .filter_map(|der| {
+                let p = der.unwrap().path();
+                // merge our auto-built config (from Path) and a config.toml, if it exists
+                let case: ComposerLockTestCaseConfig =
+                    Figment::from(Serialized::defaults(ComposerLockTestCaseConfig::from(&p)))
+                        .merge(Toml::file(p.join("config.toml")))
+                        .extract()
+                        .unwrap();
+                // skip if there isn't even a lock file in the dir
+                case.lock.is_some().then_some(case)
+            })
+            .for_each(|case| {
+                let lock = serde_json::from_str(
+                    // .relative() will allow specifying the file name in the config
+                    &fs::read_to_string(case.lock.as_ref().unwrap().relative()).unwrap(),
+                )
+                .unwrap();
+
+                let generated_json_package = make_platform_json(
+                    &lock,
+                    &case.stack,
+                    &installer_path,
+                    &case.repositories,
+                    case.install_dev,
+                );
+
+                // first check: was this even supposed to succeed or fail?
+                assert_eq!(
+                    generated_json_package.is_ok(),
+                    (case.expected_result.is_some() && case.expect_failure.is_none()),
+                    "case {} expected to {}, but it didn't",
+                    case.name.as_ref().unwrap(),
+                    generated_json_package
+                        .is_ok()
+                        .then_some("succeed")
+                        .unwrap_or("fail"),
+                );
+
+                // on failure, check if the type of failure what was the test expected
+                let (generated_json_package, generated_json_notices) = match generated_json_package
+                {
+                    Ok(v) => v,
+                    Err(e) => {
+                        assert!(
+                            case.expect_failure.is_some(),
+                            "case {}: failed, but config has no expect_failure type specified",
+                            case.name.as_ref().unwrap()
+                        );
+
+                        assert_eq!(
+                            e.to_string(),
+                            case.expect_failure.unwrap(),
+                            "case {}: failed as expected, but with mismatched failure type",
+                            case.name.as_ref().unwrap()
+                        );
+
+                        return;
+                    }
+                };
+
+                // fetch all notices and compare them against the list of expected notices
+                assert_eq!(
+                    generated_json_notices
+                        .iter()
+                        .map(|v| v.to_string())
+                        .collect::<HashSet<String>>(),
+                    case.expected_notices
+                        .unwrap_or_default()
+                        .into_iter()
+                        .collect::<HashSet<String>>(),
+                    "case {}: mismatched notices (left = generated, right = expected)",
+                    case.name.as_ref().unwrap()
+                );
+
+                let mut expected_json_object: Map<String, Value> = serde_json::from_str(
+                    &fs::read_to_string(case.expected_result.unwrap().relative()).unwrap(),
+                )
+                .unwrap();
+
+                let generated_json_value =
+                    serde_json::value::to_value(&generated_json_package).unwrap();
+                let generated_json_object = generated_json_value.as_object().unwrap();
+
+                let generated_keys: HashSet<String> =
+                    generated_json_object.keys().cloned().collect();
+                let expected_keys: HashSet<String> = expected_json_object.keys().cloned().collect();
+
+                // check if all of the expected keys are there (and only those)
+                assert_eq!(
+                    &generated_keys,
+                    &expected_keys,
+                    "case {}: mismatched keys (left = generated, right = expected)",
+                    case.name.as_ref().unwrap()
+                );
+
+                // validate each key in the generated JSON
+                // we have to do this because we want to treat e.g. the "provide" key a bit differently
+                for key in expected_keys {
+                    let generated_value = generated_json_object.get(key.as_str()).unwrap();
+                    let expected_value = match key.as_str() {
+                        k @ "provide" => {
+                            if let Value::Object(obj) =
+                                &mut expected_json_object.get_mut(k).unwrap()
+                            {
+                                obj.entry("heroku-sys/heroku").and_modify(|exp| {
+                                    let gen = generated_value.get("heroku-sys/heroku").unwrap();
+                                    if gen.as_str().unwrap().starts_with(exp.as_str().unwrap()) {
+                                        *exp = gen.clone();
+                                    }
+                                });
+                            }
+                            expected_json_object.get(k).unwrap()
+                        } // TODO: normalize "heroku-sys/heroku" stack version
+                        k @ "repositories" => expected_json_object.get(k).unwrap(), // TODO: maybe normalize plugin repo path, maybe sort packages in "package" repo?
+                        k @ _ => expected_json_object.get(k).unwrap(),
+                    };
+
+                    let comparison = assert_json_matches_no_panic(
+                        generated_value,
+                        expected_value,
+                        Config::new(CompareMode::Strict),
+                    )
+                    .map_err(|err| {
+                        format!("case {}, key {}: {}", case.name.as_ref().unwrap(), key, err)
+                    });
+
+                    assert!(comparison.is_ok(), "{}", comparison.unwrap_err());
+                }
+            })
+    }
+
+    // #[test]
+    fn yo() {
+        let composer_lock = r#"{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "c2b9dcae256d1b255b7265eef089f6c3",
+    "packages": [
+        {
+            "name": "symfony/polyfill-php80",
+            "version": "v1.23.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/polyfill-php80.git",
+                "reference": "1100343ed1a92e3a38f9ae122fc0eb21602547be"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/polyfill-php80/zipball/1100343ed1a92e3a38f9ae122fc0eb21602547be",
+                "reference": "1100343ed1a92e3a38f9ae122fc0eb21602547be",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.1"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-main": "1.23-dev"
+                },
+                "thanks": {
+                    "name": "symfony/polyfill",
+                    "url": "https://github.com/symfony/polyfill"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Symfony\\Polyfill\\Php80\\": ""
+                },
+                "files": [
+                    "bootstrap.php"
+                ],
+                "classmap": [
+                    "Resources/stubs"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ion Bazan",
+                    "email": "ion.bazan@gmail.com"
+                },
+                {
+                    "name": "Nicolas Grekas",
+                    "email": "p@tchwork.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                }
+            ],
+            "description": "Symfony polyfill backporting some PHP 8.0+ features to lower PHP versions",
+            "homepage": "https://symfony.com",
+            "keywords": [
+                "compatibility",
+                "polyfill",
+                "portable",
+                "shim"
+            ],
+            "support": {
+                "source": "https://github.com/symfony/polyfill-php80/tree/v1.23.1"
+            },
+            "funding": [
+                {
+                    "url": "https://symfony.com/sponsor",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/fabpot",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2021-07-28T13:41:28+00:00"
+        },
+        {
+            "name": "symfony/process",
+            "version": "v5.1.0-RC1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/process.git",
+                "reference": "14c0d48567aafd6b24001866de32ae45b0e3e1d1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/process/zipball/14c0d48567aafd6b24001866de32ae45b0e3e1d1",
+                "reference": "14c0d48567aafd6b24001866de32ae45b0e3e1d1",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.2.5",
+                "symfony/polyfill-php80": "^1.15"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "5.1-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Symfony\\Component\\Process\\": ""
+                },
+                "exclude-from-classmap": [
+                    "/Tests/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Fabien Potencier",
+                    "email": "fabien@symfony.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                }
+            ],
+            "description": "Symfony Process Component",
+            "homepage": "https://symfony.com",
+            "support": {
+                "source": "https://github.com/symfony/process/tree/master"
+            },
+            "funding": [
+                {
+                    "url": "https://symfony.com/sponsor",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/fabpot",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2020-04-15T16:09:08+00:00"
+        }
+    ],
+    "packages-dev": [
+        {
+            "name": "kahlan/kahlan",
+            "version": "5.1.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kahlan/kahlan.git",
+                "reference": "bbf99064b7b78049f58e20138bee18fcdee3573e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kahlan/kahlan/zipball/bbf99064b7b78049f58e20138bee18fcdee3573e",
+                "reference": "bbf99064b7b78049f58e20138bee18fcdee3573e",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.1"
+            },
+            "require-dev": {
+                "squizlabs/php_codesniffer": "^3.4"
+            },
+            "bin": [
+                "bin/kahlan"
+            ],
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Kahlan\\": "src/"
+                },
+                "files": [
+                    "src/functions.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "CrysaLEAD"
+                }
+            ],
+            "description": "The PHP Test Framework for Freedom, Truth and Justice.",
+            "keywords": [
+                "BDD",
+                "Behavior-Driven Development",
+                "Monkey Patching",
+                "TDD",
+                "mock",
+                "stub",
+                "testing",
+                "unit test"
+            ],
+            "support": {
+                "issues": "https://github.com/kahlan/kahlan/issues",
+                "source": "https://github.com/kahlan/kahlan/tree/5.1.3"
+            },
+            "time": "2021-06-13T11:14:50+00:00"
+        }
+    ],
+    "aliases": [],
+    "minimum-stability": "RC",
+    "stability-flags": {
+        "symfony/process": 5
+    },    
+    "prefer-stable": true,
+    "prefer-lowest": false,
+    "platform": {
+        "ext-gmp": "*",
+        "ext-intl": "*",
+        "ext-mbstring": "*",
+        "ext-redis": "*",
+        "ext-sqlite3": "*",
+        "ext-ldap": "*",
+        "ext-imap": "*",
+        "ext-blackfire": "*"
+    },
+    "platform-dev": {
+        "ext-pcov": "*"
+    },
+    "plugin-api-version": "2.3.0"
+}
+"#;
+        let l: ComposerLock = serde_json::from_str(composer_lock).unwrap();
+
+        let stack = env::var("STACK").unwrap_or_else(|_| "heroku-22".to_string());
+
+        // our default repo
+        let default_repos = vec![Url::parse(
+            format!(
+                "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-cnb/",
+                stack,
+            )
+            .as_str(),
+        )
+        .unwrap()];
+        // anything user-supplied
+        let byo_repos = env::var("HEROKU_PHP_PLATFORM_REPOSITORIES").unwrap();
+        let all_repos = repos_from_defaults_and_list(&default_repos, &byo_repos).unwrap();
+
+        let pj = serde_json::to_string_pretty(
+            &make_platform_json(
+                &l,
+                &stack,
+                &PathBuf::from("../../support/installer"),
+                &all_repos,
+                env::var("HEROKU_PHP_INSTALL_DEV").is_ok(),
+            )
+            .unwrap()
+            .0, // FIXME: handle
+        )
+        .unwrap();
+
+        println!("{pj}");
+    }
+
+    // #[test]
+    fn nothing() {
+        let l = ComposerLock::new(Some("2.99.0".into()));
+
+        let stack = env::var("STACK").unwrap_or_else(|_| "heroku-22".to_string());
+
+        // our default repo
+        let default_repos = vec![Url::parse(
+            format!(
+                "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-cnb/",
+                stack,
+            )
+            .as_str(),
+        )
+        .unwrap()];
+
+        let pj = serde_json::to_string_pretty(
+            &make_platform_json(
+                &l,
+                &stack,
+                &PathBuf::from("../../support/installer"),
+                &default_repos,
+                false,
+            )
+            .unwrap()
+            .0, // FIXME: handle
+        )
+        .unwrap();
+
+        println!("{pj}");
+    }
+}

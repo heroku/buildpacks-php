@@ -58,8 +58,7 @@ impl Layer for BootstrapLayer {
             context.stack_id, COMPOSER_VERSION
         );
         let installer_archive_url = format!(
-            "https://github.com/heroku/heroku-buildpack-php/archive/refs/{}.tar.gz",
-            INSTALLER_VERSION
+            "https://github.com/heroku/heroku-buildpack-php/archive/refs/{INSTALLER_VERSION}.tar.gz"
         );
 
         utils::download_and_unpack_gzip(&php_min_archive_url, layer_path)

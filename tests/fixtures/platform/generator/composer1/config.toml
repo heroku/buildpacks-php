@@ -1,0 +1,2 @@
+expected_notices = ["NoComposerPluginApiVersionInLock"]
+description = "Tests whether for really old lock files, Composer 1 is assumed"

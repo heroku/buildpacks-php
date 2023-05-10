@@ -1,0 +1,2 @@
+expected_notices = ["ComposerPluginApiVersionConfined"]
+description = "Tests whether for Composer < 2.3, Composer ~2.2.0 instead of ^2 is used, due to plugin BC breaks in 2.3"

@@ -1,0 +1,2 @@
+lock = "mycomposer.lock"
+description = "Tests composer.json file name override via COMPOSER env var"
