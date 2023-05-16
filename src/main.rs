@@ -1,20 +1,19 @@
 #![warn(clippy::pedantic)]
 
-mod composer;
+pub mod composer;
 mod errors;
 mod layers;
 mod package_manager;
 mod php_project;
+mod platform;
 mod utils;
 
 use crate::errors::PhpBuildpackError;
 use crate::layers::bootstrap::BootstrapLayer;
 use crate::layers::composer_cache::ComposerCacheLayer;
 use crate::layers::php::PhpLayer;
-use std::fs;
 
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
-use libcnb::data::build_plan::BuildPlanBuilder;
 use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
 use libcnb::data::{layer_name, process_type};
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
@@ -24,9 +23,7 @@ use libcnb::{buildpack_main, Buildpack, Platform};
 
 use libherokubuildpack::log::{log_header, log_info};
 
-use crate::layers::composer_env::ComposerEnvLayer;
 use crate::php_project::PhpProject;
-use std::process::Command;
 
 pub(crate) struct PhpBuildpack;
 
@@ -87,15 +84,13 @@ impl Buildpack for PhpBuildpack {
             .get_string_lossy("HEROKU_PHP_PLATFORM_REPOSITORIES")
             .unwrap_or("".into());
 
-        let all_repos = composer::platform::repos_from_defaults_and_list(
-            &default_platform_repositories,
-            &user_repos,
-        )
-        .unwrap(); // FIXME: handle
-                   // TODO: message if default disabled?
-                   // TODO: message for additional repos?
+        let all_repos =
+            platform::repos_from_defaults_and_list(&default_platform_repositories, &user_repos)
+                .unwrap(); // FIXME: handle
+                           // TODO: message if default disabled?
+                           // TODO: message for additional repos?
 
-        let (platform_json, notices) = php_project
+        let (platform_json, _notices) = php_project
             .make_platform_json(
                 &context.stack_id,
                 &bootstrap_layer

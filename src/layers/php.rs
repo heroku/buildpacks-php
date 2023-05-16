@@ -158,7 +158,7 @@ impl Layer for PhpLayer {
         {
             let mut composer_require_base = Command::new("composer");
             // FIXME: lol why does it need this let binding...
-            let mut composer_require_base = composer_require_base
+            let composer_require_base = composer_require_base
                 .current_dir(layer_path)
                 .envs(&self.bootstrap_env) // we're invoking 'composer' from the bootstrap layer
                 // .env("layer_env_file_path", &layer_env_file_path)

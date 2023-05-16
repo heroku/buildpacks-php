@@ -1,5 +1,3 @@
-pub(crate) mod platform;
-
 use deref_derive::Deref;
 use monostate::MustBe;
 use serde::de::{Error, MapAccess, SeqAccess, Visitor};
@@ -11,11 +9,10 @@ use url::Url;
 
 use std::fmt;
 use std::marker::PhantomData;
-use std::ops::Not;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Deref, Serialize, PartialEq)]
-struct PhpAssocArray<T>(HashMap<String, T>);
+pub struct PhpAssocArray<T>(HashMap<String, T>);
 impl<'de, T: Deserialize<'de>> Deserialize<'de> for PhpAssocArray<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -137,81 +134,81 @@ where
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct ComposerRootPackage {
-    name: Option<String>,
-    version: Option<String>,
-    config: Option<Map<String, Value>>,
-    minimum_stability: Option<ComposerLiteralStability>,
-    prefer_stable: Option<bool>,
+pub struct ComposerRootPackage {
+    pub name: Option<String>,
+    pub version: Option<String>,
+    pub config: Option<Map<String, Value>>,
+    pub minimum_stability: Option<ComposerLiteralStability>,
+    pub prefer_stable: Option<bool>,
     #[serde(flatten)]
-    package: ComposerBasePackage,
+    pub package: ComposerBasePackage,
 }
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct ComposerPackage {
-    name: String,
-    version: String,
+pub struct ComposerPackage {
+    pub name: String,
+    pub version: String,
     #[serde(flatten)]
-    package: ComposerBasePackage,
+    pub package: ComposerBasePackage,
 }
 
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct ComposerBasePackage {
+pub struct ComposerBasePackage {
     #[serde(rename = "type")]
-    kind: Option<String>,
-    abandoned: Option<ComposerPackageAbandoned>,
-    archive: Option<ComposerPackageArchive>,
-    authors: Option<Vec<ComposerPackageAuthor>>,
-    autoload: Option<ComposerPackageAutoload>,
-    autoload_dev: Option<ComposerPackageAutoload>,
+    pub kind: Option<String>,
+    pub abandoned: Option<ComposerPackageAbandoned>,
+    pub archive: Option<ComposerPackageArchive>,
+    pub authors: Option<Vec<ComposerPackageAuthor>>,
+    pub autoload: Option<ComposerPackageAutoload>,
+    pub autoload_dev: Option<ComposerPackageAutoload>,
     #[serde_as(as = "Option<OneOrMany<_, PreferOne>>")]
-    bin: Option<Vec<String>>,
-    conflict: Option<HashMap<String, String>>,
-    description: Option<String>,
-    dist: Option<ComposerPackageDist>,
-    extra: Option<Value>,
-    funding: Option<Vec<ComposerPackageFunding>>,
-    homepage: Option<Url>,
-    include_path: Option<Vec<String>>,
-    keywords: Option<Vec<String>>,
+    pub bin: Option<Vec<String>>,
+    pub conflict: Option<HashMap<String, String>>,
+    pub description: Option<String>,
+    pub dist: Option<ComposerPackageDist>,
+    pub extra: Option<Value>,
+    pub funding: Option<Vec<ComposerPackageFunding>>,
+    pub homepage: Option<Url>,
+    pub include_path: Option<Vec<String>>,
+    pub keywords: Option<Vec<String>>,
     #[serde_as(as = "Option<OneOrMany<_, PreferOne>>")]
-    license: Option<Vec<String>>,
-    minimum_stability: Option<ComposerStability>,
-    non_feature_branches: Option<Vec<String>>,
-    prefer_stable: Option<bool>,
-    provide: Option<HashMap<String, String>>,
-    readme: Option<PathBuf>,
-    replace: Option<HashMap<String, String>>,
-    repositories: Option<Vec<ComposerRepository>>,
-    require: Option<HashMap<String, String>>,
-    require_dev: Option<HashMap<String, String>>,
-    scripts: Option<HashMap<String, Vec<String>>>,
-    scripts_descriptions: Option<HashMap<String, String>>,
-    source: Option<ComposerPackageSource>,
-    support: Option<HashMap<ComposerPackageSupportType, String>>,
-    suggest: Option<HashMap<String, String>>,
-    target_dir: Option<String>,
-    time: Option<String>, // TODO: "Package release date, in 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DDTHH:MM:SSZ' format.", but in practice it uses DateTime::__construct(), which can parse a lot of formats
+    pub license: Option<Vec<String>>,
+    pub minimum_stability: Option<ComposerStability>,
+    pub non_feature_branches: Option<Vec<String>>,
+    pub prefer_stable: Option<bool>,
+    pub provide: Option<HashMap<String, String>>,
+    pub readme: Option<PathBuf>,
+    pub replace: Option<HashMap<String, String>>,
+    pub repositories: Option<Vec<ComposerRepository>>,
+    pub require: Option<HashMap<String, String>>,
+    pub require_dev: Option<HashMap<String, String>>,
+    pub scripts: Option<HashMap<String, Vec<String>>>,
+    pub scripts_descriptions: Option<HashMap<String, String>>,
+    pub source: Option<ComposerPackageSource>,
+    pub support: Option<HashMap<ComposerPackageSupportType, String>>,
+    pub suggest: Option<HashMap<String, String>>,
+    pub target_dir: Option<String>,
+    pub time: Option<String>, // TODO: "Package release date, in 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DDTHH:MM:SSZ' format.", but in practice it uses DateTime::__construct(), which can parse a lot of formats
 }
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct ComposerConfig {
+pub struct ComposerConfig {
     #[serde(rename = "cache-files-ttl")]
-    cache_files_ttl: Option<u32>,
+    pub cache_files_ttl: Option<u32>,
     #[serde(rename = "discard-changes")]
-    discard_changes: Option<bool>,
+    pub discard_changes: Option<bool>,
     #[serde(rename = "allow-plugins")]
-    allow_plugins: Option<ComposerConfigAllowPlugins>,
+    pub allow_plugins: Option<ComposerConfigAllowPlugins>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) enum ComposerConfigAllowPlugins {
+pub enum ComposerConfigAllowPlugins {
     Boolean(bool),
     List(HashMap<String, bool>),
 }
@@ -219,7 +216,7 @@ pub(crate) enum ComposerConfigAllowPlugins {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 #[derive(Default)]
-pub(crate) enum ComposerStability {
+pub enum ComposerStability {
     Dev = 20,
     Alpha = 15,
     Beta = 10,
@@ -230,7 +227,7 @@ pub(crate) enum ComposerStability {
 
 #[derive(Serialize, Deserialize, Deref, Debug, Clone)]
 #[serde(try_from = "String")]
-struct ComposerLiteralStability(ComposerStability);
+pub struct ComposerLiteralStability(ComposerStability);
 impl TryFrom<String> for ComposerLiteralStability {
     type Error = String;
 
@@ -248,7 +245,7 @@ impl TryFrom<String> for ComposerLiteralStability {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
-pub(crate) enum ComposerPackageAbandoned {
+pub enum ComposerPackageAbandoned {
     Bool(bool),
     Alternative(String),
 }
@@ -261,78 +258,78 @@ impl Default for ComposerPackageAbandoned {
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
-pub(crate) struct ComposerPackageAuthor {
-    name: String,
-    email: Option<String>, // TODO: could be EmailAddress, but Composer only warns
-    homepage: Option<Url>,
-    role: Option<String>,
+pub struct ComposerPackageAuthor {
+    pub name: String,
+    pub email: Option<String>, // TODO: could be EmailAddress, but Composer only warns
+    pub homepage: Option<Url>,
+    pub role: Option<String>,
 }
 
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct ComposerPackageAutoload {
+pub struct ComposerPackageAutoload {
     // map values for the next two can be string or list of strings
     #[serde_as(as = "Option<HashMap<_, OneOrMany<_, PreferOne>>>")]
-    psr_0: Option<HashMap<String, Vec<String>>>,
+    pub psr_0: Option<HashMap<String, Vec<String>>>,
     #[serde_as(as = "Option<HashMap<_, OneOrMany<_, PreferOne>>>")]
-    psr_4: Option<HashMap<String, Vec<String>>>,
-    classmap: Option<Vec<String>>,
-    files: Option<Vec<String>>,
-    exclude_from_classmap: Option<Vec<String>>,
+    pub psr_4: Option<HashMap<String, Vec<String>>>,
+    pub classmap: Option<Vec<String>>,
+    pub files: Option<Vec<String>>,
+    pub exclude_from_classmap: Option<Vec<String>>,
 }
 
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Default)]
-pub(crate) struct ComposerPackageArchive {
-    name: Option<String>,
-    exclude: Option<Vec<String>>,
+pub struct ComposerPackageArchive {
+    pub name: Option<String>,
+    pub exclude: Option<Vec<String>>,
 }
 
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct ComposerPackageDist {
+pub struct ComposerPackageDist {
     #[serde(rename = "type")]
-    kind: String,
-    url: Url,
-    reference: Option<String>,
-    shasum: Option<String>,
-    mirrors: Option<Vec<ComposerMirror>>,
+    pub kind: String,
+    pub url: Url,
+    pub reference: Option<String>,
+    pub shasum: Option<String>,
+    pub mirrors: Option<Vec<ComposerMirror>>,
 }
 
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct ComposerPackageSource {
+pub struct ComposerPackageSource {
     #[serde(rename = "type")]
-    kind: String,
-    url: Url,
-    reference: Option<String>,
-    mirrors: Option<Vec<ComposerMirror>>,
+    pub kind: String,
+    pub url: Url,
+    pub reference: Option<String>,
+    pub mirrors: Option<Vec<ComposerMirror>>,
 }
 
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct ComposerMirror {
-    url: Url,
-    preferred: Option<bool>,
+pub struct ComposerMirror {
+    pub url: Url,
+    pub preferred: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct ComposerPackageFunding {
+pub struct ComposerPackageFunding {
     #[serde(rename = "type")]
-    kind: String, // default "other"?
-    url: String,
+    pub kind: String, // default "other"?
+    pub url: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
 #[serde(rename_all = "lowercase")]
 #[serde(try_from = "String")]
-pub(crate) enum ComposerPackageSupportType {
+pub enum ComposerPackageSupportType {
     Email,
     Issues,
     Forum,
@@ -374,7 +371,7 @@ impl TryFrom<String> for ComposerPackageSupportType {
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
-pub(crate) enum ComposerRepository {
+pub enum ComposerRepository {
     #[serde(rename_all = "kebab-case")]
     Composer {
         #[serde(rename = "type")]
@@ -462,7 +459,7 @@ impl FromIterator<ComposerPackage> for ComposerRepository {
 }
 
 // FIXME: this should not be in this module
-fn ensure_heroku_sys_prefix(name: impl AsRef<str>) -> String {
+pub fn ensure_heroku_sys_prefix(name: impl AsRef<str>) -> String {
     let name = name.as_ref();
     format!(
         "heroku-sys/{}",
@@ -536,33 +533,33 @@ impl TryFrom<Url> for ComposerRepository {
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug)]
 //#[serde(default)]
-pub(crate) struct ComposerRepositoryFilters {
-    canonical: Option<bool>,
+pub struct ComposerRepositoryFilters {
+    pub canonical: Option<bool>,
     // FIXME: these are mutually exclusive
-    only: Option<Vec<String>>,
-    exclude: Option<Vec<String>>,
+    pub only: Option<Vec<String>>,
+    pub exclude: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct ComposerLock {
-    content_hash: String, // since 1.0: https://github.com/composer/composer/pull/4140
-    packages: Vec<ComposerPackage>,
-    packages_dev: Vec<ComposerPackage>, // TODO: can it really be null in practice?
-    platform: PhpAssocArray<String>,
-    platform_dev: PhpAssocArray<String>,
-    platform_overrides: Option<HashMap<String, String>>, // since 1.0: https://github.com/composer/composer/commit/a57c51e8d78156612e49dec1c54d3184f260f144
-    // aliases: HashMap<String, ComposerPackage>, // since 1.0: https://github.com/composer/composer/pull/350 - TODO: do we need to handle these?
-    minimum_stability: ComposerLiteralStability, // since 1.0: https://github.com/composer/composer/pull/592
-    stability_flags: PhpAssocArray<ComposerNumericStability>, // since 1.0: https://github.com/composer/composer/pull/592 - FIXME: empty will be JSON array again
-    prefer_stable: bool, // since 1.0: https://github.com/composer/composer/pull/3101
-    prefer_lowest: bool, // since 1.0: https://github.com/composer/composer/pull/3450
+pub struct ComposerLock {
+    pub content_hash: String, // since 1.0: https://github.com/composer/composer/pull/4140
+    pub packages: Vec<ComposerPackage>,
+    pub packages_dev: Vec<ComposerPackage>, // TODO: can it really be null in practice?
+    pub platform: PhpAssocArray<String>,
+    pub platform_dev: PhpAssocArray<String>,
+    pub platform_overrides: Option<HashMap<String, String>>, // since 1.0: https://github.com/composer/composer/commit/a57c51e8d78156612e49dec1c54d3184f260f144
+    // te) aliases: HashMap<String, ComposerPackage>, // since 1.0: https://github.com/composer/composer/pull/350 - TODO: do we need to handle these?
+    pub minimum_stability: ComposerLiteralStability, // since 1.0: https://github.com/composer/composer/pull/592
+    pub stability_flags: PhpAssocArray<ComposerNumericStability>, // since 1.0: https://github.com/composer/composer/pull/592 - FIXME: empty will be JSON array again
+    pub prefer_stable: bool, // since 1.0: https://github.com/composer/composer/pull/3101
+    pub prefer_lowest: bool, // since 1.0: https://github.com/composer/composer/pull/3450
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
-    plugin_api_version: Option<String>, // since 1.10.0: https://github.com/composer/composer/commit/0b9c658bef426a56dc3971e614028ff5078bcd95
+    pub plugin_api_version: Option<String>, // since 1.10.0: https://github.com/composer/composer/commit/0b9c658bef426a56dc3971e614028ff5078bcd95
 }
 impl ComposerLock {
-    pub(crate) fn new(plugin_api_version: Option<String>) -> Self {
+    pub fn new(plugin_api_version: Option<String>) -> Self {
         Self {
             content_hash: "".to_string(),
             packages: vec![],
@@ -581,7 +578,7 @@ impl ComposerLock {
 
 #[derive(Serialize, Deserialize, Deref, Debug, Clone)]
 #[serde(try_from = "u8", into = "u8")]
-struct ComposerNumericStability(ComposerStability);
+pub struct ComposerNumericStability(ComposerStability);
 impl From<ComposerNumericStability> for u8 {
     fn from(value: ComposerNumericStability) -> Self {
         value.0 as u8
