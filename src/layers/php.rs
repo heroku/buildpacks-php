@@ -150,7 +150,6 @@ impl Layer for PhpLayer {
         // the great thing is that we process these install attempts in the order the solver originally produced them
         // which means that we install more "important" extensions, that later ones might depend on, first
         // that, in turn, is important for loading order into PHP
-        dbg!(&provided_extensions_log_file_path);
         if let Ok(mut rdr) = csv::ReaderBuilder::new()
             .delimiter(b' ') // FIXME: switch to tabs here and in installer plugin
             .has_headers(false)
@@ -162,8 +161,8 @@ impl Layer for PhpLayer {
             let mut composer_require_base = composer_require_base
                 .current_dir(layer_path)
                 .envs(&self.bootstrap_env) // we're invoking 'composer' from the bootstrap layer
-                .env("COMPOSER_HOME", &self.composer_cache_layer_path)
-                .env("layer_env_file_path", &layer_env_file_path);
+                // .env("layer_env_file_path", &layer_env_file_path)
+                .env("COMPOSER_HOME", &self.composer_cache_layer_path);
             for result in rdr.deserialize() {
                 let (provider, provides): (String, Vec<String>) = result.unwrap(); // FIXME: handle
                 log_info(format!(
