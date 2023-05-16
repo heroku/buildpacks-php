@@ -1,77 +1,15 @@
 use crate::composer::*;
 
-use std::collections::HashSet;
-use std::str::FromStr;
+use std::collections::{HashMap, HashSet};
+use std::ops::Not;
+use std::path::Path;
 use std::string::ToString;
 
 use chrono::offset::Utc;
+use monostate::MustBe;
 use regex::Regex;
-use serde_json::json;
+use serde_json::{json, Value};
 use url::Url;
-
-#[derive(Debug)]
-pub(crate) enum RepoUrlsError {
-    SplitError(shell_words::ParseError),
-    ParseError(url::ParseError),
-}
-impl From<shell_words::ParseError> for RepoUrlsError {
-    fn from(err: shell_words::ParseError) -> Self {
-        Self::SplitError(err)
-    }
-}
-impl From<url::ParseError> for RepoUrlsError {
-    fn from(err: url::ParseError) -> Self {
-        Self::ParseError(err)
-    }
-}
-
-enum UrlListEntry {
-    Reset,
-    Url(Url),
-}
-impl FromStr for UrlListEntry {
-    type Err = url::ParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.as_ref() {
-            "-" => Ok(Self::Reset),
-            v => Url::parse(v).map(Self::Url),
-        }
-    }
-}
-
-pub(crate) fn repos_from_defaults_and_list(
-    default_urls: &[Url],
-    extra_urls_list: impl AsRef<str>,
-) -> Result<Vec<Url>, RepoUrlsError> {
-    let extra_urls_splits = shell_words::split(extra_urls_list.as_ref())?;
-    default_urls
-        .into_iter()
-        .cloned()
-        .map(UrlListEntry::Url)
-        .map(Ok)
-        .chain(extra_urls_splits.into_iter().map(|v| v.parse()))
-        .collect::<Result<Vec<_>, _>>()
-        .map(|repos| normalize_url_list(&repos).into_iter().cloned().collect())
-        .map_err(RepoUrlsError::ParseError)
-}
-
-fn normalize_url_list(urls: &[UrlListEntry]) -> Vec<&Url> {
-    // we now have a list of URLs
-    // some of these entries might be UrlListEntry::Reset, used to re-set anything to their left (i.e. typically the default repo)
-    // we want all entries after the last UrlListEntry::Reset
-    urls.rsplit(|url_entry| matches!(url_entry, UrlListEntry::Reset))
-        .next() // this iterator is never empty because rsplit() will always return at least an empty slice
-        .unwrap_or_else(|| unreachable!("Something is rotten in the state of Denmark."))
-        .into_iter()
-        .map(|url_entry| match url_entry {
-            UrlListEntry::Url(url) => url,
-            UrlListEntry::Reset => unreachable!(
-                "If you can see this message, you broke the rsplit predicate a few lines up."
-            ),
-        })
-        .collect()
-}
 
 #[derive(strum_macros::Display, Debug, Eq, PartialEq)]
 pub(crate) enum PlatformGeneratorError {
@@ -88,7 +26,7 @@ pub(crate) enum PlatformGeneratorNotice {
     RuntimeRequirementInserted(String),
     RuntimeRequirementFromDependencies,
 }
-pub(crate) fn make_platform_json(
+pub(crate) fn generate_platform_json(
     lock: &ComposerLock,
     stack: &str,
     installer_path: &Path,
@@ -403,10 +341,13 @@ mod tests {
     use super::*;
     use assert_json_diff::{assert_json_matches_no_panic, CompareMode, Config};
     use std::collections::HashSet;
+    use std::path::PathBuf;
     use std::{env, fs};
 
+    use crate::platform::repos_from_defaults_and_list;
     use figment::providers::{Format, Serialized, Toml};
     use figment::{value::magic::RelativePathBuf, Figment};
+    use serde_json::Map;
 
     #[derive(Deserialize, Serialize)]
     struct ComposerLockTestCaseConfig {
@@ -484,7 +425,7 @@ mod tests {
                 )
                 .unwrap();
 
-                let generated_json_package = make_platform_json(
+                let generated_json_package = generate_platform_json(
                     &lock,
                     &case.stack,
                     &installer_path,
@@ -855,11 +796,11 @@ mod tests {
         )
         .unwrap()];
         // anything user-supplied
-        let byo_repos = env::var("HEROKU_PHP_PLATFORM_REPOSITORIES").unwrap();
+        let byo_repos = env::var("HEROKU_PHP_PLATFORM_REPOSITORIES").unwrap_or_default();
         let all_repos = repos_from_defaults_and_list(&default_repos, &byo_repos).unwrap();
 
         let pj = serde_json::to_string_pretty(
-            &make_platform_json(
+            &generate_platform_json(
                 &l,
                 &stack,
                 &PathBuf::from("../../support/installer"),
@@ -891,7 +832,7 @@ mod tests {
         .unwrap()];
 
         let pj = serde_json::to_string_pretty(
-            &make_platform_json(
+            &generate_platform_json(
                 &l,
                 &stack,
                 &PathBuf::from("../../support/installer"),

@@ -1,7 +1,7 @@
-use crate::composer::platform::{PlatformGeneratorError, PlatformGeneratorNotice};
 use crate::composer::ComposerRootPackage;
 use crate::layers::php::PhpLayerMetadata;
-use crate::{composer, PhpBuildpack};
+use crate::platform::generator::{PlatformGeneratorError, PlatformGeneratorNotice};
+use crate::{composer, platform, PhpBuildpack};
 use libcnb::build::BuildContext;
 use libcnb::layer::LayerData;
 use libcnb::Env;
@@ -55,7 +55,7 @@ impl Traditional {
 
         // TODO: make more minimal JSON that doesn't pull in Composer
         // ^ not yet possible as boot scripts need composer to set COMPOSER_(BIN|VENDOR)_DIR for web server configs
-        composer::platform::make_platform_json(
+        platform::generator::generate_platform_json(
             &lock,
             stack,
             installer_path,
@@ -66,8 +66,8 @@ impl Traditional {
 
     pub(crate) fn install_dependencies(
         &self,
-        context: &BuildContext<PhpBuildpack>,
-        platform_layer: &LayerData<PhpLayerMetadata>,
+        _context: &BuildContext<PhpBuildpack>,
+        _platform_layer: &LayerData<PhpLayerMetadata>,
     ) -> Result<(), String> {
         Ok(())
     }

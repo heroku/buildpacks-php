@@ -1,27 +1,21 @@
-use crate::composer::platform::{PlatformGeneratorError, PlatformGeneratorNotice};
 use crate::composer::ComposerRootPackage;
-use crate::layers::composer_cache::ComposerCacheLayer;
-use crate::layers::composer_env::ComposerEnvLayer;
 use crate::layers::php::PhpLayerMetadata;
-use crate::{composer, utils, PhpBuildpack};
+use crate::platform::generator::{PlatformGeneratorError, PlatformGeneratorNotice};
+use crate::{composer, platform, PhpBuildpack};
 use libcnb::build::BuildContext;
-use libcnb::data::layer_name;
 use libcnb::layer::LayerData;
-use libcnb::layer_env::Scope;
 use libcnb::Env;
-use libherokubuildpack::log::log_header;
 use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
-use std::process::Command;
 use url::Url;
 
 #[derive(Default)]
 pub(crate) struct Composer {
     composer_json_name: String,
     composer_lock_name: String,
-    composer_json: Option<crate::composer::ComposerRootPackage>,
-    composer_lock: Option<crate::composer::ComposerLock>,
+    composer_json: Option<ComposerRootPackage>,
+    composer_lock: Option<composer::ComposerLock>,
 }
 
 impl Composer {
@@ -65,7 +59,7 @@ impl Composer {
         let composer_json = fs::read(&composer_json_path).unwrap(); // FIXME: handle
 
         self.composer_json =
-            Some(serde_json::from_slice::<composer::ComposerRootPackage>(&composer_json).unwrap()); // FIXME: handle
+            Some(serde_json::from_slice::<ComposerRootPackage>(&composer_json).unwrap()); // FIXME: handle
 
         self.composer_lock = match composer_lock_path.exists() {
             true => Some(serde_json::from_slice(&fs::read(&composer_lock_path).unwrap()).unwrap()),
@@ -90,7 +84,7 @@ impl Composer {
             None => &default,
         };
 
-        composer::platform::make_platform_json(
+        platform::generator::generate_platform_json(
             &lock,
             stack,
             installer_path,
@@ -104,54 +98,6 @@ impl Composer {
         context: &BuildContext<PhpBuildpack>,
         platform_layer: &LayerData<PhpLayerMetadata>,
     ) -> Result<(), String> {
-        // TODO: split up into "boot-scripts" or so layer, and later userland bin-dir layer
-        // this just puts our platform bin-dir (with boot scripts) and the userland bin-dir on $PATH
-        let composer_env_layer = context
-            .handle_layer(
-                layer_name!("composer_env"),
-                ComposerEnvLayer {
-                    php_env: platform_layer
-                        .env
-                        .apply(Scope::Build, &libcnb::Env::from_current()),
-                    php_layer_path: platform_layer.path.clone(),
-                },
-            )
-            .unwrap(); // FIXME: handle
-
-        // TODO: move to package_manger::(Composer|None), no-op in None impl
-        // TODO: check for presence of `vendor` dir
-        // TODO: validate COMPOSER_AUTH?
-        let composer_cache_layer = context
-            .handle_layer(layer_name!("composer_cache"), ComposerCacheLayer)
-            .unwrap(); // FIXME: handle
-
-        log_header("Installing dependencies");
-
-        utils::run_command(
-            Command::new("composer")
-                .current_dir(&context.app_dir)
-                .args([
-                    "install",
-                    "-vv",
-                    "--no-dev",
-                    "--no-progress",
-                    "--no-interaction",
-                    "--optimize-autoloader",
-                    "--prefer-dist",
-                ])
-                .envs(
-                    &[&platform_layer.env, &composer_env_layer.env]
-                        .iter()
-                        .fold(libcnb::Env::from_current(), |final_env, layer_env| {
-                            layer_env.apply(Scope::Build, &final_env)
-                        }),
-                )
-                .env("COMPOSER_HOME", &composer_cache_layer.path),
-        )
-        .expect("composer install failed"); // FIXME: handle
-
-        // TODO: run `composer compile`, but is that still a good name?
-
-        Ok(())
+        crate::package_manager::composer::install_dependencies(&context, &platform_layer)
     }
 }

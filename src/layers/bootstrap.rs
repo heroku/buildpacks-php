@@ -1,6 +1,5 @@
 use crate::utils::{self, DownloadUnpackError};
 use crate::{PhpBuildpack, PhpBuildpackError};
-use std::fs;
 
 use libcnb::build::BuildContext;
 use libcnb::data::buildpack::StackId;
@@ -10,7 +9,6 @@ use libcnb::layer_env::LayerEnv;
 use libcnb::Buildpack;
 use libherokubuildpack::log;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::path::Path;
 
 const PHP_VERSION: &str = "8.1.12";

@@ -1,10 +1,10 @@
 mod composer;
 mod traditional;
 
-use crate::composer::platform::{PlatformGeneratorError, PlatformGeneratorNotice};
 use crate::composer::ComposerRootPackage;
-use crate::layers::php::{PhpLayer, PhpLayerMetadata};
-use crate::{php_project, PhpBuildpack};
+use crate::layers::php::PhpLayerMetadata;
+use crate::platform::generator::{PlatformGeneratorError, PlatformGeneratorNotice};
+use crate::PhpBuildpack;
 use libcnb::build::BuildContext;
 use libcnb::layer::LayerData;
 use libcnb::Env;
