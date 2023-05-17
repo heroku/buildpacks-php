@@ -1,9 +1,7 @@
 use crate::composer::ComposerRootPackage;
-use crate::layers::php::PhpLayerMetadata;
 use crate::platform::generator::{PlatformGeneratorError, PlatformGeneratorNotice};
 use crate::{composer, platform, PhpBuildpack};
 use libcnb::build::BuildContext;
-use libcnb::layer::LayerData;
 use libcnb::Env;
 use std::collections::HashSet;
 use std::fs;
@@ -96,8 +94,8 @@ impl Composer {
     pub(crate) fn install_dependencies(
         &self,
         context: &BuildContext<PhpBuildpack>,
-        platform_layer: &LayerData<PhpLayerMetadata>,
+        command_env: &mut Env,
     ) -> Result<(), String> {
-        crate::package_manager::composer::install_dependencies(&context, &platform_layer)
+        crate::package_manager::composer::install_dependencies(&context, command_env)
     }
 }

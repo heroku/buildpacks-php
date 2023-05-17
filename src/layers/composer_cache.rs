@@ -31,7 +31,7 @@ impl Layer for ComposerCacheLayer {
             .env(LayerEnv::new().chainable_insert(
                 Scope::Build,
                 ModificationBehavior::Override,
-                "COMPOSER_HOME",
+                "COMPOSER_CACHE_DIR",
                 layer_path,
             ))
             .build()

@@ -13,17 +13,16 @@ use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fs::File;
 use std::io::{BufReader, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
-pub(crate) struct PhpLayer {
-    pub bootstrap_env: Env,
-    pub composer_cache_layer_path: PathBuf,
+pub(crate) struct PlatformLayer<'a> {
+    pub command_env: &'a Env,
     pub platform_json: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub(crate) struct PhpLayerMetadata {
+pub(crate) struct PlatformLayerMetadata {
     stack: StackId,
 }
 
@@ -70,9 +69,9 @@ where
     }
 }
 
-impl Layer for PhpLayer {
+impl Layer for PlatformLayer<'_> {
     type Buildpack = PhpBuildpack;
-    type Metadata = PhpLayerMetadata;
+    type Metadata = PlatformLayerMetadata;
 
     fn types(&self) -> LayerTypes {
         LayerTypes {
@@ -90,10 +89,10 @@ impl Layer for PhpLayer {
         log_header("Installing platform packages");
 
         let mut platform_json = File::create(layer_path.join("composer.json"))
-            .map_err(PhpLayerError::PlatformJsonCreate)?;
+            .map_err(PlatformLayerError::PlatformJsonCreate)?;
         platform_json
             .write_all(self.platform_json.as_ref())
-            .map_err(PhpLayerError::PlatformJsonWrite)?;
+            .map_err(PlatformLayerError::PlatformJsonWrite)?;
 
         // the computed env vars for this layer are written to this JSON file by the installer
         let layer_env_file_path = layer_path.join("layer_env.json"); // TODO: truncate?
@@ -103,8 +102,7 @@ impl Layer for PhpLayer {
         utils::run_command(
             Command::new("composer")
                 .current_dir(layer_path)
-                .envs(&self.bootstrap_env) // we're invoking 'composer' from the bootstrap layer
-                .env("COMPOSER_HOME", &self.composer_cache_layer_path)
+                .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
                 .args([
                     "install",
                     "--no-dev",
@@ -160,9 +158,8 @@ impl Layer for PhpLayer {
             // FIXME: lol why does it need this let binding...
             let composer_require_base = composer_require_base
                 .current_dir(layer_path)
-                .envs(&self.bootstrap_env) // we're invoking 'composer' from the bootstrap layer
                 // .env("layer_env_file_path", &layer_env_file_path)
-                .env("COMPOSER_HOME", &self.composer_cache_layer_path);
+                .envs(self.command_env); // we're invoking 'composer' from the bootstrap layer
             for result in rdr.deserialize() {
                 let (provider, provides): (String, Vec<String>) = result.unwrap(); // FIXME: handle
                 log_info(format!(
@@ -191,20 +188,20 @@ impl Layer for PhpLayer {
     }
 }
 
-fn generate_layer_metadata(stack_id: &StackId) -> PhpLayerMetadata {
-    PhpLayerMetadata {
+fn generate_layer_metadata(stack_id: &StackId) -> PlatformLayerMetadata {
+    PlatformLayerMetadata {
         stack: stack_id.clone(),
     }
 }
 
 #[derive(Debug)]
-pub(crate) enum PhpLayerError {
+pub(crate) enum PlatformLayerError {
     PlatformJsonCreate(std::io::Error),
     PlatformJsonWrite(std::io::Error),
 }
 
-impl From<PhpLayerError> for PhpBuildpackError {
-    fn from(error: PhpLayerError) -> Self {
-        Self::PhpLayer(error)
+impl From<PlatformLayerError> for PhpBuildpackError {
+    fn from(error: PlatformLayerError) -> Self {
+        Self::PlatformLayer(error)
     }
 }

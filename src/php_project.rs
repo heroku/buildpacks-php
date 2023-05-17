@@ -2,11 +2,9 @@ mod composer;
 mod traditional;
 
 use crate::composer::ComposerRootPackage;
-use crate::layers::php::PhpLayerMetadata;
 use crate::platform::generator::{PlatformGeneratorError, PlatformGeneratorNotice};
 use crate::PhpBuildpack;
 use libcnb::build::BuildContext;
-use libcnb::layer::LayerData;
 use libcnb::Env;
 use std::collections::HashSet;
 use std::path::Path;
@@ -58,11 +56,11 @@ impl PhpProject {
     pub(crate) fn install_dependencies(
         &self,
         context: &BuildContext<PhpBuildpack>,
-        platform_layer: &LayerData<PhpLayerMetadata>,
+        command_env: &mut Env,
     ) -> Result<(), String> {
         match self {
-            PhpProject::Composer(p) => p.install_dependencies(&context, &platform_layer),
-            PhpProject::Traditional(p) => p.install_dependencies(&context, &platform_layer),
+            PhpProject::Composer(p) => p.install_dependencies(&context, command_env),
+            PhpProject::Traditional(p) => p.install_dependencies(&context, command_env),
         }
     }
 }
