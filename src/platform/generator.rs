@@ -347,6 +347,7 @@ mod tests {
     use crate::platform::repos_from_defaults_and_list;
     use figment::providers::{Format, Serialized, Toml};
     use figment::{value::magic::RelativePathBuf, Figment};
+    use serde::{Deserialize, Serialize};
     use serde_json::Map;
 
     #[derive(Deserialize, Serialize)]

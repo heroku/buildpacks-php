@@ -11,12 +11,12 @@ use libherokubuildpack::log::log_header;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-pub(crate) struct ComposerEnvLayer {
-    pub php_env: Env,
-    pub php_layer_path: PathBuf,
+pub(crate) struct ComposerEnvLayer<'a> {
+    pub command_env: &'a Env,
+    pub dir: &'a PathBuf,
 }
 
-impl Layer for ComposerEnvLayer {
+impl Layer for ComposerEnvLayer<'_> {
     type Buildpack = PhpBuildpack;
     type Metadata = GenericMetadata;
 
@@ -30,15 +30,15 @@ impl Layer for ComposerEnvLayer {
 
     fn create(
         &self,
-        context: &BuildContext<Self::Buildpack>,
+        _context: &BuildContext<Self::Buildpack>,
         _layer_path: &Path,
     ) -> Result<LayerResult<Self::Metadata>, <Self::Buildpack as Buildpack>::Error> {
         log_header("Preparing Composer environment");
 
         let output = Command::new("composer")
             .args(["config", "--no-plugins", "bin-dir"])
-            .current_dir(&context.app_dir)
-            .envs(&self.php_env)
+            .current_dir(self.dir)
+            .envs(self.command_env)
             .env("PHP_INI_SCAN_DIR", "")
             .env("COMPOSER_AUTH", "")
             .output()
@@ -56,13 +56,7 @@ impl Layer for ComposerEnvLayer {
                         Scope::All,
                         ModificationBehavior::Append,
                         "PATH",
-                        context.app_dir.join(composer_bin_dir),
-                    )
-                    .chainable_insert(
-                        Scope::All,
-                        ModificationBehavior::Prepend,
-                        "PATH",
-                        self.php_layer_path.join("vendor/bin"), // FIXME: dynamic lookup
+                        self.dir.join(composer_bin_dir),
                     )
                     .chainable_insert(Scope::All, ModificationBehavior::Delimiter, "PATH", ":"),
             )

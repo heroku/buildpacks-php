@@ -1,3 +1,6 @@
+use crate::PhpBuildpack;
+use libcnb::build::BuildContext;
+use libcnb::Platform;
 use std::str::FromStr;
 use url::Url;
 
@@ -35,6 +38,31 @@ impl FromStr for UrlListEntry {
             v => Url::parse(v).map(Self::Url),
         }
     }
+}
+
+pub(crate) fn repos_from_default_and_env(
+    context: &BuildContext<PhpBuildpack>,
+) -> Result<Vec<Url>, RepoUrlsError> {
+    // our default repo
+    let default_platform_repositories = vec![Url::parse(
+        format!(
+            "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-cnb/",
+            context.stack_id,
+        )
+        .as_str(),
+    )
+    .expect("Internal error: failed to parse default repository URL")];
+
+    // anything user-supplied
+    let user_repos = context
+        .platform
+        .env()
+        .get_string_lossy("HEROKU_PHP_PLATFORM_REPOSITORIES")
+        .unwrap_or("".into());
+
+    repos_from_defaults_and_list(&default_platform_repositories, &user_repos)
+    // TODO: message if default disabled?
+    // TODO: message for additional repos?
 }
 
 pub(crate) fn repos_from_defaults_and_list(

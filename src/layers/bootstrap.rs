@@ -5,7 +5,7 @@ use libcnb::build::BuildContext;
 use libcnb::data::buildpack::StackId;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{ExistingLayerStrategy, Layer, LayerData, LayerResult, LayerResultBuilder};
-use libcnb::layer_env::LayerEnv;
+use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libcnb::Buildpack;
 use libherokubuildpack::log;
 use serde::{Deserialize, Serialize};
@@ -66,7 +66,12 @@ impl Layer for BootstrapLayer {
 
         let layer_metadata = generate_layer_metadata(&context.stack_id);
         LayerResultBuilder::new(layer_metadata)
-            .env(LayerEnv::new())
+            .env(LayerEnv::new().chainable_insert(
+                Scope::Build,
+                ModificationBehavior::Override,
+                "COMPOSER_HOME",
+                layer_path,
+            ))
             .build()
     }
 
