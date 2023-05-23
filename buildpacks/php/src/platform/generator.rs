@@ -5,12 +5,87 @@ use std::string::ToString;
 
 use chrono::offset::Utc;
 use composer::{
-    ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepository, ComposerRootPackage,
+    ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepository,
+    ComposerRepositoryFilters, ComposerRootPackage,
 };
 use monostate::MustBe;
 use regex::Regex;
 use serde_json::{json, Value};
 use url::Url;
+
+fn ensure_heroku_sys_prefix(name: impl AsRef<str>) -> String {
+    let name = name.as_ref();
+    format!(
+        "heroku-sys/{}",
+        name.strip_prefix("heroku-sys/").unwrap_or(name)
+    )
+}
+
+fn split_and_trim_list<'a>(list: &'a str, sep: &'a str) -> impl Iterator<Item = &'a str> {
+    list.split(sep)
+        .map(str::trim)
+        .filter_map(|p| (!p.is_empty()).then_some(p))
+}
+
+/// Parse a given repository `Url` with optional priority and filter query args into a `ComposerRepository`.
+///
+/// To allow users to specify whether or not a repository is canonical, or filters for packages,
+/// as documented at https://getcomposer.org/doc/articles/repository-priorities.md, the following
+/// URL query arguments are available:
+/// - `composer-repository-canonical` (`true` or `false`)
+/// - `composer-repository-exclude` (comma-separated list of package names)
+/// - `composer-repository-only` (comma-separated list of package names)
+///
+/// These query args, if present, are not removed from the URL written to the `ComposerRepository`
+/// to ensure that a possible signature included in the URL string remains valid.
+fn composer_repository_from_repository_url(url: Url) -> Result<ComposerRepository, ()> {
+    let mut filters = ComposerRepositoryFilters {
+        canonical: None,
+        only: None,
+        exclude: None,
+    };
+    // TODO: should an empty string for only/exclude query arg generate Some(vec![]), or None? https://github.com/composer/composer/blob/11879ea737978fabb8127616e703e571ff71b184/src/Composer/Repository/FilterRepository.php#L218-L233
+    for (k, v) in url.query_pairs() {
+        match &*k {
+            "composer-repository-canonical" => {
+                filters.canonical = match &*v.trim().to_ascii_lowercase() {
+                    "1" | "true" | "on" | "yes" => Some(true),
+                    &_ => Some(false),
+                }
+            }
+            "composer-repository-only" => {
+                filters.only = Some(
+                    split_and_trim_list(&*v, ",")
+                        .map(ensure_heroku_sys_prefix)
+                        .collect(),
+                )
+                .filter(|v: &Vec<String>| !v.is_empty());
+            }
+            "composer-repository-exclude" => {
+                filters.exclude = Some(
+                    split_and_trim_list(&*v, ",")
+                        .map(ensure_heroku_sys_prefix)
+                        .collect(),
+                )
+                .filter(|v: &Vec<String>| !v.is_empty());
+            }
+            _ => (),
+        }
+    }
+
+    if filters.only.is_some() && filters.exclude.is_some() {
+        return Err(());
+    }
+
+    Ok(ComposerRepository::Composer {
+        kind: Default::default(),
+        url,
+        allow_ssl_downgrade: None,
+        force_lazy_providers: None,
+        options: None,
+        filters,
+    })
+}
 
 #[derive(strum_macros::Display, Debug, Eq, PartialEq)]
 pub(crate) enum PlatformGeneratorError {
@@ -146,7 +221,7 @@ pub(crate) fn generate_platform_json(
     let mut composer_repositories = platform_repositories
         .into_iter()
         .map(|url| {
-            ComposerRepository::try_from(url.clone()) // FIXME: do we have to clone?
+            composer_repository_from_repository_url(url.clone())
                 .map_err(|_| PlatformGeneratorError::InvalidRepositoryFilter)
         })
         // repositories are passed in in ascending order of precedence
@@ -225,7 +300,7 @@ pub(crate) fn generate_platform_json(
         let ret = links
             .iter()
             .filter(|(k, _)| is_platform_package(k))
-            .map(|(k, v)| (composer::ensure_heroku_sys_prefix(k), v.clone()))
+            .map(|(k, v)| (ensure_heroku_sys_prefix(k), v.clone()))
             .collect::<HashMap<_, _>>();
 
         ret.is_empty().not().then_some(ret)
