@@ -18,19 +18,12 @@
         "heroku-sys\/composer": "*",
         "heroku-sys\/composer-plugin-api": "^2",
         "heroku/heroku-buildpack-php": "dev-master",
-        "heroku-sys\/ext-gmp": "*",
-        "heroku-sys\/ext-intl": "*",
-        "heroku-sys\/ext-mbstring": "*",
-        "heroku-sys\/ext-redis": "*",
-        "heroku-sys\/ext-sqlite3": "*",
-        "heroku-sys\/ext-ldap": "*",
-        "heroku-sys\/ext-imap": "*",
-        "heroku-sys\/ext-blackfire": "*",
+        "composer.json\/composer.lock": "dev-c2b9dcae256d1b255b7265eef089f6c3",
         "symfony\/polyfill-php80": "v1.23.1",
         "symfony\/process": "v5.1.0-RC1"
     },
     "require-dev": {
-        "heroku-sys\/ext-pcov": "*",
+        "composer.json\/composer.lock-require-dev": "dev-c2b9dcae256d1b255b7265eef089f6c3",
         "kahlan\/kahlan": "5.1.3"
     },
     "repositories": [
@@ -63,6 +56,21 @@
             "package": [
                 {
                     "type": "metapackage",
+                    "name": "composer.json\/composer.lock",
+                    "version": "dev-c2b9dcae256d1b255b7265eef089f6c3",
+                    "require": {
+                        "heroku-sys\/ext-gmp": "*",
+                        "heroku-sys\/ext-intl": "*",
+                        "heroku-sys\/ext-mbstring": "*",
+                        "heroku-sys\/ext-redis": "*",
+                        "heroku-sys\/ext-sqlite3": "*",
+                        "heroku-sys\/ext-ldap": "*",
+                        "heroku-sys\/ext-imap": "*",
+                        "heroku-sys\/ext-blackfire": "*"
+                    }
+                },
+                {
+                    "type": "metapackage",
                     "name": "symfony\/polyfill-php80",
                     "version": "v1.23.1",
                     "require": {
@@ -81,14 +89,24 @@
         },
         {
             "type": "package",
-            "package": {
-                "type": "metapackage",
-                "name": "kahlan\/kahlan",
-                "version": "5.1.3",
-                "require": {
-                    "heroku-sys\/php": ">=7.1"
+            "package": [
+                {
+                    "type": "metapackage",
+                    "name": "composer.json\/composer.lock-require-dev",
+                    "version": "dev-c2b9dcae256d1b255b7265eef089f6c3",
+                    "require": {
+                        "heroku-sys\/ext-pcov": "*"
+                    }
+                },
+                {
+                    "type": "metapackage",
+                    "name": "kahlan\/kahlan",
+                    "version": "5.1.3",
+                    "require": {
+                        "heroku-sys\/php": ">=7.1"
+                    }
                 }
-            }
+            ]
         }
     ]
 }
