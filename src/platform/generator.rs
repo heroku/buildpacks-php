@@ -117,14 +117,19 @@ pub(crate) fn generate_platform_json(
     let mut repositories = vec![
         ComposerRepository::Disabled(HashMap::from([("packagist.org".into(), MustBe!(false))])),
         // our heroku/installer-plugin
-        ComposerRepository::from(installer_path),
+        ComposerRepository::from_path_with_options(
+            installer_path,
+            [("symlink".into(), Value::Bool(false))],
+        ),
     ];
 
     // for now, we need the web server boot scripts and configs from the classic buildpack
     // so we install it as a package from a relative location - it's "above" the installer path
     requires.insert("heroku/heroku-buildpack-php".into(), "dev-master".into());
-    let mut classic_buildpack_repo =
-        ComposerRepository::from(installer_path.join("../..").as_ref());
+    let mut classic_buildpack_repo = ComposerRepository::from_path_with_options(
+        installer_path.join("../.."),
+        [("symlink".into(), Value::Bool(false))],
+    );
     // FIXME: does this need error handling? or an else? not very readable IMO
     if let ComposerRepository::Path {
         ref mut options, ..
