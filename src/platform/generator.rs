@@ -154,19 +154,20 @@ pub(crate) fn generate_platform_json(
 
     repositories.append(&mut composer_repositories);
 
-    // platform.php used to take all requirements from platform(-dev) and move them into a "composer.json/composer.lock(-require-dev)" root package
-    // ^ this package gets those requirements as its "require"s with heroku-sys/ prefix
-    // ^ and dev-${content-hash} as the version
-    // ^ this was done because if the root package required "heroku-sys/php" and "heroku-sys/ext-mbstring", no install event would be fired for "ext-mbstring",
-    //   because that package was declared as "replace"d by "heroku-sys/php", no install event would be triggered for it
-    //   but it did require an install event, as the Composer Installer Plugin needed to write an INI config bit to load the dynamic .so module
-    // > now, "ext-mbstring" is its own package (with a dummy "dist" entry, so no download actually takes place)
+    // we take all requirements from platform(-dev) and move them into a "composer.json/composer.lock(-require-dev)" metapackage
+    // ^ this package gets those platform requirements as its "require"s, with a "heroku-sys/" prefix, of course
+    // ^ this is done because if the root package requires an extension, and there is also a dependency on a polyfill for it,
+    //   e.g. "heroku-sys/ext-mbstring" and "symfony/polyfill-mbstring" (which declares "ext-mbstring" as "provide"d),
+    //   there would be no way to know that anything required "ext-mbstring", since the solver optimizes this away,
+    //   and no install event is fired for the root package itself
+    // ^ we do however need to know this, since we have to attempt an install of the "real", "native" extension later
+    // > the solution is to wrap the platform requirements into a metapackage, for which an install event fires, where we can extract these requirements
     //
-    // platform.php used to fetch all platform(-dev) requires and check if there is a stability-flags entry for it
+    // due to the above, we also have to check if there is a stability-flags entry for each of the platform(-dev) requires
     // ^ if so, create a dummy require(-dev) for that package with just @beta etc
-    // ^ we did that because the actual require of the package will be in that "composer.json/composer.lock" package mentioned earlier,
+    // ^ we do that because the actual require of the package will be in that "composer.json/composer.lock" package mentioned earlier,
     //   but stability flags are ignored in requirements that are not in the root package's require section
-    // > now, we can simply copy over the root platform requirements from the "platform" key, they contain the original string with stability flags etc
+    // ^ this is done intentionally by Composer to prevent dependencies from pushing unstable stuff onto users without explicit opt-in
     //
     // for all packages(-dev), create a type=metapackage for the package repo
     // ^ with name and version copied
@@ -208,16 +209,13 @@ pub(crate) fn generate_platform_json(
         requires.contains_key("heroku-sys/php")
     }
 
-    requires.extend(extract_platform_links_with_heroku_sys(&lock.platform).unwrap_or_default());
     seen_runtime_requirement |= has_runtime_requirement(&requires);
 
-    dev_requires
-        .extend(extract_platform_links_with_heroku_sys(&lock.platform_dev).unwrap_or_default());
     seen_runtime_dev_requirement |= has_runtime_requirement(&dev_requires);
 
-    fn extract_platform_links_with_heroku_sys(
-        links: &HashMap<String, String>,
-    ) -> Option<HashMap<String, String>> {
+    fn extract_platform_links_with_heroku_sys<T: Clone>(
+        links: &HashMap<String, T>,
+    ) -> Option<HashMap<String, T>> {
         let ret = links
             .iter()
             .filter(|(k, _)| is_platform_package(k))
@@ -227,59 +225,97 @@ pub(crate) fn generate_platform_json(
         ret.is_empty().not().then_some(ret)
     }
 
-    for (packages, requires, marker) in [
-        (&lock.packages, &mut requires, &mut seen_runtime_requirement),
+    let mut runtime_require_in_root = false;
+
+    for (is_dev, platform, packages, requires, marker) in [
         (
+            false,
+            &lock.platform,
+            &lock.packages,
+            &mut requires,
+            &mut seen_runtime_requirement,
+        ),
+        (
+            true,
+            &lock.platform_dev,
             &lock.packages_dev,
             &mut dev_requires,
             &mut seen_runtime_dev_requirement,
         ),
     ] {
-        let metapaks = packages
-            .iter()
-            .filter_map(|package| {
-                let require = package
-                    .package
-                    .require
-                    .as_ref()
-                    .and_then(extract_platform_links_with_heroku_sys);
+        let mut metapaks = Vec::new();
+        // first, for the root platform requires from "platform"/"platform-dev", make a special package
+        if let Some(root_platform_requires) = extract_platform_links_with_heroku_sys(platform) {
+            runtime_require_in_root |= !is_dev && has_runtime_requirement(&root_platform_requires); // we use this later to warn if no "php" requirement
 
-                let provide = package
-                    .package
-                    .provide
-                    .as_ref()
-                    .and_then(extract_platform_links_with_heroku_sys);
+            extract_platform_links_with_heroku_sys(&lock.stability_flags)
+                .unwrap_or_default()
+                .iter()
+                .for_each(|(package_name, numeric_stability)| {
+                    requires.insert(
+                        package_name.clone(),
+                        format!("@{}", &*numeric_stability.to_string()),
+                    );
+                });
 
-                let conflict = package
-                    .package
-                    .conflict
-                    .as_ref()
-                    .and_then(extract_platform_links_with_heroku_sys);
-
-                let replace = package
-                    .package
-                    .replace
-                    .as_ref()
-                    .and_then(extract_platform_links_with_heroku_sys);
-
-                let has_links = [&require, &provide, &conflict, &replace]
-                    .into_iter()
-                    .any(Option::is_some);
-                has_links.then(|| ComposerPackage {
-                    name: package.name.clone(),
-                    version: package.version.clone(),
-                    package: ComposerBasePackage {
-                        kind: Some("metapackage".into()),
-                        require,
-                        provide,
-                        conflict,
-                        replace,
-                        ..Default::default()
-                    },
+            metapaks.push(ComposerPackage {
+                name: format!(
+                    "composer.json/composer.lock{}",
+                    is_dev.then_some("-require-dev").unwrap_or_default() // different names for require and require-dev
+                ),
+                version: format!("dev-{}", lock.content_hash),
+                package: ComposerBasePackage {
+                    kind: Some("metapackage".into()),
+                    require: Some(root_platform_requires),
                     ..Default::default()
-                })
+                },
+                ..Default::default()
+            });
+        }
+
+        // then, build packages for all regular requires
+        metapaks.extend(packages.iter().filter_map(|package| {
+            let require = package
+                .package
+                .require
+                .as_ref()
+                .and_then(extract_platform_links_with_heroku_sys);
+
+            let provide = package
+                .package
+                .provide
+                .as_ref()
+                .and_then(extract_platform_links_with_heroku_sys);
+
+            let conflict = package
+                .package
+                .conflict
+                .as_ref()
+                .and_then(extract_platform_links_with_heroku_sys);
+
+            let replace = package
+                .package
+                .replace
+                .as_ref()
+                .and_then(extract_platform_links_with_heroku_sys);
+
+            let has_links = [&require, &provide, &conflict, &replace]
+                .into_iter()
+                .any(Option::is_some);
+            has_links.then(|| ComposerPackage {
+                name: package.name.clone(),
+                version: package.version.clone(),
+                package: ComposerBasePackage {
+                    kind: Some("metapackage".into()),
+                    require,
+                    provide,
+                    conflict,
+                    replace,
+                    ..Default::default()
+                },
+                ..Default::default()
             })
-            .collect::<Vec<ComposerPackage>>();
+        }));
 
         if metapaks.is_empty().not() {
             *marker |= metapaks.iter().any(|package| {
@@ -308,7 +344,7 @@ pub(crate) fn generate_platform_json(
             r.clone(),
         ));
         requires.insert("heroku-sys/php".into(), r);
-    } else if !requires.contains_key("heroku-sys/php") {
+    } else if !runtime_require_in_root {
         // runtime requirements from dependencies will be used
         notices.insert(PlatformGeneratorNotice::RuntimeRequirementFromDependencies);
     }

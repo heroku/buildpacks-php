@@ -224,6 +224,17 @@ pub enum ComposerStability {
     #[default]
     Stable = 0,
 }
+impl fmt::Display for ComposerStability {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ComposerStability::Dev => write!(f, "dev"),
+            ComposerStability::Alpha => write!(f, "alpha"),
+            ComposerStability::Beta => write!(f, "beta"),
+            ComposerStability::Rc => write!(f, "RC"),
+            ComposerStability::Stable => write!(f, "stable"),
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Deref, Debug, Clone)]
 #[serde(try_from = "String")]

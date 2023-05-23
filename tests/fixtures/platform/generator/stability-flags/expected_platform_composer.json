@@ -16,9 +16,10 @@
         "heroku-sys\/apache": "^2.4.10",
         "heroku-sys\/nginx": "^1.8.0",
         "heroku-sys\/composer": "*",
-        "heroku-sys\/composer-plugin-api": "^1",
+        "heroku-sys\/composer-plugin-api": "^2",
         "heroku/heroku-buildpack-php": "dev-master",
-        "composer.json/composer.lock": "dev-a90ecf736d0c5431a479f94e52129fcf"
+        "composer.json/composer.lock": "dev-b6707541737bd6346c9d941383d263a9",
+        "heroku-sys\/php": "@RC"
     },
     "repositories": [
         {
@@ -43,10 +44,6 @@
         },
         {
             "type": "composer",
-            "url": "https:\/\/localhost:8080\/packages.json"
-        },
-        {
-            "type": "composer",
             "url": "https:\/\/lang-php.s3.us-east-1.amazonaws.com\/dist-heroku-20-cnb\/packages.json"
         },
         {
@@ -54,9 +51,9 @@
             "package": {
                 "type": "metapackage",
                 "name": "composer.json\/composer.lock",
-                "version": "dev-a90ecf736d0c5431a479f94e52129fcf",
+                "version": "dev-b6707541737bd6346c9d941383d263a9",
                 "require": {
-                    "heroku-sys\/php": "7.4.*"
+                    "heroku-sys\/php": "9.0.0@RC"
                 }
             }
         }
