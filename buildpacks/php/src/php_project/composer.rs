@@ -1,6 +1,6 @@
-use crate::composer::ComposerRootPackage;
 use crate::platform::generator::{PlatformGeneratorError, PlatformGeneratorNotice};
-use crate::{composer, platform, PhpBuildpack};
+use crate::{platform, PhpBuildpack};
+use composer::{ComposerLock, ComposerRootPackage};
 use libcnb::build::BuildContext;
 use libcnb::Env;
 use std::collections::HashSet;
@@ -13,7 +13,7 @@ pub(crate) struct Composer {
     composer_json_name: String,
     composer_lock_name: String,
     composer_json: Option<ComposerRootPackage>,
-    composer_lock: Option<composer::ComposerLock>,
+    composer_lock: Option<ComposerLock>,
 }
 
 impl Composer {
@@ -76,7 +76,7 @@ impl Composer {
     ) -> Result<(ComposerRootPackage, HashSet<PlatformGeneratorNotice>), PlatformGeneratorError>
     {
         // FIXME: assigning default first is uglybugly
-        let default = composer::ComposerLock::new(Some("2.99.0".into()));
+        let default = ComposerLock::new(Some("2.99.0".into()));
         let lock = match &self.composer_lock {
             Some(l) => l,
             None => &default,

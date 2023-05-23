@@ -1,6 +1,6 @@
-use crate::composer::ComposerRootPackage;
 use crate::platform::generator::{PlatformGeneratorError, PlatformGeneratorNotice};
-use crate::{composer, platform, PhpBuildpack};
+use crate::{platform, PhpBuildpack};
+use composer::{ComposerLock, ComposerRootPackage};
 use libcnb::build::BuildContext;
 use libcnb::Env;
 use std::collections::HashSet;
@@ -49,7 +49,7 @@ impl Traditional {
         dev: bool,
     ) -> Result<(ComposerRootPackage, HashSet<PlatformGeneratorNotice>), PlatformGeneratorError>
     {
-        let lock = composer::ComposerLock::new(Some("2.99.0".into()));
+        let lock = ComposerLock::new(Some("2.99.0".into()));
 
         // TODO: make more minimal JSON that doesn't pull in Composer
         // ^ not yet possible as boot scripts need composer to set COMPOSER_(BIN|VENDOR)_DIR for web server configs

@@ -1,11 +1,12 @@
-use crate::composer::*;
-
 use std::collections::{HashMap, HashSet};
 use std::ops::Not;
 use std::path::Path;
 use std::string::ToString;
 
 use chrono::offset::Utc;
+use composer::{
+    ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepository, ComposerRootPackage,
+};
 use monostate::MustBe;
 use regex::Regex;
 use serde_json::{json, Value};
@@ -224,7 +225,7 @@ pub(crate) fn generate_platform_json(
         let ret = links
             .iter()
             .filter(|(k, _)| is_platform_package(k))
-            .map(|(k, v)| (ensure_heroku_sys_prefix(k), v.clone()))
+            .map(|(k, v)| (composer::ensure_heroku_sys_prefix(k), v.clone()))
             .collect::<HashMap<_, _>>();
 
         ret.is_empty().not().then_some(ret)
