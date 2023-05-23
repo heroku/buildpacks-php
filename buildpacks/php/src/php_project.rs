@@ -1,9 +1,9 @@
 mod composer;
 mod traditional;
 
-use crate::composer::ComposerRootPackage;
 use crate::platform::generator::{PlatformGeneratorError, PlatformGeneratorNotice};
 use crate::PhpBuildpack;
+use ::composer::ComposerRootPackage;
 use libcnb::build::BuildContext;
 use libcnb::Env;
 use std::collections::HashSet;

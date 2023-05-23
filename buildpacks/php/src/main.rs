@@ -1,6 +1,5 @@
 #![warn(clippy::pedantic)]
 
-pub mod composer;
 mod errors;
 mod layers;
 mod package_manager;

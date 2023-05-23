@@ -9,7 +9,7 @@ use url::Url;
 
 use std::fmt;
 use std::marker::PhantomData;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(Debug, Deref, Serialize, PartialEq)]
 pub struct PhpAssocArray<T>(HashMap<String, T>);
@@ -399,7 +399,7 @@ pub enum ComposerRepository {
     Path {
         #[serde(rename = "type")]
         kind: MustBe!("path"),
-        url: PathBuf, // TODO: Path
+        url: PathBuf
         options: Option<Map<String, Value>>,
         #[serde(flatten)]
         filters: ComposerRepositoryFilters,
@@ -436,7 +436,7 @@ pub enum ComposerRepository {
     Disabled(HashMap<String, MustBe!(false)>),
 }
 impl ComposerRepository {
-    pub(crate) fn from_path_with_options<O>(path: impl Into<PathBuf>, options: O) -> Self
+    pub fn from_path_with_options<O>(path: impl Into<PathBuf>, options: O) -> Self
     where
         O: IntoIterator<Item = (String, Value)>,
     {
