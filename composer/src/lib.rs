@@ -392,17 +392,19 @@ pub enum ComposerRepository {
         allow_ssl_downgrade: Option<bool>,
         force_lazy_providers: Option<bool>,
         options: Option<Map<String, Value>>,
+        canonical: Option<bool>,
         #[serde(flatten)]
-        filters: ComposerRepositoryFilters,
+        filters: Option<ComposerRepositoryFilters>,
     },
     #[serde(rename_all = "kebab-case")]
     Path {
         #[serde(rename = "type")]
         kind: MustBe!("path"),
-        url: PathBuf
+        url: PathBuf,
         options: Option<Map<String, Value>>,
+        canonical: Option<bool>,
         #[serde(flatten)]
-        filters: ComposerRepositoryFilters,
+        filters: Option<ComposerRepositoryFilters>,
     },
     #[serde(rename_all = "kebab-case")]
     Package {
@@ -410,16 +412,18 @@ pub enum ComposerRepository {
         kind: MustBe!("package"),
         #[serde_as(as = "OneOrMany<_, PreferOne>")]
         package: Vec<ComposerPackage>,
+        canonical: Option<bool>,
         #[serde(flatten)]
-        filters: ComposerRepositoryFilters,
+        filters: Option<ComposerRepositoryFilters>,
     },
     #[serde(rename_all = "kebab-case")]
     Url {
         #[serde(rename = "type")]
         kind: String,
         url: Url,
+        canonical: Option<bool>,
         #[serde(flatten)]
-        filters: ComposerRepositoryFilters,
+        filters: Option<ComposerRepositoryFilters>,
         #[serde(flatten)]
         extra: HashMap<String, Value>,
     },
@@ -427,8 +431,9 @@ pub enum ComposerRepository {
     Other {
         #[serde(rename = "type")]
         kind: String,
+        canonical: Option<bool>,
         #[serde(flatten)]
-        filters: ComposerRepositoryFilters,
+        filters: Option<ComposerRepositoryFilters>,
         #[serde(flatten)]
         extra: HashMap<String, Value>,
     },
@@ -444,11 +449,8 @@ impl ComposerRepository {
             kind: Default::default(),
             url: path.into(),
             options: Some(Map::from_iter(options)),
-            filters: ComposerRepositoryFilters {
-                canonical: None,
-                only: None,
-                exclude: None,
-            },
+            canonical: None,
+            filters: None,
         }
     }
 }
@@ -457,11 +459,8 @@ impl From<Vec<ComposerPackage>> for ComposerRepository {
         Self::Package {
             kind: Default::default(),
             package: value,
-            filters: ComposerRepositoryFilters {
-                canonical: None,
-                only: None,
-                exclude: None,
-            },
+            canonical: None,
+            filters: None,
         }
     }
 }
@@ -473,12 +472,10 @@ impl FromIterator<ComposerPackage> for ComposerRepository {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug)]
-//#[serde(default)]
-pub struct ComposerRepositoryFilters {
-    pub canonical: Option<bool>,
-    // FIXME (some day): these are mutually exclusive
-    pub only: Option<Vec<String>>,
-    pub exclude: Option<Vec<String>>,
+#[serde(rename_all = "lowercase")]
+pub enum ComposerRepositoryFilters {
+    Only(Vec<String>),
+    Exclude(Vec<String>),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
