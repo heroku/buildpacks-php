@@ -435,13 +435,15 @@ pub enum ComposerRepository {
     #[serde(rename_all = "kebab-case")]
     Disabled(HashMap<String, MustBe!(false)>),
 }
-// FIXME: this should not be in this module, at least not this specialized (symlink => false)
-impl From<&Path> for ComposerRepository {
-    fn from(value: &Path) -> Self {
+impl ComposerRepository {
+    pub(crate) fn from_path_with_options<O>(path: impl Into<PathBuf>, options: O) -> Self
+    where
+        O: IntoIterator<Item = (String, Value)>,
+    {
         Self::Path {
             kind: Default::default(),
-            url: value.into(),
-            options: Some(Map::from_iter([("symlink".into(), Value::Bool(false))])),
+            url: path.into(),
+            options: Some(Map::from_iter(options)),
             filters: ComposerRepositoryFilters {
                 canonical: None,
                 only: None,
