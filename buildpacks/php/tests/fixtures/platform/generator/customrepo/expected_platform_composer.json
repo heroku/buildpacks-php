@@ -43,7 +43,12 @@
         },
         {
             "type": "composer",
-            "url": "https:\/\/localhost:8080\/packages.json"
+            "url": "https://localhost:8080/packages.json?composer-repository-canonical=0&composer-repository-only=ext-foo,ext-bar",
+            "canonical": false,
+            "only": [
+                "heroku-sys/ext-foo",
+                "heroku-sys/ext-bar"
+            ]
         },
         {
             "type": "composer",

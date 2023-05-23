@@ -39,42 +39,30 @@ fn split_and_trim_list<'a>(list: &'a str, sep: &'a str) -> impl Iterator<Item = 
 /// These query args, if present, are not removed from the URL written to the `ComposerRepository`
 /// to ensure that a possible signature included in the URL string remains valid.
 fn composer_repository_from_repository_url(url: Url) -> Result<ComposerRepository, ()> {
-    let mut filters = ComposerRepositoryFilters {
-        canonical: None,
-        only: None,
-        exclude: None,
-    };
-    // TODO: should an empty string for only/exclude query arg generate Some(vec![]), or None? https://github.com/composer/composer/blob/11879ea737978fabb8127616e703e571ff71b184/src/Composer/Repository/FilterRepository.php#L218-L233
+    let mut canonical = None;
+    let mut filters = None;
     for (k, v) in url.query_pairs() {
         match &*k {
             "composer-repository-canonical" => {
-                filters.canonical = match &*v.trim().to_ascii_lowercase() {
+                canonical = match &*v.trim().to_ascii_lowercase() {
                     "1" | "true" | "on" | "yes" => Some(true),
                     &_ => Some(false),
                 }
             }
-            "composer-repository-only" => {
-                filters.only = Some(
-                    split_and_trim_list(&*v, ",")
-                        .map(ensure_heroku_sys_prefix)
-                        .collect(),
-                )
-                .filter(|v: &Vec<String>| !v.is_empty());
-            }
-            "composer-repository-exclude" => {
-                filters.exclude = Some(
-                    split_and_trim_list(&*v, ",")
-                        .map(ensure_heroku_sys_prefix)
-                        .collect(),
-                )
-                .filter(|v: &Vec<String>| !v.is_empty());
+            "composer-repository-only" | "composer-repository-exclude" => {
+                if filters.is_some() {
+                    return Err(());
+                };
+                let filter_list = split_and_trim_list(&*v, ",")
+                    .map(ensure_heroku_sys_prefix)
+                    .collect();
+                filters = Some(match &*k {
+                    "composer-repository-only" => ComposerRepositoryFilters::Only(filter_list),
+                    _ => ComposerRepositoryFilters::Exclude(filter_list),
+                });
             }
             _ => (),
         }
-    }
-
-    if filters.only.is_some() && filters.exclude.is_some() {
-        return Err(());
     }
 
     Ok(ComposerRepository::Composer {
@@ -83,6 +71,7 @@ fn composer_repository_from_repository_url(url: Url) -> Result<ComposerRepositor
         allow_ssl_downgrade: None,
         force_lazy_providers: None,
         options: None,
+        canonical,
         filters,
     })
 }
