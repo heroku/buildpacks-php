@@ -548,8 +548,8 @@ mod tests {
                     case.name.as_ref().unwrap(),
                     generated_json_package
                         .is_ok()
-                        .then_some("succeed")
-                        .unwrap_or("fail"),
+                        .then_some("fail")
+                        .unwrap_or("succeed"),
                 );
 
                 // on failure, check if the type of failure what was the test expected
