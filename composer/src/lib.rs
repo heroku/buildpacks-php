@@ -471,84 +471,12 @@ impl FromIterator<ComposerPackage> for ComposerRepository {
     }
 }
 
-// FIXME: this should not be in this module
-pub fn ensure_heroku_sys_prefix(name: impl AsRef<str>) -> String {
-    let name = name.as_ref();
-    format!(
-        "heroku-sys/{}",
-        name.strip_prefix("heroku-sys/").unwrap_or(name)
-    )
-}
-fn split_and_trim_list<'a>(list: &'a str, sep: &'a str) -> impl Iterator<Item = &'a str> {
-    list.split(sep)
-        .map(str::trim)
-        .filter_map(|p| (!p.is_empty()).then_some(p))
-}
-// FIXME: this should not be in this module, at least not with the ensure_heroku_sys_prefix specialization
-impl TryFrom<Url> for ComposerRepository {
-    type Error = ();
-
-    fn try_from(value: Url) -> Result<Self, Self::Error> {
-        let mut filters = ComposerRepositoryFilters {
-            canonical: None,
-            only: None,
-            exclude: None,
-        };
-        // allow control of https://getcomposer.org/doc/articles/repository-priorities.md via query args:
-        // ?composer-repository-canonical=false
-        // ?composer-repository-only=heroku-sys/ext-foo
-        // ?composer-repository-exclude=ext-lol
-        // FIXME: for 100% parity with Classic, we could support array notation: ?composer-repository-exclude[]=ext-foo&composer-repository-exclude[]=ext-bar
-        // TODO: should an empty string for only/exclude query arg generate Some(vec![]), or None? https://github.com/composer/composer/blob/11879ea737978fabb8127616e703e571ff71b184/src/Composer/Repository/FilterRepository.php#L218-L233
-        for (k, v) in value.query_pairs() {
-            match &*k {
-                "composer-repository-canonical" => {
-                    filters.canonical = match &*v.trim().to_ascii_lowercase() {
-                        "1" | "true" | "on" | "yes" => Some(true),
-                        &_ => Some(false),
-                    }
-                }
-                "composer-repository-only" => {
-                    filters.only = Some(
-                        split_and_trim_list(&*v, ",")
-                            .map(ensure_heroku_sys_prefix)
-                            .collect(),
-                    )
-                    .filter(|v: &Vec<String>| !v.is_empty());
-                }
-                "composer-repository-exclude" => {
-                    filters.exclude = Some(
-                        split_and_trim_list(&*v, ",")
-                            .map(ensure_heroku_sys_prefix)
-                            .collect(),
-                    )
-                    .filter(|v: &Vec<String>| !v.is_empty());
-                }
-                _ => (),
-            }
-        }
-
-        if filters.only.is_some() && filters.exclude.is_some() {
-            return Err(());
-        }
-
-        Ok(Self::Composer {
-            kind: Default::default(),
-            url: value,
-            allow_ssl_downgrade: None,
-            force_lazy_providers: None,
-            options: None,
-            filters,
-        })
-    }
-}
-
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug)]
 //#[serde(default)]
 pub struct ComposerRepositoryFilters {
     pub canonical: Option<bool>,
-    // FIXME: these are mutually exclusive
+    // FIXME (some day): these are mutually exclusive
     pub only: Option<Vec<String>>,
     pub exclude: Option<Vec<String>>,
 }
