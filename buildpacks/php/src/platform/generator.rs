@@ -337,7 +337,7 @@ pub(crate) fn generate_platform_json(
                 .for_each(|(package_name, numeric_stability)| {
                     requires.insert(
                         package_name.clone(),
-                        format!("@{}", &*numeric_stability.to_string()),
+                        format!("@{}", &numeric_stability.to_string()),
                     );
                 });
 
@@ -494,7 +494,7 @@ mod tests {
                 expected_notices: None,
                 expect_failure: None,
                 install_dev: false,
-                repositories: vec![Url::parse(&*format!(
+                repositories: vec![Url::parse(&format!(
                     "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-cnb/packages.json",
                     stack,
                 ))

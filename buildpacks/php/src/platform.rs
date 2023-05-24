@@ -28,12 +28,11 @@ enum UrlListEntry {
     Reset,
     Url(Url),
 }
-
 impl FromStr for UrlListEntry {
     type Err = url::ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.as_ref() {
+        match s {
             "-" => Ok(Self::Reset),
             v => Url::parse(v).map(Self::Url),
         }
@@ -44,13 +43,10 @@ pub(crate) fn repos_from_default_and_env(
     context: &BuildContext<PhpBuildpack>,
 ) -> Result<Vec<Url>, RepoUrlsError> {
     // our default repo
-    let default_platform_repositories = vec![Url::parse(
-        format!(
-            "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-cnb/",
-            context.stack_id,
-        )
-        .as_str(),
-    )
+    let default_platform_repositories = vec![Url::parse(&format!(
+        "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-cnb/",
+        context.stack_id,
+    ))
     .expect("Internal error: failed to parse default repository URL")];
 
     // anything user-supplied
