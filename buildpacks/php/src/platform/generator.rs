@@ -27,38 +27,47 @@ fn split_and_trim_list<'a>(list: &'a str, sep: &'a str) -> impl Iterator<Item = 
         .filter_map(|p| (!p.is_empty()).then_some(p))
 }
 
-/// Parse a given repository `Url` with optional priority and filter query args into a `ComposerRepository`.
+/// Parse a given repository [`Url`] with optional priority and filter query args into a [`ComposerRepository`].
 ///
 /// To allow users to specify whether or not a repository is canonical, or filters for packages,
-/// as documented at https://getcomposer.org/doc/articles/repository-priorities.md, the following
+/// as documented at <https://getcomposer.org/doc/articles/repository-priorities.md>, the following
 /// URL query arguments are available:
 /// - `composer-repository-canonical` (`true` or `false`)
 /// - `composer-repository-exclude` (comma-separated list of package names)
 /// - `composer-repository-only` (comma-separated list of package names)
 ///
-/// These query args, if present, are not removed from the URL written to the `ComposerRepository`
+/// These query args, if present, are not removed from the URL written to the [`ComposerRepository`]
 /// to ensure that a possible signature included in the URL string remains valid.
-fn composer_repository_from_repository_url(url: Url) -> Result<ComposerRepository, ()> {
+fn composer_repository_from_repository_url(
+    url: Url,
+) -> Result<ComposerRepository, ComposerRepositoryFromRepositoryUrlError> {
+    const CANONICAL_QUERY_ARG_NAME: &str = "composer-repository-canonical";
+    const ONLY_QUERY_ARG_NAME: &str = "composer-repository-only";
+    const EXCLUDE_QUERY_ARG_NAME: &str = "composer-repository-exclude";
+
     let mut canonical = None;
     let mut filters = None;
     for (k, v) in url.query_pairs() {
-        match &*k {
-            "composer-repository-canonical" => {
-                canonical = match &*v.trim().to_ascii_lowercase() {
-                    "1" | "true" | "on" | "yes" => Some(true),
-                    &_ => Some(false),
-                }
+        let k = k.as_ref();
+        let v = v.as_ref();
+        match k {
+            CANONICAL_QUERY_ARG_NAME => {
+                canonical = Some(matches!(
+                    v.trim().to_ascii_lowercase().as_ref(),
+                    "1" | "true" | "on" | "yes"
+                ))
             }
-            "composer-repository-only" | "composer-repository-exclude" => {
+            ONLY_QUERY_ARG_NAME | EXCLUDE_QUERY_ARG_NAME => {
                 if filters.is_some() {
-                    return Err(());
+                    return Err(ComposerRepositoryFromRepositoryUrlError::MultipleFilters);
                 };
-                let filter_list = split_and_trim_list(&*v, ",")
+                let filter_list = split_and_trim_list(v, ",")
                     .map(ensure_heroku_sys_prefix)
                     .collect();
-                filters = Some(match &*k {
-                    "composer-repository-only" => ComposerRepositoryFilters::Only(filter_list),
-                    _ => ComposerRepositoryFilters::Exclude(filter_list),
+                filters = Some(match k {
+                    ONLY_QUERY_ARG_NAME => ComposerRepositoryFilters::Only(filter_list),
+                    EXCLUDE_QUERY_ARG_NAME => ComposerRepositoryFilters::Exclude(filter_list),
+                    _ => unreachable!(),
                 });
             }
             _ => (),
@@ -74,6 +83,10 @@ fn composer_repository_from_repository_url(url: Url) -> Result<ComposerRepositor
         canonical,
         filters,
     })
+}
+#[derive(Debug)]
+enum ComposerRepositoryFromRepositoryUrlError {
+    MultipleFilters,
 }
 
 #[derive(strum_macros::Display, Debug, Eq, PartialEq)]
