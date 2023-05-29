@@ -89,6 +89,39 @@ enum ComposerRepositoryFromRepositoryUrlError {
     MultipleFilters,
 }
 
+fn is_platform_package(name: impl AsRef<str>) -> bool {
+    let name = name.as_ref();
+    // same regex used by Composer as well
+    Regex::new(r"^(?i)(?:php(?:-64bit|-ipv6|-zts|-debug)?|hhvm|(?:ext|lib)-[a-z0-9](?:[_.-]?[a-z0-9]+)*|composer(?:-(?:plugin|runtime)-api)?)$")
+        .expect(
+            "You've got a typo in that regular expression. No, it was not broken before. Yes, I am sure.",
+        )
+        .is_match(name)
+        // ext-….native packages are ours, and ours alone - virtual packages to later force installation of native extensions in case of userland "provide"s 
+        && !(name.starts_with("ext-") && name.ends_with(".native"))
+        // we ignore those for the moment - they're not in package metadata (yet), and if they were, the versions are "frozen" at build time, but stack images get updates...
+        && !name.starts_with("lib-")
+        // not currently in package metadata
+        // TODO: put into package metadata so it's usable
+        && name != "composer-runtime-api"
+}
+
+fn has_runtime_requirement(requires: &HashMap<String, String>) -> bool {
+    requires.contains_key("heroku-sys/php")
+}
+
+fn extract_platform_links_with_heroku_sys<T: Clone>(
+    links: &HashMap<String, T>,
+) -> Option<HashMap<String, T>> {
+    let ret = links
+        .iter()
+        .filter(|(k, _)| is_platform_package(k))
+        .map(|(k, v)| (ensure_heroku_sys_prefix(k), v.clone()))
+        .collect::<HashMap<_, _>>();
+
+    ret.is_empty().not().then_some(ret)
+}
+
 #[derive(strum_macros::Display, Debug, Eq, PartialEq)]
 pub(crate) enum PlatformGeneratorError {
     EmptyPlatformRepositoriesList,
@@ -270,44 +303,6 @@ pub(crate) fn generate_platform_json(
 
     let mut seen_runtime_requirement = false;
     let mut seen_runtime_dev_requirement = false;
-
-    fn is_platform_package(name: impl AsRef<str>) -> bool {
-        let name = name.as_ref();
-        // same regex used by Composer as well
-        Regex::new(r"^(?i)(?:php(?:-64bit|-ipv6|-zts|-debug)?|hhvm|(?:ext|lib)-[a-z0-9](?:[_.-]?[a-z0-9]+)*|composer(?:-(?:plugin|runtime)-api)?)$")
-            .expect(
-                "You've got a typo in that regular expression. No, it was not broken before. Yes, I am sure.",
-            )
-            .is_match(name)
-            // ext-….native packages are ours, and ours alone - virtual packages to later force installation of native extensions in case of userland "provide"s 
-            && !(name.starts_with("ext-") && name.ends_with(".native"))
-            // we ignore those for the moment - they're not in package metadata (yet), and if they were, the versions are "frozen" at build time, but stack images get updates...
-            && !name.starts_with("lib-")
-            // not currently in package metadata
-            // TODO: put into package metadata so it's usable
-            && name != "composer-runtime-api"
-    }
-
-    fn has_runtime_requirement(requires: &HashMap<String, String>) -> bool {
-        requires.contains_key("heroku-sys/php")
-    }
-
-    seen_runtime_requirement |= has_runtime_requirement(&requires);
-
-    seen_runtime_dev_requirement |= has_runtime_requirement(&dev_requires);
-
-    fn extract_platform_links_with_heroku_sys<T: Clone>(
-        links: &HashMap<String, T>,
-    ) -> Option<HashMap<String, T>> {
-        let ret = links
-            .iter()
-            .filter(|(k, _)| is_platform_package(k))
-            .map(|(k, v)| (ensure_heroku_sys_prefix(k), v.clone()))
-            .collect::<HashMap<_, _>>();
-
-        ret.is_empty().not().then_some(ret)
-    }
-
     let mut runtime_require_in_root = false;
 
     for (is_dev, platform, packages, requires, marker) in [
