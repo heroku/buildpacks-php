@@ -483,13 +483,13 @@ pub enum ComposerRepositoryFilters {
 pub struct ComposerLock {
     pub content_hash: String, // since 1.0: https://github.com/composer/composer/pull/4140
     pub packages: Vec<ComposerPackage>,
-    pub packages_dev: Vec<ComposerPackage>, // TODO: can it really be null in practice?
+    pub packages_dev: Vec<ComposerPackage>, // could be null before 1.1.0: https://github.com/composer/composer/pull/5224
     pub platform: PhpAssocArray<String>,
     pub platform_dev: PhpAssocArray<String>,
     pub platform_overrides: Option<HashMap<String, String>>, // since 1.0: https://github.com/composer/composer/commit/a57c51e8d78156612e49dec1c54d3184f260f144
-    // te) aliases: HashMap<String, ComposerPackage>, // since 1.0: https://github.com/composer/composer/pull/350 - TODO: do we need to handle these?
+    // pub aliases: HashMap<String, ComposerPackage>, // since 1.0: https://github.com/composer/composer/pull/350 - TODO: do we need to handle these?
     pub minimum_stability: ComposerLiteralStability, // since 1.0: https://github.com/composer/composer/pull/592
-    pub stability_flags: PhpAssocArray<ComposerNumericStability>, // since 1.0: https://github.com/composer/composer/pull/592 - FIXME: empty will be JSON array again
+    pub stability_flags: PhpAssocArray<ComposerNumericStability>, // since 1.0: https://github.com/composer/composer/pull/592
     pub prefer_stable: bool, // since 1.0: https://github.com/composer/composer/pull/3101
     pub prefer_lowest: bool, // since 1.0: https://github.com/composer/composer/pull/3450
     #[serde(skip_serializing_if = "Option::is_none")]
