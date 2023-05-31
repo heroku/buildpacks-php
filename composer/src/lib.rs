@@ -238,7 +238,7 @@ impl fmt::Display for ComposerStability {
 
 #[derive(Serialize, Deserialize, Deref, Debug, Clone)]
 #[serde(try_from = "String")]
-pub struct ComposerLiteralStability(ComposerStability);
+pub struct ComposerLiteralStability(pub ComposerStability);
 impl TryFrom<String> for ComposerLiteralStability {
     type Error = String;
 
@@ -516,7 +516,7 @@ impl ComposerLock {
 
 #[derive(Serialize, Deserialize, Deref, Debug, Clone)]
 #[serde(try_from = "u8", into = "u8")]
-pub struct ComposerNumericStability(ComposerStability);
+pub struct ComposerNumericStability(pub ComposerStability);
 impl From<ComposerNumericStability> for u8 {
     fn from(value: ComposerNumericStability) -> Self {
         value.0 as u8
