@@ -21,6 +21,9 @@
         "composer.json/composer.lock": "dev-b6707541737bd6346c9d941383d263a9",
         "heroku-sys\/php": "@RC"
     },
+    "require-dev": {
+        "composer.json/composer.lock-require-dev": "dev-b6707541737bd6346c9d941383d263a9"
+    },
     "repositories": [
         {
             "packagist.org": false
@@ -54,6 +57,17 @@
                 "version": "dev-b6707541737bd6346c9d941383d263a9",
                 "require": {
                     "heroku-sys\/php": "9.0.0@RC"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "type": "metapackage",
+                "name": "composer.json\/composer.lock-require-dev",
+                "version": "dev-b6707541737bd6346c9d941383d263a9",
+                "require": {
+                    "heroku-sys\/ext-xdebug": "*"
                 }
             }
         }

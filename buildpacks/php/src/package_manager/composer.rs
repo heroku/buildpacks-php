@@ -65,3 +65,13 @@ pub(crate) fn install_dependencies(
 
     Ok(())
 }
+
+#[derive(strum_macros::Display, Debug, Eq, PartialEq)]
+pub(crate) enum PlatformExtractorError {
+    InvalidPlatformApiVersion,
+}
+#[derive(strum_macros::Display, Debug, Eq, Hash, PartialEq)]
+pub(crate) enum PlatformExtractorNotice {
+    NoComposerPluginApiVersionInLock(String),
+    ComposerPluginApiVersionConfined(String, String),
+}
