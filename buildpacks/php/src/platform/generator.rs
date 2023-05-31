@@ -365,7 +365,7 @@ mod tests {
     use std::{env, fs};
 
     use crate::package_manager::composer::{ensure_runtime_requirement, extract_from_lock};
-    use crate::platform::repos_from_defaults_and_list;
+    use crate::platform::platform_repository_urls_from_defaults_and_list;
     use figment::providers::{Format, Serialized, Toml};
     use figment::{value::magic::RelativePathBuf, Figment};
     use serde::{Deserialize, Serialize};
@@ -922,7 +922,8 @@ mod tests {
         .unwrap()];
         // anything user-supplied
         let byo_repos = env::var("HEROKU_PHP_PLATFORM_REPOSITORIES").unwrap_or_default();
-        let all_repos = repos_from_defaults_and_list(&default_repos, &byo_repos).unwrap();
+        let all_repos =
+            platform_repository_urls_from_defaults_and_list(&default_repos, &byo_repos).unwrap();
 
         let (generator_input, _) = extract_from_lock(&l).unwrap();
 
