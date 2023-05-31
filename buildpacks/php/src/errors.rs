@@ -1,14 +1,19 @@
 use crate::layers::bootstrap::BootstrapLayerError;
 use crate::layers::composer_env::ComposerEnvLayerError;
 use crate::layers::platform::PlatformLayerError;
-use crate::platform::generator::PlatformGeneratorError;
+use crate::package_manager::composer::DependencyInstallationError;
+use crate::php_project::{PlatformJsonError, ProjectLoadError};
+use crate::platform::PlatformRepositoryUrlError;
 
 #[derive(Debug)]
 pub(crate) enum PhpBuildpackError {
+    ProjectLoad(ProjectLoadError),
     BootstrapLayer(BootstrapLayerError),
     PlatformLayer(PlatformLayerError),
     ComposerEnvLayer(ComposerEnvLayerError),
-    Platform(PlatformGeneratorError),
+    PlatformJson(PlatformJsonError),
+    PlatformRepositoryUrl(PlatformRepositoryUrlError),
+    DependencyInstallation(DependencyInstallationError),
 }
 
 impl From<PhpBuildpackError> for libcnb::Error<PhpBuildpackError> {

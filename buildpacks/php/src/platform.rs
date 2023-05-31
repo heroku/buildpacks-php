@@ -6,24 +6,6 @@ use url::Url;
 
 pub(crate) mod generator;
 
-#[derive(Debug)]
-pub(crate) enum RepoUrlsError {
-    SplitError(shell_words::ParseError),
-    ParseError(url::ParseError),
-}
-
-impl From<shell_words::ParseError> for RepoUrlsError {
-    fn from(err: shell_words::ParseError) -> Self {
-        Self::SplitError(err)
-    }
-}
-
-impl From<url::ParseError> for RepoUrlsError {
-    fn from(err: url::ParseError) -> Self {
-        Self::ParseError(err)
-    }
-}
-
 enum UrlListEntry {
     Reset,
     Url(Url),
@@ -39,14 +21,20 @@ impl FromStr for UrlListEntry {
     }
 }
 
+#[derive(Debug)]
+pub(crate) enum PlatformRepositoryUrlError {
+    Split(shell_words::ParseError),
+    Parse(url::ParseError),
+}
+
 /// Returns a list of platform repository [`Url`s](Url), computed from the given [`BuildContext`]'s
 /// stack ID and processed `HEROKU_PHP_PLATFORM_REPOSITORIES` environment variable.
 ///
-/// Defers to [`repos_from_defaults_and_list`] once a default URL string has been constructed and
+/// Defers to [`platform_repository_urls_from_defaults_and_list`] once a default URL string has been constructed and
 /// the `HEROKU_PHP_PLATFORM_REPOSITORIES` environment variable has been read.
-pub(crate) fn repos_from_default_and_build_context(
+pub(crate) fn platform_repository_urls_from_default_and_build_context(
     context: &BuildContext<PhpBuildpack>,
-) -> Result<Vec<Url>, RepoUrlsError> {
+) -> Result<Vec<Url>, PlatformRepositoryUrlError> {
     // our default repo
     let default_platform_repositories = vec![Url::parse(&format!(
         "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-cnb/",
@@ -61,18 +49,19 @@ pub(crate) fn repos_from_default_and_build_context(
         .get_string_lossy("HEROKU_PHP_PLATFORM_REPOSITORIES")
         .unwrap_or("".into());
 
-    repos_from_defaults_and_list(&default_platform_repositories, &user_repos)
+    platform_repository_urls_from_defaults_and_list(&default_platform_repositories, &user_repos)
     // TODO: message if default disabled?
     // TODO: message for additional repos?
 }
 
 /// Returns a list of platform repository [`Url`s](Url), computed from the given default [`Url`s](Url)
 /// and space-separated list of additional URL strings (typically user-supplied).
-pub(crate) fn repos_from_defaults_and_list(
+pub(crate) fn platform_repository_urls_from_defaults_and_list(
     default_urls: &[Url],
     extra_urls_list: impl AsRef<str>,
-) -> Result<Vec<Url>, RepoUrlsError> {
-    let extra_urls_splits = shell_words::split(extra_urls_list.as_ref())?;
+) -> Result<Vec<Url>, PlatformRepositoryUrlError> {
+    let extra_urls_splits =
+        shell_words::split(extra_urls_list.as_ref()).map_err(PlatformRepositoryUrlError::Split)?;
     default_urls
         .into_iter()
         .cloned()
@@ -81,7 +70,7 @@ pub(crate) fn repos_from_defaults_and_list(
         .chain(extra_urls_splits.into_iter().map(|v| v.parse()))
         .collect::<Result<Vec<_>, _>>()
         .map(|repos| normalize_url_list(&repos).into_iter().cloned().collect())
-        .map_err(RepoUrlsError::ParseError)
+        .map_err(PlatformRepositoryUrlError::Parse)
 }
 
 /// For a given [`UrlListEntry`] slice, returns a [`Vec<&Url>`] containing only the inner [`Url`]
