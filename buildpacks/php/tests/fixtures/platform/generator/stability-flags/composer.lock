@@ -17,6 +17,8 @@
     "platform": {
         "php": "9.0.0@RC"
     },
-    "platform-dev": [],
+    "platform-dev": {
+        "ext-xdebug": "*"
+    },
     "plugin-api-version": "2.3.0"
 }

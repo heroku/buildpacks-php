@@ -53,7 +53,10 @@ impl Traditional {
 
         // TODO: make more minimal JSON that doesn't pull in Composer
         // ^ not yet possible as boot scripts need composer to set COMPOSER_(BIN|VENDOR)_DIR for web server configs
+        // FIXME: temporary
+        let (generator_input, _) = platform::generator::extract_from_lock(&lock).unwrap();
         platform::generator::generate_platform_json(
+            generator_input,
             &lock,
             stack,
             installer_path,

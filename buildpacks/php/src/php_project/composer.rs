@@ -82,7 +82,11 @@ impl Composer {
             None => &default,
         };
 
+        // FIXME: temporary
+        let (generator_input, _) = platform::generator::extract_from_lock(&lock).unwrap();
+
         platform::generator::generate_platform_json(
+            generator_input,
             &lock,
             stack,
             installer_path,
