@@ -6,8 +6,8 @@ use std::string::ToString;
 use crate::package_manager::composer::{PlatformExtractorError, PlatformExtractorNotice};
 use chrono::offset::Utc;
 use composer::{
-    ComposerBasePackage, ComposerLiteralStability, ComposerLock, ComposerNumericStability,
-    ComposerPackage, ComposerRepository, ComposerRepositoryFilters, ComposerRootPackage,
+    ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepository,
+    ComposerRepositoryFilters, ComposerRootPackage, ComposerStability,
 };
 use monostate::MustBe;
 use regex::Regex;
@@ -227,7 +227,7 @@ fn process_composer_version(
 }
 
 fn process_stability_flags(
-    stability_flags: &HashMap<String, ComposerNumericStability>,
+    stability_flags: &HashMap<String, ComposerStability>,
 ) -> HashMap<String, String> {
     let mut additional_requires = HashMap::new();
 
@@ -287,11 +287,11 @@ pub(crate) fn extract_from_lock(
 }
 
 pub(crate) struct PlatformJsonGeneratorConfigNeedsBetterName {
-    pub minimum_stability: ComposerLiteralStability,
+    pub minimum_stability: ComposerStability,
     pub prefer_stable: bool,
     pub require: Option<HashMap<String, String>>,
     pub require_dev: Option<HashMap<String, String>>,
-    pub stability_flags: Option<HashMap<String, ComposerNumericStability>>,
+    pub stability_flags: Option<HashMap<String, ComposerStability>>,
 }
 impl From<&ComposerLock> for PlatformJsonGeneratorConfigNeedsBetterName {
     fn from(lock: &ComposerLock) -> Self {

@@ -1,9 +1,9 @@
-use deref_derive::Deref;
+use derive_more::{Deref, From};
 use monostate::MustBe;
 use serde::de::{Error, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
-use serde_with::{formats::PreferOne, serde_as, skip_serializing_none, OneOrMany};
+use serde_with::{formats::PreferOne, serde_as, skip_serializing_none, OneOrMany, TryFromInto};
 use std::collections::HashMap;
 use url::Url;
 
@@ -11,7 +11,7 @@ use std::fmt;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 
-#[derive(Debug, Deref, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deref, Serialize, PartialEq, From)]
 pub struct PhpAssocArray<T>(HashMap<String, T>);
 impl<'de, T: Deserialize<'de>> Deserialize<'de> for PhpAssocArray<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -138,7 +138,7 @@ pub struct ComposerRootPackage {
     pub name: Option<String>,
     pub version: Option<String>,
     pub config: Option<Map<String, Value>>,
-    pub minimum_stability: Option<ComposerLiteralStability>,
+    pub minimum_stability: Option<ComposerStability>,
     pub prefer_stable: Option<bool>,
     #[serde(flatten)]
     pub package: ComposerBasePackage,
@@ -220,6 +220,7 @@ pub enum ComposerStability {
     Dev = 20,
     Alpha = 15,
     Beta = 10,
+    #[serde(alias = "RC")]
     Rc = 5,
     #[default]
     Stable = 0,
@@ -235,21 +236,48 @@ impl fmt::Display for ComposerStability {
         }
     }
 }
-
-#[derive(Serialize, Deserialize, Deref, Debug, Clone)]
-#[serde(try_from = "String")]
-pub struct ComposerLiteralStability(pub ComposerStability);
-impl TryFrom<String> for ComposerLiteralStability {
+impl From<ComposerStability> for u8 {
+    fn from(value: ComposerStability) -> Self {
+        value as u8
+    }
+}
+impl TryFrom<u8> for ComposerStability {
     type Error = String;
 
-    fn try_from(v: String) -> Result<Self, Self::Error> {
-        match v.as_ref() {
-            "stable" => Ok(ComposerLiteralStability(ComposerStability::Stable)),
-            "rc" | "RC" => Ok(ComposerLiteralStability(ComposerStability::Rc)),
-            "beta" => Ok(ComposerLiteralStability(ComposerStability::Beta)),
-            "alpha" => Ok(ComposerLiteralStability(ComposerStability::Alpha)),
-            "dev" => Ok(ComposerLiteralStability(ComposerStability::Dev)),
+    fn try_from(v: u8) -> Result<Self, Self::Error> {
+        match v {
+            0 => Ok(ComposerStability::Stable),
+            5 => Ok(ComposerStability::Rc),
+            10 => Ok(ComposerStability::Beta),
+            15 => Ok(ComposerStability::Alpha),
+            20 => Ok(ComposerStability::Dev),
             _ => Err(format!("Invalid stability flag {v}")),
+        }
+    }
+}
+impl From<PhpAssocArray<ComposerStability>> for PhpAssocArray<u8> {
+    fn from(value: PhpAssocArray<ComposerStability>) -> Self {
+        value
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone() as u8))
+            .collect::<HashMap<String, u8>>()
+            .into()
+    }
+}
+impl TryFrom<PhpAssocArray<u8>> for PhpAssocArray<ComposerStability> {
+    type Error = String;
+
+    fn try_from(value: PhpAssocArray<u8>) -> Result<Self, Self::Error> {
+        let ret = value
+            .iter()
+            .map(|(k, v)| match ComposerStability::try_from(v.clone()) {
+                Ok(value) => Ok((k.clone(), value)),
+                Err(e) => Err(e),
+            })
+            .collect::<Result<HashMap<String, ComposerStability>, _>>();
+        match ret {
+            Ok(v) => Ok(v.into()),
+            Err(e) => Err(e),
         }
     }
 }
@@ -478,6 +506,7 @@ pub enum ComposerRepositoryFilters {
     Exclude(Vec<String>),
 }
 
+#[serde_as]
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerLock {
@@ -488,8 +517,9 @@ pub struct ComposerLock {
     pub platform_dev: PhpAssocArray<String>,
     pub platform_overrides: Option<HashMap<String, String>>, // since 1.0: https://github.com/composer/composer/commit/a57c51e8d78156612e49dec1c54d3184f260f144
     // pub aliases: HashMap<String, ComposerPackage>, // since 1.0: https://github.com/composer/composer/pull/350 - TODO: do we need to handle these?
-    pub minimum_stability: ComposerLiteralStability, // since 1.0: https://github.com/composer/composer/pull/592
-    pub stability_flags: PhpAssocArray<ComposerNumericStability>, // since 1.0: https://github.com/composer/composer/pull/592
+    pub minimum_stability: ComposerStability, // since 1.0: https://github.com/composer/composer/pull/592
+    #[serde_as(as = "TryFromInto<PhpAssocArray<u8>>")]
+    pub stability_flags: PhpAssocArray<ComposerStability>, // since 1.0: https://github.com/composer/composer/pull/592
     pub prefer_stable: bool, // since 1.0: https://github.com/composer/composer/pull/3101
     pub prefer_lowest: bool, // since 1.0: https://github.com/composer/composer/pull/3450
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -505,34 +535,11 @@ impl ComposerLock {
             platform: PhpAssocArray(Default::default()),
             platform_dev: PhpAssocArray(Default::default()),
             platform_overrides: None,
-            minimum_stability: ComposerLiteralStability(ComposerStability::Stable),
+            minimum_stability: ComposerStability::Stable,
             stability_flags: PhpAssocArray(Default::default()),
             prefer_stable: false,
             prefer_lowest: false,
             plugin_api_version,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Deref, Debug, Clone)]
-#[serde(try_from = "u8", into = "u8")]
-pub struct ComposerNumericStability(pub ComposerStability);
-impl From<ComposerNumericStability> for u8 {
-    fn from(value: ComposerNumericStability) -> Self {
-        value.0 as u8
-    }
-}
-impl TryFrom<u8> for ComposerNumericStability {
-    type Error = String;
-
-    fn try_from(v: u8) -> Result<Self, Self::Error> {
-        match v {
-            0 => Ok(ComposerNumericStability(ComposerStability::Stable)),
-            5 => Ok(ComposerNumericStability(ComposerStability::Rc)),
-            10 => Ok(ComposerNumericStability(ComposerStability::Beta)),
-            15 => Ok(ComposerNumericStability(ComposerStability::Alpha)),
-            20 => Ok(ComposerNumericStability(ComposerStability::Dev)),
-            _ => Err(format!("Invalid stability flag {v}")),
         }
     }
 }
