@@ -132,7 +132,7 @@ where
 */
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerRootPackage {
     pub name: Option<String>,
@@ -145,7 +145,7 @@ pub struct ComposerRootPackage {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerPackage {
     pub name: String,
@@ -156,7 +156,7 @@ pub struct ComposerPackage {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerBasePackage {
     #[serde(rename = "type")]
@@ -197,7 +197,7 @@ pub struct ComposerBasePackage {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ComposerConfig {
     #[serde(rename = "cache-files-ttl")]
     pub cache_files_ttl: Option<u32>,
@@ -207,15 +207,14 @@ pub struct ComposerConfig {
     pub allow_plugins: Option<ComposerConfigAllowPlugins>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum ComposerConfigAllowPlugins {
     Boolean(bool),
     List(HashMap<String, bool>),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
-#[derive(Default)]
 pub enum ComposerStability {
     Dev = 20,
     Alpha = 15,
@@ -282,7 +281,7 @@ impl TryFrom<PhpAssocArray<u8>> for PhpAssocArray<ComposerStability> {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum ComposerPackageAbandoned {
     Bool(bool),
@@ -296,7 +295,7 @@ impl Default for ComposerPackageAbandoned {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
 pub struct ComposerPackageAuthor {
     pub name: String,
     pub email: Option<String>, // TODO: could be EmailAddress, but Composer only warns
@@ -306,7 +305,7 @@ pub struct ComposerPackageAuthor {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerPackageAutoload {
     // map values for the next two can be string or list of strings
@@ -321,7 +320,7 @@ pub struct ComposerPackageAutoload {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
 pub struct ComposerPackageArchive {
     pub name: Option<String>,
     pub exclude: Option<Vec<String>>,
@@ -329,7 +328,7 @@ pub struct ComposerPackageArchive {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ComposerPackageDist {
     #[serde(rename = "type")]
     pub kind: String,
@@ -341,7 +340,7 @@ pub struct ComposerPackageDist {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ComposerPackageSource {
     #[serde(rename = "type")]
     pub kind: String,
@@ -352,13 +351,13 @@ pub struct ComposerPackageSource {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ComposerMirror {
     pub url: Url,
     pub preferred: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ComposerPackageFunding {
     #[serde(rename = "type")]
     pub kind: String, // default "other"?
@@ -408,7 +407,7 @@ impl TryFrom<String> for ComposerPackageSupportType {
 // The solution is to rely on monostrate's MustBe!
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum ComposerRepository {
     #[serde(rename_all = "kebab-case")]
@@ -499,7 +498,7 @@ impl FromIterator<ComposerPackage> for ComposerRepository {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum ComposerRepositoryFilters {
     Only(Vec<String>),
@@ -507,7 +506,7 @@ pub enum ComposerRepositoryFilters {
 }
 
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerLock {
     pub content_hash: String, // since 1.0: https://github.com/composer/composer/pull/4140
