@@ -66,6 +66,18 @@ impl Composer {
             false => None,
         };
 
+        // TODO: lint userland composer.json
+
+        // TODO: enforce presence of userland composer.lock if composer.json lists requires
+
+        // TODO: call "composer validate"?
+        //       ^ yes, also for lockfile freshness check
+        //       ^ also as a fallback validation for when we have a Category::Data error
+
+        // TODO: validate composer.lock
+
+        // FIXME: we have to fail (or warn?) if heroku/heroku-buildpack-php is a dependency
+
         Ok(())
     }
 

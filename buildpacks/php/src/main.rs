@@ -58,19 +58,7 @@ impl Buildpack for PhpBuildpack {
         platform_env = bootstrap_layer.env.apply(Scope::Build, &platform_env);
         dbg!(&platform_env);
 
-        // TODO: lint userland composer.json
-
-        // TODO: enforce presence of userland composer.lock if composer.json lists requires
-
-        // TODO: call "composer validate"?
-        //       ^ yes, also for lockfile freshness check
-        //       ^ also as a fallback validation for when we have a Category::Data error
-
-        // TODO: validate composer.lock
-
         php_project.load(&context.app_dir).unwrap();
-
-        // FIXME: we have to fail (or warn?) if heroku/heroku-buildpack-php is a dependency
 
         log_header("Preparing platform packages installation");
 
@@ -96,7 +84,6 @@ impl Buildpack for PhpBuildpack {
         platform_env = platform_cache_layer.env.apply(Scope::Build, &platform_env);
         dbg!(&platform_env);
 
-        // TODO: rename layer to... "platform" or something?
         let platform_layer = context.handle_layer(
             layer_name!("platform"),
             PlatformLayer {
