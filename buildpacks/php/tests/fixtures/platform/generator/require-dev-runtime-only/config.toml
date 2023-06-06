@@ -1,4 +1,4 @@
-expect_failure = "RuntimeRequirementInRequireDevButNotRequire"
+expect_finalizer_failure = "RuntimeRequirementInRequireDevButNotRequire"
 description = """Test that a "php" requirement in `require-dev`, but not in `require`, fails.
 
 For regular builds, we `composer install --no-dev`.

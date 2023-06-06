@@ -1,9 +1,11 @@
-use crate::platform::generator::{PlatformGeneratorError, PlatformGeneratorNotice};
+use crate::platform::generator::{
+    PlatformFinalizerNotice, PlatformGeneratorError, PlatformJsonGeneratorInput,
+};
 use crate::{platform, PhpBuildpack};
-use composer::{ComposerLock, ComposerRootPackage};
+use composer::ComposerRootPackage;
 use libcnb::build::BuildContext;
 use libcnb::Env;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use url::Url;
 
@@ -46,23 +48,29 @@ impl Traditional {
         stack: &str,
         installer_path: &Path,
         platform_repositories: &Vec<Url>,
-        dev: bool,
-    ) -> Result<(ComposerRootPackage, HashSet<PlatformGeneratorNotice>), PlatformGeneratorError>
+        _dev: bool,
+    ) -> Result<(ComposerRootPackage, HashSet<PlatformFinalizerNotice>), PlatformGeneratorError>
     {
-        let lock = ComposerLock::new(Some("2.99.0".into()));
-
-        // TODO: make more minimal JSON that doesn't pull in Composer
+        // TODO: remove composer requirement
         // ^ not yet possible as boot scripts need composer to set COMPOSER_(BIN|VENDOR)_DIR for web server configs
-        // FIXME: temporary
-        let (generator_input, _) = platform::generator::extract_from_lock(&lock).unwrap();
-        platform::generator::generate_platform_json(
-            generator_input,
-            &lock,
-            stack,
-            installer_path,
-            platform_repositories,
-            dev,
-        )
+        let generator_input = PlatformJsonGeneratorInput {
+            input_name: "auto/generated".to_string(),
+            input_revision: "main".to_string(),
+            additional_require: Some(HashMap::from([(
+                "heroku-sys/composer".to_string(),
+                "*".to_string(),
+            )])),
+            ..Default::default()
+        };
+        Ok((
+            platform::generator::generate_platform_json(
+                generator_input,
+                stack,
+                installer_path,
+                platform_repositories,
+            )?,
+            HashSet::new(),
+        ))
     }
 
     pub(crate) fn install_dependencies(

@@ -18,7 +18,16 @@
         "heroku-sys\/composer": "*",
         "heroku-sys\/composer-plugin-api": "^1.0.0",
         "heroku/heroku-buildpack-php": "dev-master",
-        "composer.json/composer.lock": "dev-fc385a27e5169a169062c230878645d1"
+        "composer.json/composer.lock": "dev-fc385a27e5169a169062c230878645d1",
+        "heroku-sys\/php": "7.4.*",
+        "heroku-sys\/ext-gmp": "*",
+        "heroku-sys\/ext-intl": "*",
+        "heroku-sys\/ext-mbstring": "*",
+        "heroku-sys\/ext-redis": "*",
+        "heroku-sys\/ext-sqlite3": "*",
+        "heroku-sys\/ext-ldap": "*",
+        "heroku-sys\/ext-imap": "*",
+        "heroku-sys\/ext-blackfire": "*"
     },
     "repositories": [
         {
