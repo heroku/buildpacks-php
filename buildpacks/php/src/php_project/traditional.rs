@@ -56,10 +56,10 @@ impl Traditional {
         let generator_input = PlatformJsonGeneratorInput {
             input_name: "auto/generated".to_string(),
             input_revision: "main".to_string(),
-            additional_require: Some(HashMap::from([(
-                "heroku-sys/composer".to_string(),
-                "*".to_string(),
-            )])),
+            additional_require: Some(HashMap::from([
+                ("heroku-sys/composer".to_string(), "*".to_string()),
+                ("heroku-sys/php".to_string(), "*".to_string()),
+            ])),
             ..Default::default()
         };
         Ok((
