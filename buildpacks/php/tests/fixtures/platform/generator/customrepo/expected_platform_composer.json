@@ -18,7 +18,8 @@
         "heroku-sys\/composer": "*",
         "heroku-sys\/composer-plugin-api": "^1",
         "heroku/heroku-buildpack-php": "dev-master",
-        "composer.json/composer.lock": "dev-a90ecf736d0c5431a479f94e52129fcf"
+        "composer.json/composer.lock": "dev-a90ecf736d0c5431a479f94e52129fcf",
+        "heroku-sys\/php": "7.4.*"
     },
     "repositories": [
         {

@@ -20,11 +20,20 @@
         "heroku/heroku-buildpack-php": "dev-master",
         "composer.json\/composer.lock": "dev-c2b9dcae256d1b255b7265eef089f6c3",
         "symfony\/polyfill-php80": "v1.23.1",
-        "symfony\/process": "v5.1.0-RC1"
+        "symfony\/process": "v5.1.0-RC1",
+        "heroku-sys\/ext-gmp": "*",
+        "heroku-sys\/ext-intl": "*",
+        "heroku-sys\/ext-mbstring": "*",
+        "heroku-sys\/ext-redis": "*",
+        "heroku-sys\/ext-sqlite3": "*",
+        "heroku-sys\/ext-ldap": "*",
+        "heroku-sys\/ext-imap": "*",
+        "heroku-sys\/ext-blackfire": "*"
     },
     "require-dev": {
         "composer.json\/composer.lock-require-dev": "dev-c2b9dcae256d1b255b7265eef089f6c3",
-        "kahlan\/kahlan": "5.1.3"
+        "kahlan\/kahlan": "5.1.3",
+        "heroku-sys\/ext-pcov": "*"
     },
     "repositories": [
         {

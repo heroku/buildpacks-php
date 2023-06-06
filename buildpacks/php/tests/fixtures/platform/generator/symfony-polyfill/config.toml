@@ -1,4 +1,4 @@
-expected_notices = ["RuntimeRequirementFromDependencies"]
+expected_finalizer_notices = ["RuntimeRequirementFromDependencies"]
 description = """Test that userland polyfills for native extensions do not prevent native extension installs.
 
 The extension "ext-ctype" is bundled with PHP, but it is not enabled by default, and in most builds, like Heroku's, it

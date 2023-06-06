@@ -1,2 +1,2 @@
 install_dev = true
-expected_notices = ["RuntimeRequirementFromDependencies"]
+expected_finalizer_notices = ["RuntimeRequirementFromDependencies"]

@@ -1,7 +1,7 @@
 mod composer;
 mod traditional;
 
-use crate::platform::generator::{PlatformGeneratorError, PlatformGeneratorNotice};
+use crate::platform::generator::{PlatformFinalizerNotice, PlatformGeneratorError};
 use crate::PhpBuildpack;
 use ::composer::ComposerRootPackage;
 use libcnb::build::BuildContext;
@@ -41,7 +41,7 @@ impl PhpProject {
         installer_path: &Path,
         platform_repositories: &Vec<Url>,
         dev: bool,
-    ) -> Result<(ComposerRootPackage, HashSet<PlatformGeneratorNotice>), PlatformGeneratorError>
+    ) -> Result<(ComposerRootPackage, HashSet<PlatformFinalizerNotice>), PlatformGeneratorError>
     {
         match self {
             PhpProject::Composer(p) => {

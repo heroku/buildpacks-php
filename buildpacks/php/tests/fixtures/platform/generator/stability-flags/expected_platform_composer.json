@@ -19,10 +19,11 @@
         "heroku-sys\/composer-plugin-api": "^2",
         "heroku/heroku-buildpack-php": "dev-master",
         "composer.json/composer.lock": "dev-b6707541737bd6346c9d941383d263a9",
-        "heroku-sys\/php": "@RC"
+        "heroku-sys\/php": "9.0.0@RC"
     },
     "require-dev": {
-        "composer.json/composer.lock-require-dev": "dev-b6707541737bd6346c9d941383d263a9"
+        "composer.json/composer.lock-require-dev": "dev-b6707541737bd6346c9d941383d263a9",
+        "heroku-sys\/ext-xdebug": "*"
     },
     "repositories": [
         {

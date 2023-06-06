@@ -1,9 +1,11 @@
-use crate::platform::generator::{PlatformGeneratorError, PlatformGeneratorNotice};
+use crate::platform::generator::{
+    PlatformFinalizerNotice, PlatformGeneratorError, PlatformJsonGeneratorInput,
+};
 use crate::{platform, PhpBuildpack};
 use composer::{ComposerLock, ComposerRootPackage};
 use libcnb::build::BuildContext;
 use libcnb::Env;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 use url::Url;
@@ -73,26 +75,42 @@ impl Composer {
         installer_path: &Path,
         platform_repositories: &Vec<Url>,
         dev: bool,
-    ) -> Result<(ComposerRootPackage, HashSet<PlatformGeneratorNotice>), PlatformGeneratorError>
+    ) -> Result<(ComposerRootPackage, HashSet<PlatformFinalizerNotice>), PlatformGeneratorError>
     {
-        // FIXME: assigning default first is uglybugly
-        let default = ComposerLock::new(Some("2.99.0".into()));
-        let lock = match &self.composer_lock {
-            Some(l) => l,
-            None => &default,
+        let (generator_input, _) = match &self.composer_lock {
+            // FIXME: map notices
+            Some(l) => platform::generator::extract_from_lock(l).unwrap(), // FIXME: map errors
+            None => (
+                PlatformJsonGeneratorInput {
+                    input_name: "auto/generated".to_string(),
+                    input_revision: "main".to_string(),
+                    additional_require: Some(HashMap::from([(
+                        "heroku-sys/composer".to_string(),
+                        "*".to_string(),
+                    )])),
+                    ..Default::default()
+                },
+                HashSet::new(),
+            ),
         };
 
-        // FIXME: temporary
-        let (generator_input, _) = platform::generator::extract_from_lock(&lock).unwrap();
-
-        platform::generator::generate_platform_json(
+        let mut ret = platform::generator::generate_platform_json(
             generator_input,
-            &lock,
             stack,
             installer_path,
             platform_repositories,
-            dev,
-        )
+        )?;
+
+        let notices = platform::generator::ensure_runtime_requirement(&mut ret).unwrap(); // FIXME: map errors
+
+        if !dev {
+            // we do not want dev requirements to even get resolved, so we do not return them
+            // the reason is that even with a --no-dev install, Composer has to resolve all packages, both in require and require-dev
+            // but it is common for require-dev to e.g. list ext-xdebug, and if that isn't available in our repositories, even a non-dev install would fail
+            ret.package.require_dev.take();
+        }
+
+        Ok((ret, notices))
     }
 
     pub(crate) fn install_dependencies(
