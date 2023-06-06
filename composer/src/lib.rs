@@ -543,43 +543,11 @@ impl ComposerLock {
     }
 }
 
-// used for deserializing empty [] to a default, also see PhpAssocArray
-fn empty_vec_to_default<'de, T, D>(deserializer: D) -> Result<T, D::Error>
-where
-    T: Deserialize<'de> + Default,
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum VecOrOriginal<T> {
-        Original(T),
-        Vec(Vec<Value>),
-    }
-
-    match VecOrOriginal::deserialize(deserializer)? {
-        VecOrOriginal::Vec(v) => {
-            if !v.is_empty() {
-                Err(D::Error::custom("got unexpected array"))
-            } else {
-                Ok(<T as Default>::default())
-            }
-        }
-        VecOrOriginal::Original(v) => Ok(v),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     use serde_test::{assert_de_tokens, assert_de_tokens_error, Token};
-
-    #[derive(Debug, PartialEq, Deserialize, Serialize)]
-    #[serde(transparent)]
-    struct EVT {
-        #[serde(deserialize_with = "empty_vec_to_default")]
-        foo: HashMap<String, bool>,
-    }
 
     #[derive(Debug, PartialEq, Deserialize, Serialize, Deref)]
     #[serde(transparent)]
@@ -622,39 +590,6 @@ mod tests {
         assert_de_tokens_error::<ArrayIfEmpty>(
             &[Token::Seq { len: Some(1) }, Token::U8(42), Token::SeqEnd],
             "sequence must be empty",
-        );
-    }
-
-    #[test]
-    fn test_empty_vec_to_default() {
-        assert_de_tokens(
-            &EVT {
-                foo: HashMap::<String, bool>::new(),
-            },
-            &[Token::Seq { len: Some(0) }, Token::SeqEnd],
-        );
-        assert_de_tokens(
-            &EVT {
-                foo: HashMap::<String, bool>::from([("foo".into(), true)]),
-            },
-            &[
-                Token::Map { len: Some(1) },
-                Token::String("foo"),
-                Token::Bool(true),
-                Token::MapEnd,
-            ],
-        );
-    }
-
-    #[test]
-    fn test_empty_vec_to_default_errors() {
-        assert_de_tokens_error::<EVT>(
-            &[
-                Token::Seq { len: Some(1) },
-                Token::String("yo"),
-                Token::SeqEnd,
-            ],
-            "got unexpected array",
         );
     }
 }
