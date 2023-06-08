@@ -4,13 +4,13 @@ use std::path::Path;
 use std::string::ToString;
 
 use crate::package_manager::composer::{PlatformExtractorError, PlatformExtractorNotice};
+use crate::utils::regex;
 use chrono::offset::Utc;
 use composer::{
     ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepository,
     ComposerRepositoryFilters, ComposerRootPackage, ComposerStability,
 };
 use monostate::MustBe;
-use regex::Regex;
 use serde_json::{json, Value};
 use url::Url;
 
@@ -94,10 +94,7 @@ enum ComposerRepositoryFromRepositoryUrlError {
 fn is_platform_package(name: impl AsRef<str>) -> bool {
     let name = name.as_ref();
     // same regex used by Composer as well
-    Regex::new(r"^(?i)(?:php(?:-64bit|-ipv6|-zts|-debug)?|hhvm|(?:ext|lib)-[a-z0-9](?:[_.-]?[a-z0-9]+)*|composer(?:-(?:plugin|runtime)-api)?)$")
-        .expect(
-            "You've got a typo in that regular expression. No, it was not broken before. Yes, I am sure.",
-        )
+    regex!(r"^(?i)(?:php(?:-64bit|-ipv6|-zts|-debug)?|hhvm|(?:ext|lib)-[a-z0-9](?:[_.-]?[a-z0-9]+)*|composer(?:-(?:plugin|runtime)-api)?)$")
         .is_match(name)
         // ext-….native packages are ours, and ours alone - virtual packages to later force installation of native extensions in case of userland "provide"s 
         && !(name.starts_with("ext-") && name.ends_with(".native"))
@@ -392,8 +389,7 @@ pub(crate) fn generate_platform_json(
     };
 
     // from the given stack string like "heroku-99", make a ("heroku-sys/heroku", "99.2023.04.05") tuple for "provide" later
-    let stack_captures = Regex::new(r"^([^-]+)(?:-([0-9]+))?$")
-        .expect("A certain somebody broke the stack parsing regex. Yes, I am looking at you.")
+    let stack_captures = regex!(r"^([^-]+)(?:-([0-9]+))?$")
         .captures(stack)
         .ok_or(PlatformGeneratorError::InvalidStackIdentifier)?;
     let stack_provide = (
