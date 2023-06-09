@@ -1,3 +1,6 @@
+#![warn(clippy::pedantic)]
+#![warn(unused_crate_dependencies)]
+
 use derive_more::{Deref, From};
 use monostate::MustBe;
 use serde::de::{Error, MapAccess, SeqAccess, Visitor};

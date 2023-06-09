@@ -1,4 +1,5 @@
 #![warn(clippy::pedantic)]
+#![warn(unused_crate_dependencies)]
 
 mod errors;
 mod layers;
