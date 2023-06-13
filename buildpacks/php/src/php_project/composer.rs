@@ -1,7 +1,6 @@
-use crate::platform::generator::{
-    PlatformFinalizerNotice, PlatformGeneratorError, PlatformJsonGeneratorInput,
-};
-use crate::{platform, PhpBuildpack};
+use crate::package_manager::composer::PlatformFinalizerNotice;
+use crate::platform::generator::{PlatformGeneratorError, PlatformJsonGeneratorInput};
+use crate::{package_manager, platform, PhpBuildpack};
 use composer::{ComposerLock, ComposerRootPackage};
 use libcnb::build::BuildContext;
 use libcnb::Env;
@@ -91,7 +90,7 @@ impl Composer {
     {
         let (generator_input, _) = match &self.composer_lock {
             // FIXME: map notices
-            Some(l) => platform::generator::extract_from_lock(l).unwrap(), // FIXME: map errors
+            Some(l) => package_manager::composer::extract_from_lock(l).unwrap(), // FIXME: map errors
             None => (
                 PlatformJsonGeneratorInput {
                     input_name: "auto/generated".to_string(),
@@ -113,7 +112,7 @@ impl Composer {
             platform_repositories,
         )?;
 
-        let notices = platform::generator::ensure_runtime_requirement(&mut ret).unwrap(); // FIXME: map errors
+        let notices = package_manager::composer::ensure_runtime_requirement(&mut ret).unwrap(); // FIXME: map errors
 
         if !dev {
             // we do not want dev requirements to even get resolved, so we do not return them

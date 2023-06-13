@@ -1,7 +1,8 @@
 mod composer;
 mod traditional;
 
-use crate::platform::generator::{PlatformFinalizerNotice, PlatformGeneratorError};
+use crate::package_manager::composer::PlatformFinalizerNotice;
+use crate::platform::generator::PlatformGeneratorError;
 use crate::PhpBuildpack;
 use ::composer::ComposerRootPackage;
 use libcnb::build::BuildContext;

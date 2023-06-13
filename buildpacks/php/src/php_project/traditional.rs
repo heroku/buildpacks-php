@@ -1,6 +1,5 @@
-use crate::platform::generator::{
-    PlatformFinalizerNotice, PlatformGeneratorError, PlatformJsonGeneratorInput,
-};
+use crate::package_manager::composer::PlatformFinalizerNotice;
+use crate::platform::generator::{PlatformGeneratorError, PlatformJsonGeneratorInput};
 use crate::{platform, PhpBuildpack};
 use composer::ComposerRootPackage;
 use libcnb::build::BuildContext;
