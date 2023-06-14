@@ -14,6 +14,7 @@ use monostate::MustBe;
 use serde_json::{json, Value};
 use url::Url;
 
+/// Adds the `heroku-sys/` package name prefix to the given input string, if not already present.
 pub(crate) fn ensure_heroku_sys_prefix(name: impl AsRef<str>) -> String {
     let name = name.as_ref();
     format!(
@@ -22,13 +23,14 @@ pub(crate) fn ensure_heroku_sys_prefix(name: impl AsRef<str>) -> String {
     )
 }
 
+/// Splits the given string by the given separator, and returns an iterator over the non-empty items, with whitespace trimmed.
 fn split_and_trim_list<'a>(list: &'a str, sep: &'a str) -> impl Iterator<Item = &'a str> {
     list.split(sep)
         .map(str::trim)
         .filter_map(|p| (!p.is_empty()).then_some(p))
 }
 
-/// Parse a given repository [`Url`] with optional priority and filter query args into a [`ComposerRepository`].
+/// Parses a given repository [`Url`] with optional priority and filter query args into a [`ComposerRepository`].
 ///
 /// To allow users to specify whether or not a repository is canonical, or filters for packages,
 /// as documented at <https://getcomposer.org/doc/articles/repository-priorities.md>, the following
@@ -97,17 +99,28 @@ pub(crate) enum PlatformGeneratorError {
     InvalidStackIdentifier,
 }
 
+/// Input data describing the desired packages and stabilities for [`generate_platform_json`]
 #[derive(Default, Debug)]
 pub(crate) struct PlatformJsonGeneratorInput {
+    /// A description for the source of this information, e.g. "composer.json/composer.lock", or "auto/generated"
     pub input_name: String,
+    /// A revision or version identifier for the input, e.g. a file hash, datetime string, "0", etc
     pub input_revision: String,
+    /// The desired [`ComposerStability´] for the root package's `minimum-stability` field
     pub minimum_stability: ComposerStability,
+    /// The desired value for the root package's `prefer-stable` field
     pub prefer_stable: bool,
+    /// The direct platform requirements from the root dependencies of the source project
     pub platform_require: HashMap<String, String>,
+    /// The direct platform dev requirements from the root dependencies of the source project
     pub platform_require_dev: HashMap<String, String>,
+    /// A list of packages from the source project's locked dependencies
     pub packages: Vec<ComposerPackage>,
+    /// A list of packages from the source project's locked dev dependencies
     pub packages_dev: Vec<ComposerPackage>,
+    /// A list of additional requirements to be placed into the generated package's root requirements
     pub additional_require: Option<HashMap<String, String>>,
+    /// A list of additional requirements to be placed into the generated package's root dev requirements
     pub additional_require_dev: Option<HashMap<String, String>>,
 }
 // TODO refactor: move to package_manager/composer
@@ -128,6 +141,17 @@ impl From<&ComposerLock> for PlatformJsonGeneratorInput {
     }
 }
 
+/// Generates a [`ComposerRootPackage`] for the given:
+/// - [`PlatformJsonGeneratorInput`],
+/// - stack name,
+/// - path to the Composer installer plugin, and
+/// - list of platform repository URLs.
+///
+/// A "provide" entry on the root package is automatically generated for the given stack.
+///
+/// From the given platform repository URLs, a "composer" type repository entry is generated for each.
+/// The repositories are inserted in reverse order to allow loter repositories to override packages from earlier ones.
+/// For details on this (and Composer's) repository precedence behavior, and how to control it via URL query args, see [`composer_repository_from_repository_url`]
 pub(crate) fn generate_platform_json(
     input: PlatformJsonGeneratorInput,
     stack: &str,

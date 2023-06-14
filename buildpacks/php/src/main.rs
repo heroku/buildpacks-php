@@ -63,7 +63,7 @@ impl Buildpack for PhpBuildpack {
 
         log_header("Preparing platform packages installation");
 
-        let all_repos = platform::repos_from_default_and_env(&context).unwrap();
+        let all_repos = platform::repos_from_default_and_build_context(&context).unwrap();
 
         let (platform_json, _notices) = php_project
             .make_platform_json(

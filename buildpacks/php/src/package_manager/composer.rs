@@ -84,6 +84,7 @@ pub(crate) enum PlatformExtractorNotice {
     ComposerPluginApiVersionConfined(String, String),
 }
 
+/// Checks whether the given package name represents what Composer refers to as a "platform package".
 pub(crate) fn is_platform_package(name: impl AsRef<str>) -> bool {
     let name = name.as_ref();
     // same regex used by Composer as well
@@ -98,10 +99,12 @@ pub(crate) fn is_platform_package(name: impl AsRef<str>) -> bool {
         && name != "composer-runtime-api"
 }
 
-pub(crate) fn has_runtime_requirement(requires: &HashMap<String, String>) -> bool {
-    requires.contains_key("heroku-sys/php")
+/// Checks whether the given list of package links (typically from "require") contains a requirement for a language runtime.
+pub(crate) fn has_runtime_link(links: &HashMap<String, String>) -> bool {
+    links.contains_key("heroku-sys/php")
 }
 
+/// Extracts links to platform packages (see [`is_platform_package`]) and prefix them using [`ensure_heroku_sys_prefix`].
 pub(crate) fn extract_platform_links_with_heroku_sys<T: Clone>(
     links: &HashMap<String, T>,
 ) -> Option<HashMap<String, T>> {
@@ -125,6 +128,13 @@ pub(crate) enum PlatformFinalizerNotice {
     RuntimeRequirementFromDependencies,
 }
 
+// From the given [`ComposerPackage`], creates a new one with the same name and version, and any package links processed through [`extract_platform_links_with_heroku_sys`].
+//
+// Package links can reside in four different places on a Composer package:
+// - `require`
+// - `provide`
+// - `conflict`
+// - `replace`
 pub(crate) fn package_with_only_platform_links(
     package: &ComposerPackage,
 ) -> Option<ComposerPackage> {
@@ -170,6 +180,9 @@ pub(crate) fn package_with_only_platform_links(
     })
 }
 
+/// Generates requirements for Composer and the Composer Plugin API version that match the given [`ComposerLock`].
+///
+/// The returned tuple contains the generated requirements, and a set of [`PlatformExtractorNotice`s](PlatformExtractorNotice) encountered during processing.
 pub(crate) fn process_composer_version(
     lock: &ComposerLock,
 ) -> Result<(HashMap<String, String>, HashSet<PlatformExtractorNotice>), PlatformExtractorError> {
@@ -220,6 +233,7 @@ pub(crate) fn process_composer_version(
     Ok((requires, notices))
 }
 
+/// From the given package links (typically from the `platform` field on a [`ComposerLock`]), generates a new package with the given name and version and those package links as requirements.
 pub(crate) fn extract_root_requirements(
     platform: &HashMap<String, String>,
     generated_package_name: String,
@@ -239,6 +253,9 @@ pub(crate) fn extract_root_requirements(
     })
 }
 
+/// From the given [`ComposerLock`], extracts all relevant fields into a [`PlatformJsonGeneratorInput`].
+///
+/// The returned tuple contains the generated input struct, and a set of [`PlatformExtractorNotice`s](PlatformExtractorNotice) encountered during processing.
 pub(crate) fn extract_from_lock(
     lock: &ComposerLock,
 ) -> Result<(PlatformJsonGeneratorInput, HashSet<PlatformExtractorNotice>), PlatformExtractorError>
@@ -251,6 +268,9 @@ pub(crate) fn extract_from_lock(
     Ok((config, composer_requires.1))
 }
 
+/// Post-processes the given [`ComposerRootPackage`] to insert a runtime requirement, if necessary (and possible).
+///
+/// The returned value is a set of [`PlatformFinalizerNotice`s](PlatformFinalizerNotice) to indicate what operations were performed.
 pub(crate) fn ensure_runtime_requirement(
     root_package: &mut ComposerRootPackage,
 ) -> Result<HashSet<PlatformFinalizerNotice>, PlatformFinalizerError> {
@@ -277,7 +297,7 @@ pub(crate) fn ensure_runtime_requirement(
         });
 
     // is there a requirement for php in the root?
-    if !has_runtime_requirement(&root_package.package.require.clone().unwrap_or_default()) {
+    if !has_runtime_link(&root_package.package.require.clone().unwrap_or_default()) {
         // there is not!
         let mut seen_runtime_requirement = false;
         let mut seen_runtime_dev_requirement = false;
@@ -295,7 +315,7 @@ pub(crate) fn ensure_runtime_requirement(
                 *marker |= metapaks.get(&name).map_or(false, |package| {
                     // here, we only look at a package's require list, not require-dev, which only has an effect in the root of a composer.json
                     // (since every library has its own list of dev requirements for testing etc, and that should never be installed into a project using that library)
-                    has_runtime_requirement(&package.package.require.clone().unwrap_or_default())
+                    has_runtime_link(&package.package.require.clone().unwrap_or_default())
                 });
             }
         }
