@@ -39,7 +39,12 @@ impl FromStr for UrlListEntry {
     }
 }
 
-pub(crate) fn repos_from_default_and_env(
+/// Returns a list of platform repository [`Url`s](Url), computed from the given [`BuildContext`]'s
+/// stack ID and processed `HEROKU_PHP_PLATFORM_REPOSITORIES` environment variable.
+///
+/// Defers to [`repos_from_defaults_and_list`] once a default URL string has been constructed and
+/// the `HEROKU_PHP_PLATFORM_REPOSITORIES` environment variable has been read.
+pub(crate) fn repos_from_default_and_build_context(
     context: &BuildContext<PhpBuildpack>,
 ) -> Result<Vec<Url>, RepoUrlsError> {
     // our default repo
@@ -61,6 +66,8 @@ pub(crate) fn repos_from_default_and_env(
     // TODO: message for additional repos?
 }
 
+/// Returns a list of platform repository [`Url`s](Url), computed from the given default [`Url`s](Url)
+/// and space-separated list of additional URL strings (typically user-supplied).
 pub(crate) fn repos_from_defaults_and_list(
     default_urls: &[Url],
     extra_urls_list: impl AsRef<str>,
@@ -77,6 +84,9 @@ pub(crate) fn repos_from_defaults_and_list(
         .map_err(RepoUrlsError::ParseError)
 }
 
+/// For a given [`UrlListEntry`] slice, returns a [`Vec<&Url>`] containing only the inner [`Url`]
+/// values of all [`UrlListEntry::Url`] variants that follow the last [`UrlListEntry::Reset`] in the
+/// slice (or of all [`UrlListEntry::Url`] variants if no [`UrlListEntry::Reset`] is present).
 fn normalize_url_list(urls: &[UrlListEntry]) -> Vec<&Url> {
     // we now have a list of URLs
     // some of these entries might be UrlListEntry::Reset, used to re-set anything to their left (i.e. typically the default repo)
