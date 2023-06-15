@@ -30,7 +30,7 @@ pub(crate) fn download_and_unpack_gzip(
 pub(crate) enum DownloadUnpackError {
     Io(io::Error),
     // Boxed to prevent `large_enum_variant` Clippy errors since `ureq::Error` is massive.
-    Request(Box<ureq::Error>),
+    Request(Box<ureq::Error>), // TODO: does this still need boxing?
 }
 
 pub(crate) fn run_command(command: &mut Command) -> Result<(), CommandError> {
