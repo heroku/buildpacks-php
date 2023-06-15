@@ -167,7 +167,12 @@ pub(crate) fn generate_platform_json(
         .captures(stack)
         .ok_or(PlatformGeneratorError::InvalidStackIdentifier)?;
     let stack_provide = (
-        ensure_heroku_sys_prefix(String::from(stack_captures.get(1).unwrap().as_str())),
+        ensure_heroku_sys_prefix(String::from(
+            stack_captures
+                .get(1)
+                .ok_or(PlatformGeneratorError::InvalidStackIdentifier)?
+                .as_str(),
+        )),
         format!(
             "{}.{}",
             stack_captures.get(2).map_or("1", |m| m.as_str()),
