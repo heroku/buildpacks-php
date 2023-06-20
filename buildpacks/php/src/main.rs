@@ -84,8 +84,7 @@ impl Buildpack for PhpBuildpack {
             layer_name!("platform"),
             PlatformLayer {
                 command_env: &platform_env,
-                platform_json: serde_json::to_string_pretty(&platform_json)
-                    .expect("Internal error: platform composer.json serialization"),
+                platform_json: &platform_json,
             },
         )?;
         // this puts the boot scripts installed in the layer above on $PATH

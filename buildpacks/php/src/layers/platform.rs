@@ -7,18 +7,19 @@ use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 
+use composer::ComposerRootPackage;
 use libcnb::{Buildpack, Env};
 use libherokubuildpack::log::{log_header, log_info};
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fs::File;
-use std::io::{BufReader, Write};
+use std::io::BufReader;
 use std::path::Path;
 use std::process::Command;
 
 pub(crate) struct PlatformLayer<'a> {
     pub command_env: &'a Env,
-    pub platform_json: String,
+    pub platform_json: &'a ComposerRootPackage,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -88,10 +89,9 @@ impl Layer for PlatformLayer<'_> {
     ) -> Result<LayerResult<Self::Metadata>, <Self::Buildpack as Buildpack>::Error> {
         log_header("Installing platform packages");
 
-        let mut platform_json = File::create(layer_path.join("composer.json"))
+        let platform_json = File::create(layer_path.join("composer.json"))
             .map_err(PlatformLayerError::PlatformJsonCreate)?;
-        platform_json
-            .write_all(self.platform_json.as_ref())
+        serde_json::to_writer_pretty(platform_json, &self.platform_json)
             .map_err(PlatformLayerError::PlatformJsonWrite)?;
 
         // the computed env vars for this layer are written to this JSON file by the installer
@@ -208,7 +208,7 @@ fn generate_layer_metadata(stack_id: &StackId) -> PlatformLayerMetadata {
 #[derive(Debug)]
 pub(crate) enum PlatformLayerError {
     PlatformJsonCreate(std::io::Error),
-    PlatformJsonWrite(std::io::Error),
+    PlatformJsonWrite(serde_json::Error),
     ProvidedPackagesLogRead(csv::Error),
     ProvidedPackagesLogParse,
     InstallCommand(CommandError),
