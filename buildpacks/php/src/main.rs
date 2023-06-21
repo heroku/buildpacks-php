@@ -46,6 +46,10 @@ impl Buildpack for PhpBuildpack {
 
         // to install platform packages, we'll need PHP and Composer, as well as the Composer Installer Plugin from the classic buildpack
         let bootstrap_layer = context.handle_layer(layer_name!("bootstrap"), BootstrapLayer)?;
+        let platform_installer_path = &bootstrap_layer
+            .path
+            .join(layers::bootstrap::CLASSIC_BUILDPACK_SUBDIR)
+            .join(layers::bootstrap::CLASSIC_BUILDPACK_INSTALLER_SUBDIR);
         // dbg!(&bootstrap_layer.env);
 
         let mut platform_env = Env::from_current();
@@ -63,10 +67,7 @@ impl Buildpack for PhpBuildpack {
         let platform_json = project
             .platform_json(
                 &context.stack_id,
-                &bootstrap_layer
-                    .path
-                    .join(layers::bootstrap::INSTALLER_SUBDIR)
-                    .join("support/installer/"),
+                platform_installer_path,
                 &all_repos,
                 false,
             )
@@ -80,6 +81,8 @@ impl Buildpack for PhpBuildpack {
         platform_env = platform_cache_layer.env.apply(Scope::Build, &platform_env);
         // dbg!(&platform_env);
 
+        log_header("Installing platform packages");
+
         let platform_layer = context.handle_layer(
             layer_name!("platform"),
             PlatformLayer {
@@ -87,18 +90,26 @@ impl Buildpack for PhpBuildpack {
                 platform_json: &platform_json,
             },
         )?;
-        // this puts the boot scripts installed in the layer above on $PATH
-        // we do this in a separate layer because
-        // 1) we then do not have to merge with the package-generated env vars
-        // 2) in the future, we'll have a dedicated layer for boot scripts
+
+        log_header("Installing web servers");
+
+        let webservers_json = platform::webservers_json(
+            &context.stack_id,
+            platform_installer_path,
+            &bootstrap_layer
+                .path
+                .join(layers::bootstrap::CLASSIC_BUILDPACK_SUBDIR),
+            &all_repos,
+        )
+        .map_err(PhpBuildpackError::WebserversJson)?;
+
         context.handle_layer(
-            layer_name!("boot_env"),
-            ComposerEnvLayer {
+            layer_name!("webservers"),
+            PlatformLayer {
                 command_env: &platform_env,
-                dir: &platform_layer.path,
+                platform_json: &webservers_json,
             },
         )?;
-        // no need to merge this layer's env into anything, it's for launch later
 
         // time for a fresh env. First, from current, so `git` is on $PATH etc
         let mut command_env = Env::from_current();
@@ -121,16 +132,13 @@ impl Buildpack for PhpBuildpack {
             .map_err(PhpBuildpackError::DependencyInstallation)?;
 
         // this just puts the userland bin-dir on $PATH
-        let composer_env_layer = context.handle_layer(
+        context.handle_layer(
             layer_name!("composer_env"),
             ComposerEnvLayer {
                 command_env: &command_env,
                 dir: &context.app_dir,
             },
         )?;
-        // dbg!(&composer_env_layer.env);
-        command_env = composer_env_layer.env.apply(Scope::All, &command_env);
-        // dbg!(&command_env);
 
         let default_process = ProcessBuilder::new(process_type!("web"), vec!["heroku-php-apache2"])
             .default(true)

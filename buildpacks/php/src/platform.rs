@@ -1,9 +1,12 @@
 pub(crate) mod generator;
 
+use crate::platform::generator::PlatformGeneratorError;
 use crate::PhpBuildpack;
 use composer::ComposerRootPackage;
 use libcnb::build::BuildContext;
 use libcnb::Platform;
+use std::collections::HashMap;
+use std::path::Path;
 use std::str::FromStr;
 use url::Url;
 
@@ -93,4 +96,57 @@ fn normalize_url_list(urls: &[UrlListEntry]) -> Vec<&Url> {
             ),
         })
         .collect()
+}
+
+#[derive(Debug)]
+pub(crate) enum WebserversJsonError {
+    PlatformGenerator(PlatformGeneratorError),
+}
+
+pub(crate) fn webservers_json(
+    stack: &str,
+    installer_path: &Path,
+    classic_buildpack_path: &Path,
+    platform_repositories: &Vec<Url>,
+) -> Result<ComposerRootPackage, WebserversJsonError> {
+    let webservers_generator_input = generator::PlatformJsonGeneratorInput {
+        input_name: "auto/generated".to_string(),
+        input_revision: "main".to_string(),
+        additional_require: Some(HashMap::from([
+            ("heroku-sys/apache".to_string(), "*".to_string()),
+            ("heroku-sys/nginx".to_string(), "*".to_string()),
+            // for now, we need the web server boot scripts and configs from the classic buildpack
+            (
+                "heroku/heroku-buildpack-php".to_string(),
+                "dev-bundled".to_string(),
+            ),
+        ])),
+        // path repo for the above heroku/heroku-buildpack-php package
+        additional_repositories: Some(vec![composer::ComposerRepository::from_path_with_options(
+            classic_buildpack_path,
+            [
+                ("symlink".into(), serde_json::Value::Bool(false)),
+                (
+                    "versions".to_string(),
+                    serde_json::json!({"heroku/heroku-buildpack-php": "dev-bundled"}),
+                ),
+            ],
+        )]),
+        ..Default::default()
+    };
+
+    let mut webservers_json = generator::generate_platform_json(
+        &webservers_generator_input,
+        stack,
+        installer_path,
+        platform_repositories,
+    )
+    .map_err(WebserversJsonError::PlatformGenerator)?;
+
+    //
+    let mut config_with_bin_dir = webservers_json.config.unwrap_or_default();
+    config_with_bin_dir.insert("bin-dir".to_string(), "bin".into());
+    webservers_json.config = Some(config_with_bin_dir);
+
+    Ok(webservers_json)
 }

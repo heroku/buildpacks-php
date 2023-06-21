@@ -13,11 +13,8 @@
     },
     "require": {
         "heroku/installer-plugin": "*",
-        "heroku-sys\/apache": "^2.4.10",
-        "heroku-sys\/nginx": "^1.8.0",
         "heroku-sys\/composer": "*",
         "heroku-sys\/composer-plugin-api": "^1",
-        "heroku/heroku-buildpack-php": "dev-master",
         "composer.json/composer.lock": "dev-fc385a27e5169a169062c230878645d1",
         "heroku-sys\/php": "7.4.*",
         "heroku-sys\/ext-gmp": "*",
@@ -38,16 +35,6 @@
             "url": "..\/..\/support\/installer",
             "options": {
                 "symlink": false
-            }
-        },
-        {
-            "type": "path",
-            "url": "../../support/installer/../..",
-            "options": {
-                "symlink": false,
-                "versions": {
-                    "heroku/heroku-buildpack-php": "dev-master"
-                }
             }
         },
         {

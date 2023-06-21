@@ -106,7 +106,7 @@ pub(crate) struct PlatformJsonGeneratorInput {
     pub input_name: String,
     /// A revision or version identifier for the input, e.g. a file hash, datetime string, "0", etc
     pub input_revision: String,
-    /// The desired [`ComposerStability´] for the root package's `minimum-stability` field
+    /// The desired [`ComposerStability`] for the root package's `minimum-stability` field
     pub minimum_stability: ComposerStability,
     /// The desired value for the root package's `prefer-stable` field
     pub prefer_stable: bool,
@@ -122,8 +122,9 @@ pub(crate) struct PlatformJsonGeneratorInput {
     pub additional_require: Option<HashMap<String, String>>,
     /// A list of additional requirements to be placed into the generated package's root dev requirements
     pub additional_require_dev: Option<HashMap<String, String>>,
+    /// Additional [`ComposerRepository`] entries to be placed into the generated package
+    pub additional_repositories: Option<Vec<ComposerRepository>>,
 }
-// TODO refactor: move to package_manager/composer
 impl From<&ComposerLock> for PlatformJsonGeneratorInput {
     fn from(lock: &ComposerLock) -> Self {
         Self {
@@ -137,6 +138,7 @@ impl From<&ComposerLock> for PlatformJsonGeneratorInput {
             packages_dev: lock.packages_dev.clone(),
             additional_require: None,
             additional_require_dev: None,
+            additional_repositories: None,
         }
     }
 }
@@ -201,33 +203,13 @@ pub(crate) fn generate_platform_json(
             [("symlink".into(), Value::Bool(false))],
         ),
     ];
-
-    // TODO refactor: this could be a separate install in a dedicated layer
-    // web servers
-    require.insert("heroku-sys/apache".to_string(), "^2.4.10".to_string());
-    require.insert("heroku-sys/nginx".to_string(), "^1.8.0".to_string());
-    // for now, we need the web server boot scripts and configs from the classic buildpack
-    // so we install it as a package from a relative location - it's "above" the installer path
-    match ComposerRepository::from_path_with_options(
-        installer_path.join("../.."),
-        [
-            ("symlink".into(), Value::Bool(false)),
-            (
-                "versions".to_string(),
-                json!({"heroku/heroku-buildpack-php": "dev-master"}),
-            ),
-        ],
-    ) {
-        r @ ComposerRepository::Path { .. } => {
-            repositories.push(r);
-            require.insert(
-                "heroku/heroku-buildpack-php".to_string(),
-                "dev-master".into(),
-            );
-        }
-        _ => unreachable!(),
-    };
-    // TODO refactor: end
+    repositories.append(
+        input
+            .additional_repositories
+            .clone()
+            .unwrap_or_default()
+            .as_mut(),
+    );
 
     // process the given platform repository URLs and insert them into the list
     repositories.append(
