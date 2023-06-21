@@ -40,9 +40,8 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for PhpAssocArray<T> {
                 A: SeqAccess<'de>,
             {
                 match seq.next_element::<T>() {
-                    Ok(Some(_)) => Err(A::Error::custom("sequence must be empty")), // if a T is in there
+                    Ok(Some(_)) | Err(_) => Err(A::Error::custom("sequence must be empty")), // if a T is in there or something else is in there
                     Ok(None) => Ok(PhpAssocArray(HashMap::new())),
-                    Err(_) => Err(A::Error::custom("sequence must be empty")), // if something else is in there
                 }
             }
 
@@ -272,7 +271,7 @@ impl TryFrom<PhpAssocArray<u8>> for PhpAssocArray<ComposerStability> {
     fn try_from(value: PhpAssocArray<u8>) -> Result<Self, Self::Error> {
         let ret = value
             .iter()
-            .map(|(k, v)| match ComposerStability::try_from(v.clone()) {
+            .map(|(k, v)| match ComposerStability::try_from(*v) {
                 Ok(value) => Ok((k.clone(), value)),
                 Err(e) => Err(e),
             })
@@ -407,7 +406,7 @@ impl TryFrom<String> for ComposerPackageSupportType {
 // 2) { "name": false } to disable a repo (we use that to disable packagist via { "packagist.org": false }
 // Tagged enums can have #[serde(other)] only for a unit type: https://github.com/serde-rs/serde/issues/912
 // A workaround with tags declared on separate structs (https://stackoverflow.com/a/61219284/162354) doesn't work as explained in https://stackoverflow.com/a/74544853/162354
-// The solution is to rely on monostrate's MustBe!
+// The solution is to rely on monostate's MustBe!
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -467,6 +466,7 @@ pub enum ComposerRepository {
         #[serde(flatten)]
         extra: HashMap<String, Value>,
     },
+    #[allow(clippy::zero_sized_map_values)]
     #[serde(rename_all = "kebab-case")]
     Disabled(HashMap<String, MustBe!(false)>),
 }
@@ -476,6 +476,7 @@ impl ComposerRepository {
         O: IntoIterator<Item = (String, Value)>,
     {
         Self::Path {
+            #[allow(clippy::default_trait_access)]
             kind: Default::default(),
             url: path.into(),
             options: Some(Map::from_iter(options)),
@@ -487,6 +488,7 @@ impl ComposerRepository {
 impl From<Vec<ComposerPackage>> for ComposerRepository {
     fn from(value: Vec<ComposerPackage>) -> Self {
         Self::Package {
+            #[allow(clippy::default_trait_access)]
             kind: Default::default(),
             package: value,
             canonical: None,
@@ -531,7 +533,7 @@ pub struct ComposerLock {
 impl ComposerLock {
     pub fn new(plugin_api_version: Option<String>) -> Self {
         Self {
-            content_hash: "".to_string(),
+            content_hash: String::new(),
             packages: vec![],
             packages_dev: vec![],
             platform: PhpAssocArray(Default::default()),

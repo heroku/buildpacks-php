@@ -47,9 +47,9 @@ pub(crate) fn platform_repository_urls_from_default_and_build_context(
         .platform
         .env()
         .get_string_lossy("HEROKU_PHP_PLATFORM_REPOSITORIES")
-        .unwrap_or("".into());
+        .unwrap_or(String::new());
 
-    platform_repository_urls_from_defaults_and_list(&default_platform_repositories, &user_repos)
+    platform_repository_urls_from_defaults_and_list(&default_platform_repositories, user_repos)
     // TODO: message if default disabled?
     // TODO: message for additional repos?
 }
@@ -63,7 +63,7 @@ pub(crate) fn platform_repository_urls_from_defaults_and_list(
     let extra_urls_splits =
         shell_words::split(extra_urls_list.as_ref()).map_err(PlatformRepositoryUrlError::Split)?;
     default_urls
-        .into_iter()
+        .iter()
         .cloned()
         .map(UrlListEntry::Url)
         .map(Ok)
@@ -83,7 +83,7 @@ fn normalize_url_list(urls: &[UrlListEntry]) -> Vec<&Url> {
     urls.rsplit(|url_entry| matches!(url_entry, UrlListEntry::Reset))
         .next() // this iterator is never empty because rsplit() will always return at least an empty slice
         .unwrap_or_else(|| unreachable!("Something is rotten in the state of Denmark."))
-        .into_iter()
+        .iter()
         .map(|url_entry| match url_entry {
             UrlListEntry::Url(url) => url,
             UrlListEntry::Reset => unreachable!(

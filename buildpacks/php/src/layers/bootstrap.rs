@@ -33,7 +33,7 @@ impl Layer for BootstrapLayer {
     fn types(&self) -> LayerTypes {
         LayerTypes {
             build: false,
-            cache: false, // disabled until installer "archive" is stable
+            cache: false, // disabled until we start using a fixed tag for CLASSIC_BUILDPACK_VERSION
             launch: false,
         }
     }

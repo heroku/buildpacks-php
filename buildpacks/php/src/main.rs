@@ -33,8 +33,7 @@ impl Buildpack for PhpBuildpack {
     type Error = PhpBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
-        // walk over all kinds of PhpProject in our preferred order of detection, and see if one matches this codebase
-        if php_project::ProjectLoader::from_env(&context.platform.env()).detect(&context.app_dir) {
+        if php_project::ProjectLoader::from_env(context.platform.env()).detect(&context.app_dir) {
             DetectResultBuilder::pass().build()
         } else {
             log_info("No PHP project files found.");
@@ -43,11 +42,11 @@ impl Buildpack for PhpBuildpack {
     }
 
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
-        let project = php_project::ProjectLoader::from_env(&context.platform.env())
+        let project = php_project::ProjectLoader::from_env(context.platform.env())
             .load(&context.app_dir)
             .map_err(PhpBuildpackError::ProjectLoad)?;
 
-        // to bootstrap, we'll need PHP and Composer
+        // to install platform packages, we'll need PHP and Composer, as well as the Composer Installer Plugin from the classic buildpack
         let bootstrap_layer = context.handle_layer(layer_name!("bootstrap"), BootstrapLayer)?;
         // dbg!(&bootstrap_layer.env);
 
