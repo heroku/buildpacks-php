@@ -7,9 +7,10 @@ use composer::{
 };
 use libcnb::build::BuildContext;
 use libcnb::Env;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::ops::Not;
 use std::process::Command;
+use warned::Warned;
 
 #[derive(Debug)]
 pub(crate) enum DependencyInstallationError {
@@ -47,14 +48,13 @@ pub(crate) fn install_dependencies(
     Ok(())
 }
 
-#[derive(strum_macros::Display, Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub(crate) enum PlatformExtractorError {
-    InvalidPlatformApiVersion,
+    ComposerLockVersion(ComposerLockVersionError),
 }
-#[derive(strum_macros::Display, Debug, Eq, Hash, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub(crate) enum PlatformExtractorNotice {
-    NoComposerPluginApiVersionInLock(String),
-    ComposerPluginApiVersionConfined(String, String),
+    ComposerLockVersion(ComposerLockVersionNotice),
 }
 
 /// Checks whether the given package name represents what Composer refers to as a "platform package".
@@ -90,12 +90,12 @@ pub(crate) fn extract_platform_links_with_heroku_sys<T: Clone>(
     ret.is_empty().not().then_some(ret)
 }
 
-#[derive(strum_macros::Display, Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub(crate) enum PlatformFinalizerError {
     RuntimeRequirementInRequireDevButNotRequire,
 }
 
-#[derive(strum_macros::Display, Debug, Eq, Hash, PartialEq)]
+#[derive(Debug, Eq, Hash, PartialEq)]
 pub(crate) enum PlatformFinalizerNotice {
     RuntimeRequirementInserted(String, String),
     RuntimeRequirementFromDependencies,
@@ -153,13 +153,22 @@ pub(crate) fn package_with_only_platform_links(
     })
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub(crate) enum ComposerLockVersionNotice {
+    NoComposerPluginApiVersionInLock(String),
+    ComposerPluginApiVersionConfined(String, String),
+}
+#[derive(Debug, Eq, PartialEq)]
+pub(crate) enum ComposerLockVersionError {
+    InvalidPlatformApiVersion(String),
+}
 /// Generates requirements for Composer and the Composer Plugin API version that match the given [`ComposerLock`].
 ///
-/// The returned tuple contains the generated requirements, and a set of [`PlatformExtractorNotice`s](PlatformExtractorNotice) encountered during processing.
-pub(crate) fn process_composer_version(
+/// The returned [`Warned`] struct contains a hash map of the generated requirements, and a list of [`PlatformExtractorNotice`s](PlatformExtractorNotice) encountered during processing.
+pub(crate) fn requires_for_composer_itself(
     lock: &ComposerLock,
-) -> Result<(HashMap<String, String>, HashSet<PlatformExtractorNotice>), PlatformExtractorError> {
-    let mut notices = HashSet::new();
+) -> Result<Warned<HashMap<String, String>, ComposerLockVersionNotice>, ComposerLockVersionError> {
+    let mut notices = Vec::new();
     let mut requires = HashMap::new();
     // we want the latest Composer...
     requires.insert(
@@ -180,7 +189,7 @@ pub(crate) fn process_composer_version(
             // also ensures plugins are compatible with other libraries Composer bundles (e.g. various Symfony components), as those got big version bumps in 2.3
             Some(v @ ("2.0.0" | "2.1.0" | "2.2.0")) => {
                 let r = "~2.2.0".to_string();
-                notices.insert(PlatformExtractorNotice::ComposerPluginApiVersionConfined(
+                notices.push(ComposerLockVersionNotice::ComposerPluginApiVersionConfined(
                     v.to_string(),
                     r.clone(),
                 ));
@@ -190,20 +199,22 @@ pub(crate) fn process_composer_version(
             Some(v) => format!(
                 "^{}",
                 v.split_once('.')
-                    .ok_or(PlatformExtractorError::InvalidPlatformApiVersion)?
+                    .ok_or(ComposerLockVersionError::InvalidPlatformApiVersion(
+                        v.to_string()
+                    ))?
                     .0
             ),
             // nothing means it's pre-v1.10, in which case we want to just use v1
             None => {
                 let r = "^1.0.0".to_string();
-                notices.insert(PlatformExtractorNotice::NoComposerPluginApiVersionInLock(
+                notices.push(ComposerLockVersionNotice::NoComposerPluginApiVersionInLock(
                     r.clone(),
                 ));
                 r
             }
         },
     );
-    Ok((requires, notices))
+    Ok(Warned::new(requires, notices))
 }
 
 /// From the given package links (typically from the `platform` field on a [`ComposerLock`]), generates a new package with the given name and version and those package links as requirements.
@@ -228,26 +239,34 @@ pub(crate) fn extract_root_requirements(
 
 /// From the given [`ComposerLock`], extracts all relevant fields into a [`PlatformJsonGeneratorInput`].
 ///
-/// The returned tuple contains the generated input struct, and a set of [`PlatformExtractorNotice`s](PlatformExtractorNotice) encountered during processing.
+/// The returned [`Warned`] struct contains the generated input struct, and a list of [`PlatformExtractorNotice`s](PlatformExtractorNotice) encountered during processing.
 pub(crate) fn extract_from_lock(
     lock: &ComposerLock,
-) -> Result<(PlatformJsonGeneratorInput, HashSet<PlatformExtractorNotice>), PlatformExtractorError>
-{
+) -> Result<Warned<PlatformJsonGeneratorInput, PlatformExtractorNotice>, PlatformExtractorError> {
     let mut config = PlatformJsonGeneratorInput::from(lock);
-    let composer_requires = process_composer_version(lock)?;
+    let composer_requires =
+        requires_for_composer_itself(lock).map_err(PlatformExtractorError::ComposerLockVersion)?;
 
-    config.additional_require.replace(composer_requires.0);
+    let mut processing_notices = Vec::new();
+    config
+        .additional_require
+        .replace(composer_requires.unwrap(&mut processing_notices)); // Warned::unwrap does not panic :)
 
-    Ok((config, composer_requires.1))
+    Ok(Warned::new(
+        config,
+        processing_notices
+            .into_iter()
+            .map(PlatformExtractorNotice::ComposerLockVersion),
+    ))
 }
 
 /// Post-processes the given [`ComposerRootPackage`] to insert a runtime requirement, if necessary (and possible).
 ///
-/// The returned value is a set of [`PlatformFinalizerNotice`s](PlatformFinalizerNotice) to indicate what operations were performed.
+/// The returned value is a list of [`PlatformFinalizerNotice`s](PlatformFinalizerNotice) to indicate what operations were performed.
 pub(crate) fn ensure_runtime_requirement(
     root_package: &mut ComposerRootPackage,
-) -> Result<HashSet<PlatformFinalizerNotice>, PlatformFinalizerError> {
-    let mut notices = HashSet::new();
+) -> Result<Vec<PlatformFinalizerNotice>, PlatformFinalizerError> {
+    let mut notices = Vec::new();
 
     // from all our metapackages, dev or not, make a lookup table
     let metapaks = root_package
@@ -295,7 +314,7 @@ pub(crate) fn ensure_runtime_requirement(
 
         if seen_runtime_requirement {
             // some dependenc(y|ies) required a runtime, which will be used
-            notices.insert(PlatformFinalizerNotice::RuntimeRequirementFromDependencies);
+            notices.push(PlatformFinalizerNotice::RuntimeRequirementFromDependencies);
         } else if seen_runtime_dev_requirement {
             // no runtime requirement anywhere, but there is a requirement in a require-dev package, which we do not allow
             return Err(PlatformFinalizerError::RuntimeRequirementInRequireDevButNotRequire);
@@ -303,7 +322,7 @@ pub(crate) fn ensure_runtime_requirement(
             // nothing anywhere; time to insert a default!
             let name = "php".to_string();
             let version = "*".to_string();
-            notices.insert(PlatformFinalizerNotice::RuntimeRequirementInserted(
+            notices.push(PlatformFinalizerNotice::RuntimeRequirementInserted(
                 name.clone(),
                 version.clone(),
             ));

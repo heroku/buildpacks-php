@@ -7,10 +7,11 @@ use crate::{platform, PhpBuildpack};
 use ::composer::{ComposerLock, ComposerRootPackage};
 use libcnb::build::BuildContext;
 use libcnb::Env;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::path::Path;
 use std::{fs, io};
 use url::Url;
+use warned::Warned;
 
 pub(crate) struct ProjectLoader {
     composer_json_name: String,
@@ -98,7 +99,7 @@ pub(crate) enum PlatformJsonError {
     Finalizer(PlatformFinalizerError),
 }
 
-#[derive(Debug, Eq, Hash, PartialEq)]
+#[derive(Debug)]
 pub(crate) enum PlatformJsonNotice {
     Extractor(PlatformExtractorNotice),
     Finalizer(PlatformFinalizerNotice),
@@ -125,29 +126,22 @@ impl Project {
         installer_path: &Path,
         platform_repositories: &Vec<Url>,
         dev: bool,
-    ) -> Result<(ComposerRootPackage, HashSet<PlatformJsonNotice>), PlatformJsonError> {
-        let mut notices = HashSet::new();
-        let (generator_input, extractor_notices) = match &self.composer_lock {
+    ) -> Result<Warned<ComposerRootPackage, PlatformJsonNotice>, PlatformJsonError> {
+        let mut extractor_notices = Vec::new();
+        let generator_input = match &self.composer_lock {
             Some(l) => crate::package_manager::composer::extract_from_lock(l)
                 .map_err(PlatformJsonError::Extractor)?,
-            None => (
-                PlatformJsonGeneratorInput {
-                    input_name: "auto/generated".to_string(),
-                    input_revision: "main".to_string(),
-                    additional_require: Some(HashMap::from([(
-                        "heroku-sys/composer".to_string(),
-                        "*".to_string(),
-                    )])),
-                    ..Default::default()
-                },
-                HashSet::new(),
-            ),
-        };
-        notices.extend(
-            extractor_notices
-                .into_iter()
-                .map(PlatformJsonNotice::Extractor),
-        );
+            None => Warned::from(PlatformJsonGeneratorInput {
+                input_name: "auto/generated".to_string(),
+                input_revision: "main".to_string(),
+                additional_require: Some(HashMap::from([(
+                    "heroku-sys/composer".to_string(),
+                    "*".to_string(),
+                )])),
+                ..Default::default()
+            }),
+        }
+        .unwrap(&mut extractor_notices); // Warned::unwrap does not panic :)
 
         let mut ret = platform::generator::generate_platform_json(
             generator_input,
@@ -160,11 +154,6 @@ impl Project {
         let finalizer_notices =
             crate::package_manager::composer::ensure_runtime_requirement(&mut ret)
                 .map_err(PlatformJsonError::Finalizer)?;
-        notices.extend(
-            finalizer_notices
-                .into_iter()
-                .map(PlatformJsonNotice::Finalizer),
-        );
 
         if !dev {
             // we do not want dev requirements to even get resolved, so we do not return them
@@ -173,7 +162,17 @@ impl Project {
             ret.package.require_dev.take();
         }
 
-        Ok((ret, notices))
+        Ok(Warned::new(
+            ret,
+            extractor_notices
+                .into_iter()
+                .map(PlatformJsonNotice::Extractor)
+                .chain(
+                    finalizer_notices
+                        .into_iter()
+                        .map(PlatformJsonNotice::Finalizer),
+                ),
+        ))
     }
 
     pub(crate) fn validate(&self) -> Result<(), String> {
