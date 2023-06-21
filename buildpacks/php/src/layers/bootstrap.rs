@@ -1,6 +1,5 @@
-use crate::utils::{self, DownloadUnpackError};
+use crate::utils;
 use crate::{PhpBuildpack, PhpBuildpackError};
-
 use libcnb::build::BuildContext;
 use libcnb::data::buildpack::StackId;
 use libcnb::data::layer_content_metadata::LayerTypes;
@@ -16,8 +15,6 @@ const COMPOSER_VERSION: &str = "2.4.4";
 const INSTALLER_VERSION: &str = "heads/cnb-installer";
 pub(crate) const INSTALLER_SUBDIR: &str = "heroku-buildpack-php-cnb-installer";
 
-pub(crate) struct BootstrapLayer;
-
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) struct BootstrapLayerMetadata {
     stack: StackId,
@@ -25,6 +22,8 @@ pub(crate) struct BootstrapLayerMetadata {
     composer_version: String,
     installer_version: String,
 }
+
+pub(crate) struct BootstrapLayer;
 
 impl Layer for BootstrapLayer {
     type Buildpack = PhpBuildpack;
@@ -102,7 +101,7 @@ fn generate_layer_metadata(stack_id: &StackId) -> BootstrapLayerMetadata {
 
 #[derive(Debug)]
 pub(crate) enum BootstrapLayerError {
-    DownloadUnpack(DownloadUnpackError),
+    DownloadUnpack(utils::DownloadUnpackError),
 }
 
 impl From<BootstrapLayerError> for PhpBuildpackError {

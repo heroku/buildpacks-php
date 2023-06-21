@@ -1,13 +1,12 @@
 use crate::utils::{self, CommandError};
 use crate::{PhpBuildpack, PhpBuildpackError};
 
+use composer::ComposerRootPackage;
 use libcnb::build::BuildContext;
 use libcnb::data::buildpack::StackId;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
-
-use composer::ComposerRootPackage;
 use libcnb::{Buildpack, Env};
 use libherokubuildpack::log::{log_header, log_info};
 use serde::de::{Error, Unexpected};
@@ -17,57 +16,14 @@ use std::io::BufReader;
 use std::path::Path;
 use std::process::Command;
 
-pub(crate) struct PlatformLayer<'a> {
-    pub command_env: &'a Env,
-    pub platform_json: &'a ComposerRootPackage,
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct PlatformLayerMetadata {
     stack: StackId,
 }
 
-#[derive(Deserialize, Debug)]
-struct LayerEnvValue {
-    #[serde(deserialize_with = "scope_from_string")]
-    scope: Scope,
-    #[serde(deserialize_with = "modification_behavior_from_string")]
-    modification_behavior: ModificationBehavior,
-    name: String,
-    value: String,
-}
-
-fn scope_from_string<'de, D>(deserializer: D) -> Result<Scope, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s: String = Deserialize::deserialize(deserializer)?;
-    Ok(match s.as_ref() {
-        "build" => Scope::Build,
-        "launch" => Scope::Launch,
-        "all" => Scope::All,
-        process => Scope::Process(process.to_string()),
-    })
-}
-
-fn modification_behavior_from_string<'de, D>(
-    deserializer: D,
-) -> Result<ModificationBehavior, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s: String = Deserialize::deserialize(deserializer)?;
-    match s.as_ref() {
-        "append" => Ok(ModificationBehavior::Append),
-        "default" => Ok(ModificationBehavior::Default),
-        "delimiter" => Ok(ModificationBehavior::Delimiter),
-        "override" => Ok(ModificationBehavior::Override),
-        "prepend" => Ok(ModificationBehavior::Prepend),
-        _ => Err(D::Error::invalid_value(
-            Unexpected::Str(&s),
-            &"one of: append, default, delimiter, override, prepend",
-        )),
-    }
+pub(crate) struct PlatformLayer<'a> {
+    pub command_env: &'a Env,
+    pub platform_json: &'a ComposerRootPackage,
 }
 
 impl Layer for PlatformLayer<'_> {
@@ -200,6 +156,49 @@ impl Layer for PlatformLayer<'_> {
 fn generate_layer_metadata(stack_id: &StackId) -> PlatformLayerMetadata {
     PlatformLayerMetadata {
         stack: stack_id.clone(),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct LayerEnvValue {
+    #[serde(deserialize_with = "scope_from_string")]
+    scope: Scope,
+    #[serde(deserialize_with = "modification_behavior_from_string")]
+    modification_behavior: ModificationBehavior,
+    name: String,
+    value: String,
+}
+
+fn scope_from_string<'de, D>(deserializer: D) -> Result<Scope, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: String = Deserialize::deserialize(deserializer)?;
+    Ok(match s.as_ref() {
+        "build" => Scope::Build,
+        "launch" => Scope::Launch,
+        "all" => Scope::All,
+        process => Scope::Process(process.to_string()),
+    })
+}
+
+fn modification_behavior_from_string<'de, D>(
+    deserializer: D,
+) -> Result<ModificationBehavior, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: String = Deserialize::deserialize(deserializer)?;
+    match s.as_ref() {
+        "append" => Ok(ModificationBehavior::Append),
+        "default" => Ok(ModificationBehavior::Default),
+        "delimiter" => Ok(ModificationBehavior::Delimiter),
+        "override" => Ok(ModificationBehavior::Override),
+        "prepend" => Ok(ModificationBehavior::Prepend),
+        _ => Err(D::Error::invalid_value(
+            Unexpected::Str(&s),
+            &"one of: append, default, delimiter, override, prepend",
+        )),
     }
 }
 

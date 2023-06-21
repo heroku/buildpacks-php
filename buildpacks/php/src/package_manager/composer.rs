@@ -52,6 +52,7 @@ pub(crate) fn install_dependencies(
 pub(crate) enum PlatformExtractorError {
     ComposerLockVersion(ComposerLockVersionError),
 }
+
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) enum PlatformExtractorNotice {
     ComposerLockVersion(ComposerLockVersionNotice),
@@ -157,10 +158,12 @@ pub(crate) enum ComposerLockVersionNotice {
     NoComposerPluginApiVersionInLock(String),
     ComposerPluginApiVersionConfined(String, String),
 }
+
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) enum ComposerLockVersionError {
     InvalidPlatformApiVersion(String),
 }
+
 /// Generates requirements for Composer and the Composer Plugin API version that match the given [`ComposerLock`].
 ///
 /// The returned [`Warned`] struct contains a hash map of the generated requirements, and a list of [`PlatformExtractorNotice`s](PlatformExtractorNotice) encountered during processing.
