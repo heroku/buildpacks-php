@@ -88,15 +88,15 @@ fn composer_repository_from_repository_url(
     })
 }
 #[derive(Debug)]
-enum ComposerRepositoryFromRepositoryUrlError {
+pub(crate) enum ComposerRepositoryFromRepositoryUrlError {
     MultipleFilters,
 }
 
-#[derive(strum_macros::Display, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub(crate) enum PlatformGeneratorError {
     EmptyPlatformRepositoriesList,
-    InvalidRepositoryFilter,
-    InvalidStackIdentifier,
+    FromRepositoryUrl(ComposerRepositoryFromRepositoryUrlError),
+    InvalidStackIdentifier(String),
 }
 
 /// Input data describing the desired packages and stabilities for [`generate_platform_json`]
@@ -163,14 +163,16 @@ pub(crate) fn generate_platform_json(
     };
 
     // from the given stack string like "heroku-99", make a ("heroku-sys/heroku", "99.2023.04.05") tuple for "provide" later
-    let stack_captures = regex!(r"^([^-]+)(?:-([0-9]+))?$")
-        .captures(stack)
-        .ok_or(PlatformGeneratorError::InvalidStackIdentifier)?;
+    let stack_captures = regex!(r"^([^-]+)(?:-([0-9]+))?$").captures(stack).ok_or(
+        PlatformGeneratorError::InvalidStackIdentifier(stack.to_string()),
+    )?;
     let stack_provide = (
         ensure_heroku_sys_prefix(String::from(
             stack_captures
                 .get(1)
-                .ok_or(PlatformGeneratorError::InvalidStackIdentifier)?
+                .ok_or(PlatformGeneratorError::InvalidStackIdentifier(
+                    stack.to_string(),
+                ))?
                 .as_str(),
         )),
         format!(
@@ -233,7 +235,7 @@ pub(crate) fn generate_platform_json(
             .into_iter()
             .map(|url| {
                 composer_repository_from_repository_url(url.clone())
-                    .map_err(|_| PlatformGeneratorError::InvalidRepositoryFilter)
+                    .map_err(|e| PlatformGeneratorError::FromRepositoryUrl(e))
             })
             // repositories are passed in in ascending order of precedence
             // typically our default repo first, then user-supplied repos after that
@@ -364,7 +366,9 @@ mod tests {
     use std::path::PathBuf;
     use std::{env, fs};
 
-    use crate::package_manager::composer::{ensure_runtime_requirement, extract_from_lock};
+    use crate::package_manager::composer::{
+        ensure_runtime_requirement, extract_from_lock, PlatformExtractorNotice,
+    };
     use crate::platform::platform_repository_urls_from_defaults_and_list;
     use figment::providers::{Format, Serialized, Toml};
     use figment::{value::magic::RelativePathBuf, Figment};
@@ -470,9 +474,10 @@ mod tests {
                 );
 
                 // on failure, check if the type of failure what was the test expected
-                let (generator_input, extractor_notices) = match generator_input
+                let mut extractor_notices  = Vec::<PlatformExtractorNotice>::new();
+                let generator_input  = match generator_input
                 {
-                    Ok(v) => v,
+                    Ok(v) => v.unwrap(&mut extractor_notices),
                     Err(e) => {
                         assert!(
                             case.expect_extractor_failure.is_some(),
@@ -481,7 +486,7 @@ mod tests {
                         );
 
                         assert_eq!(
-                            e.to_string(),
+                            format!("{e:?}"),
                             case.expect_extractor_failure.unwrap(),
                             "case {}: lock extraction failed as expected, but with mismatched failure type",
                             case.name.as_ref().unwrap()
@@ -495,7 +500,7 @@ mod tests {
                 assert_eq!(
                     extractor_notices
                         .iter()
-                        .map(|v| v.to_string())
+                        .map(|v| format!("{v:?}"))
                         .collect::<HashSet<String>>(),
                     case.expected_extractor_notices
                         .unwrap_or_default()
@@ -538,7 +543,7 @@ mod tests {
                         );
 
                         assert_eq!(
-                            e.to_string(),
+                            format!("{e:?}"),
                             case.expect_generator_failure.unwrap(),
                             "case {}: generation failed as expected, but with mismatched failure type",
                             case.name.as_ref().unwrap()
@@ -575,7 +580,7 @@ mod tests {
                         );
 
                         assert_eq!(
-                            e.to_string(),
+                            format!("{e:?}"),
                             case.expect_finalizer_failure.unwrap(),
                             "case {}: finalizing failed as expected, but with mismatched failure type",
                             case.name.as_ref().unwrap()
@@ -589,7 +594,7 @@ mod tests {
                 assert_eq!(
                     finalizer_notices
                         .iter()
-                        .map(|v| v.to_string())
+                        .map(|v| format!("{v:?}"))
                         .collect::<HashSet<String>>(),
                     case.expected_finalizer_notices
                         .unwrap_or_default()
@@ -925,7 +930,7 @@ mod tests {
         let all_repos =
             platform_repository_urls_from_defaults_and_list(&default_repos, &byo_repos).unwrap();
 
-        let (generator_input, _) = extract_from_lock(&l).unwrap();
+        let generator_input = extract_from_lock(&l).unwrap().value;
 
         let pj = serde_json::to_string_pretty(
             &generate_platform_json(

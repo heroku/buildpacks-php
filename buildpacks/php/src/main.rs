@@ -22,6 +22,7 @@ use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env, Platform};
 
 use crate::layers::composer_env::ComposerEnvLayer;
+use crate::php_project::PlatformJsonNotice;
 use libherokubuildpack::log::{log_header, log_info};
 
 pub(crate) struct PhpBuildpack;
@@ -61,7 +62,8 @@ impl Buildpack for PhpBuildpack {
         let all_repos = platform::platform_repository_urls_from_default_and_build_context(&context)
             .map_err(PhpBuildpackError::PlatformRepositoryUrl)?;
 
-        let (platform_json, _platform_json_notices) = project
+        let mut platform_json_notices = Vec::<PlatformJsonNotice>::new();
+        let platform_json = project
             .platform_json(
                 &context.stack_id,
                 &bootstrap_layer
@@ -71,8 +73,9 @@ impl Buildpack for PhpBuildpack {
                 &all_repos,
                 false,
             )
-            .map_err(PhpBuildpackError::PlatformJson)?;
-        // TODO: print notices
+            .map_err(PhpBuildpackError::PlatformJson)?
+            .unwrap(&mut platform_json_notices); // Warned::unwrap() does not panic :)
+                                                 // TODO: print notices
 
         let platform_cache_layer =
             context.handle_layer(layer_name!("platform_cache"), ComposerCacheLayer)?;

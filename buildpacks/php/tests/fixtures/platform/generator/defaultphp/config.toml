@@ -1,1 +1,1 @@
-expected_finalizer_notices = ["RuntimeRequirementInserted"]
+expected_finalizer_notices = ['RuntimeRequirementInserted("php", "*")']
