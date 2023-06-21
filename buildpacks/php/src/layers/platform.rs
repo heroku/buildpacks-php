@@ -156,28 +156,26 @@ impl Layer for PlatformLayer<'_> {
             .from_path(&provided_packages_log_file_path)
         {
             let mut composer_require_base = Command::new("composer");
-            // FIXME: lol why does it need this let binding...
-            let composer_require_base = composer_require_base
+            composer_require_base
                 .current_dir(layer_path)
                 // .env("layer_env_file_path", &layer_env_file_path)
                 .envs(self.command_env); // we're invoking 'composer' from the bootstrap layer
             for result in rdr.deserialize() {
-                let (provider, provides): (String, Vec<String>) =
+                let (provider_name, provides): (String, Vec<String>) =
                     result.map_err(PlatformLayerError::ProvidedPackagesLogRead)?;
                 log_info(format!(
-                    "Attempting native package installs for {}",
-                    provider
+                    "Attempting native package installs for {provider_name}"
                 ));
 
                 for provide in provides {
                     let (name, _version) = provide
-                        .split_once(":")
+                        .split_once(':')
                         .ok_or(PlatformLayerError::ProvidedPackagesLogParse)?;
                     // TODO: output filtering and error display (Classic uses echo -n)
                     // TODO: keep in mind that this could, in turn, pull in dependencies
                     match utils::run_command(composer_require_base.args([
                         "require",
-                        &format!("{}.native:*", name),
+                        &format!("{name}.native:*"),
                         // "--no-dev",
                         // "--no-interaction",
                         //"--no-progress",
@@ -185,7 +183,7 @@ impl Layer for PlatformLayer<'_> {
                         Ok(_) => {}
                         Err(_) => {
                             // TODO: Classic uses \r here
-                            log_info(format!("no suitable native version of {} available", name))
+                            log_info(format!("no suitable native version of {name} available"));
                         }
                     }
                 }

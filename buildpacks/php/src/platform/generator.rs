@@ -58,7 +58,7 @@ fn composer_repository_from_repository_url(
                 canonical = Some(matches!(
                     v.trim().to_ascii_lowercase().as_ref(),
                     "1" | "true" | "on" | "yes"
-                ))
+                ));
             }
             ONLY_QUERY_ARG_NAME | EXCLUDE_QUERY_ARG_NAME => {
                 if filters.is_some() {
@@ -77,6 +77,7 @@ fn composer_repository_from_repository_url(
         }
     }
 
+    #[allow(clippy::default_trait_access)]
     Ok(ComposerRepository::Composer {
         kind: Default::default(),
         url,
@@ -130,7 +131,7 @@ impl From<&ComposerLock> for PlatformJsonGeneratorInput {
             input_name: "composer.json/composer.lock".to_string(),
             input_revision: lock.content_hash.clone(),
             minimum_stability: lock.minimum_stability.clone(),
-            prefer_stable: lock.prefer_stable.clone(),
+            prefer_stable: lock.prefer_stable,
             platform_require: (*lock.platform).clone(),
             platform_require_dev: (*lock.platform_dev).clone(),
             packages: lock.packages.clone(),
@@ -150,10 +151,10 @@ impl From<&ComposerLock> for PlatformJsonGeneratorInput {
 /// A "provide" entry on the root package is automatically generated for the given stack.
 ///
 /// From the given platform repository URLs, a "composer" type repository entry is generated for each.
-/// The repositories are inserted in reverse order to allow loter repositories to override packages from earlier ones.
+/// The repositories are inserted in reverse order to allow later repositories to override packages from earlier ones.
 /// For details on this (and Composer's) repository precedence behavior, and how to control it via URL query args, see [`composer_repository_from_repository_url`]
 pub(crate) fn generate_platform_json(
-    input: PlatformJsonGeneratorInput,
+    input: &PlatformJsonGeneratorInput,
     stack: &str,
     installer_path: &Path,
     platform_repositories: &Vec<Url>,
@@ -232,10 +233,10 @@ pub(crate) fn generate_platform_json(
     // process the given platform repository URLs and insert them into the list
     repositories.append(
         platform_repositories
-            .into_iter()
+            .iter()
             .map(|url| {
                 composer_repository_from_repository_url(url.clone())
-                    .map_err(|e| PlatformGeneratorError::FromRepositoryUrl(e))
+                    .map_err(PlatformGeneratorError::FromRepositoryUrl)
             })
             // repositories are passed in in ascending order of precedence
             // typically our default repo first, then user-supplied repos after that
@@ -345,7 +346,7 @@ pub(crate) fn generate_platform_json(
         .as_object()
         .cloned(),
         minimum_stability: Some(input.minimum_stability.clone()),
-        prefer_stable: Some(input.prefer_stable.clone()),
+        prefer_stable: Some(input.prefer_stable),
         package: ComposerBasePackage {
             provide: Some(HashMap::from([stack_provide])),
             replace: None, // TODO: blackfire
@@ -407,8 +408,7 @@ mod tests {
                 expect_finalizer_failure: None,
                 install_dev: false,
                 repositories: vec![Url::parse(&format!(
-                    "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-cnb/packages.json",
-                    stack,
+                    "https://lang-php.s3.us-east-1.amazonaws.com/dist-{stack}-cnb/packages.json",
                 ))
                 .unwrap()],
             }
@@ -436,7 +436,7 @@ mod tests {
     fn make_platform_json_with_fixtures() {
         let installer_path = &PathBuf::from("../../support/installer");
 
-        fs::read_dir(&Path::new("tests/fixtures/platform/generator"))
+        fs::read_dir(Path::new("tests/fixtures/platform/generator"))
             .unwrap()
             .filter(|der| der.as_ref().unwrap().metadata().unwrap().is_dir())
             .filter_map(|der| {
@@ -467,10 +467,8 @@ mod tests {
                     case.expect_extractor_failure.is_none(),
                     "case {}: lock extraction expected to {}, but it didn't",
                     case.name.as_ref().unwrap(),
-                    generator_input
-                        .is_ok()
-                        .then_some("fail")
-                        .unwrap_or("succeed"),
+                    if generator_input
+                        .is_ok() { "fail" } else { "succeed" },
                 );
 
                 // on failure, check if the type of failure what was the test expected
@@ -513,9 +511,9 @@ mod tests {
                 // SECOND: generate "platform.json" from the extracted config and packages list
 
                 let generated_json_package = generate_platform_json(
-                    generator_input,
+                    &generator_input,
                     &case.stack,
-                    &installer_path,
+                    installer_path,
                     &case.repositories,
                 );
 
@@ -525,10 +523,8 @@ mod tests {
                     case.expect_generator_failure.is_none(),
                     "case {}: generation expected to {}, but it didn't",
                     case.name.as_ref().unwrap(),
-                    generated_json_package
-                        .is_ok()
-                        .then_some("fail")
-                        .unwrap_or("succeed"),
+                    if generated_json_package
+                        .is_ok() { "fail" } else { "succeed" },
                 );
 
                 // on failure, check if the type of failure what was the test expected
@@ -562,10 +558,8 @@ mod tests {
                     case.expect_finalizer_failure.is_none(),
                     "case {}: finalizing expected to {}, but it didn't",
                     case.name.as_ref().unwrap(),
-                    ensure_runtime_requirement_result
-                        .is_ok()
-                        .then_some("fail")
-                        .unwrap_or("succeed"),
+                    if ensure_runtime_requirement_result
+                        .is_ok() { "fail" } else { "succeed" },
                 );
 
                 // on failure, check if the type of failure what was the test expected
@@ -650,8 +644,8 @@ mod tests {
                             }
                             expected_json_object.get(k).unwrap()
                         }
-                        k @ "repositories" => expected_json_object.get(k).unwrap(), // TODO: maybe normalize plugin repo path, maybe sort packages in "package" repo?
-                        k @ _ => expected_json_object.get(k).unwrap(),
+                        // k @ "repositories" => expected_json_object.get(k).unwrap(), // maybe normalize plugin repo path, maybe sort packages in "package" repo?
+                        k => expected_json_object.get(k).unwrap(),
                     };
 
                     let comparison = assert_json_matches_no_panic(
@@ -665,7 +659,7 @@ mod tests {
 
                     assert!(comparison.is_ok(), "{}", comparison.unwrap_err());
                 }
-            })
+            });
     }
 
     // #[test]
@@ -918,23 +912,19 @@ mod tests {
 
         // our default repo
         let default_repos = vec![Url::parse(
-            format!(
-                "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-cnb/",
-                stack,
-            )
-            .as_str(),
+            format!("https://lang-php.s3.us-east-1.amazonaws.com/dist-{stack}-cnb/",).as_str(),
         )
         .unwrap()];
         // anything user-supplied
         let byo_repos = env::var("HEROKU_PHP_PLATFORM_REPOSITORIES").unwrap_or_default();
         let all_repos =
-            platform_repository_urls_from_defaults_and_list(&default_repos, &byo_repos).unwrap();
+            platform_repository_urls_from_defaults_and_list(&default_repos, byo_repos).unwrap();
 
         let generator_input = extract_from_lock(&l).unwrap().value;
 
         let pj = serde_json::to_string_pretty(
             &generate_platform_json(
-                generator_input,
+                &generator_input,
                 &stack,
                 &PathBuf::from("../../support/installer"),
                 &all_repos,
@@ -952,11 +942,7 @@ mod tests {
 
         // our default repo
         let default_repos = vec![Url::parse(
-            format!(
-                "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-cnb/",
-                stack,
-            )
-            .as_str(),
+            format!("https://lang-php.s3.us-east-1.amazonaws.com/dist-{stack}-cnb/",).as_str(),
         )
         .unwrap()];
 
@@ -971,7 +957,7 @@ mod tests {
         };
 
         let mut pj = generate_platform_json(
-            generator_input,
+            &generator_input,
             &stack,
             &PathBuf::from("../../support/installer"),
             &default_repos,

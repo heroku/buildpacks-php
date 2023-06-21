@@ -51,7 +51,7 @@ impl ProjectLoader {
         let composer_lock_path = project_dir.join(&self.composer_lock_name);
 
         let composer_json =
-            fs::read(&composer_json_path).map_err(ProjectLoadError::ComposerJsonRead)?;
+            fs::read(composer_json_path).map_err(ProjectLoadError::ComposerJsonRead)?;
 
         let composer_json = serde_json::from_slice::<ComposerRootPackage>(&composer_json)
             .map_err(ProjectLoadError::ComposerJsonParse)?;
@@ -84,6 +84,7 @@ pub(crate) struct Project {
     composer_lock: Option<ComposerLock>,
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 pub(crate) enum ProjectLoadError {
     ComposerJsonRead(io::Error),
@@ -144,7 +145,7 @@ impl Project {
         .unwrap(&mut extractor_notices); // Warned::unwrap does not panic :)
 
         let mut ret = platform::generator::generate_platform_json(
-            generator_input,
+            &generator_input,
             stack,
             installer_path,
             platform_repositories,
@@ -187,7 +188,7 @@ impl Project {
         // TODO: check for presence of `vendor` dir
         // TODO: validate COMPOSER_AUTH?
 
-        Ok(())
+        todo!();
     }
 
     pub(crate) fn install_dependencies(
@@ -195,6 +196,6 @@ impl Project {
         context: &BuildContext<PhpBuildpack>,
         command_env: &mut Env,
     ) -> Result<(), DependencyInstallationError> {
-        crate::package_manager::composer::install_dependencies(&context, command_env)
+        crate::package_manager::composer::install_dependencies(context, command_env)
     }
 }
