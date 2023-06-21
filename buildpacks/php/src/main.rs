@@ -11,8 +11,9 @@ mod utils;
 use crate::errors::PhpBuildpackError;
 use crate::layers::bootstrap::BootstrapLayer;
 use crate::layers::composer_cache::ComposerCacheLayer;
+use crate::layers::composer_env::ComposerEnvLayer;
 use crate::layers::platform::PlatformLayer;
-
+use crate::php_project::PlatformJsonNotice;
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
 use libcnb::data::{layer_name, process_type};
@@ -20,9 +21,6 @@ use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env, Platform};
-
-use crate::layers::composer_env::ComposerEnvLayer;
-use crate::php_project::PlatformJsonNotice;
 use libherokubuildpack::log::{log_header, log_info};
 
 pub(crate) struct PhpBuildpack;

@@ -8,13 +8,12 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use serde_with::{formats::PreferOne, serde_as, skip_serializing_none, OneOrMany, TryFromInto};
 use std::collections::HashMap;
-use url::Url;
-
 use std::fmt;
 use std::marker::PhantomData;
 use std::path::PathBuf;
+use url::Url;
 
-#[derive(Clone, Debug, Deref, Serialize, PartialEq, From)]
+#[derive(Clone, Debug, Deref, From, PartialEq, Serialize)]
 pub struct PhpAssocArray<T>(HashMap<String, T>);
 impl<'de, T: Deserialize<'de>> Deserialize<'de> for PhpAssocArray<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -66,75 +65,8 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for PhpAssocArray<T> {
     }
 }
 
-/*pub(crate) enum ComposerDependencyError {
-    VersionMustBeAString,
-}
-impl Display for ComposerDependencyError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        match (self) {
-            Self::VersionMustBeAString => write!(f, "Version must be a string"),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct ComposerDependency {
-    name: String,
-    version: String,
-}
-impl TryFrom<(String, Value)> for ComposerDependency {
-    type Error = ComposerDependencyError;
-
-    fn try_from(value: (String, Value)) -> Result<Self, Self::Error> {
-        match value.1 {
-            Value::String(version) => Ok(ComposerDependency {
-                name: value.0,
-                version: version.clone(),
-            }),
-            _ => Err(ComposerDependencyError::VersionMustBeAString),
-        }
-    }
-}
-
-// used with ComposerDependency
-fn opt_map_to_opt_vec<'de, T, D>(deserializer: D) -> Result<Option<Vec<T>>, D::Error>
-where
-    T: Deserialize<'de> + TryFrom<(String, Value)>,
-    <T as TryFrom<(String, Value)>>::Error: Display,
-    D: Deserializer<'de>,
-{
-    Option::<Map<String, Value>>::deserialize(deserializer).and_then(|optmap| {
-        optmap
-            .map(|svmap| {
-                svmap
-                    .into_iter()
-                    .map(T::try_from)
-                    .collect::<Result<Vec<T>, <T as TryFrom<(String, Value)>>::Error>>()
-                    .map_err(D::Error::custom)
-            })
-            .transpose()
-    })
-}
-
-// used with ComposerDependency
-fn map_to_vec<'de, T, D>(deserializer: D) -> Result<Vec<T>, D::Error>
-where
-    T: Deserialize<'de> + TryFrom<(String, Value)>,
-    <T as TryFrom<(String, Value)>>::Error: Display,
-    D: Deserializer<'de>,
-{
-    <Map<String, Value>>::deserialize(deserializer).and_then(|svmap| {
-        svmap
-            .into_iter()
-            .map(T::try_from)
-            .collect::<Result<Vec<T>, <T as TryFrom<(String, Value)>>::Error>>()
-            .map_err(D::Error::custom)
-    })
-}
-*/
-
 #[skip_serializing_none]
-#[derive(Clone, Serialize, Deserialize, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerRootPackage {
     pub name: Option<String>,
@@ -147,7 +79,7 @@ pub struct ComposerRootPackage {
 }
 
 #[skip_serializing_none]
-#[derive(Clone, Serialize, Deserialize, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerPackage {
     pub name: String,
@@ -158,7 +90,7 @@ pub struct ComposerPackage {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Clone, Serialize, Deserialize, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerBasePackage {
     #[serde(rename = "type")]
@@ -199,7 +131,7 @@ pub struct ComposerBasePackage {
 }
 
 #[skip_serializing_none]
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ComposerConfig {
     #[serde(rename = "cache-files-ttl")]
     pub cache_files_ttl: Option<u32>,
@@ -209,13 +141,13 @@ pub struct ComposerConfig {
     pub allow_plugins: Option<ComposerConfigAllowPlugins>,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum ComposerConfigAllowPlugins {
     Boolean(bool),
     List(HashMap<String, bool>),
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, Clone)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ComposerStability {
     Dev = 20,
@@ -283,7 +215,7 @@ impl TryFrom<PhpAssocArray<u8>> for PhpAssocArray<ComposerStability> {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum ComposerPackageAbandoned {
     Bool(bool),
@@ -297,7 +229,7 @@ impl Default for ComposerPackageAbandoned {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Clone, Serialize, Deserialize, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct ComposerPackageAuthor {
     pub name: String,
     pub email: Option<String>, // TODO: could be EmailAddress, but Composer only warns
@@ -307,7 +239,7 @@ pub struct ComposerPackageAuthor {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerPackageAutoload {
     // map values for the next two can be string or list of strings
@@ -322,7 +254,7 @@ pub struct ComposerPackageAutoload {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Clone, Serialize, Deserialize, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct ComposerPackageArchive {
     pub name: Option<String>,
     pub exclude: Option<Vec<String>>,
@@ -330,7 +262,7 @@ pub struct ComposerPackageArchive {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ComposerPackageDist {
     #[serde(rename = "type")]
     pub kind: String,
@@ -342,7 +274,7 @@ pub struct ComposerPackageDist {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ComposerPackageSource {
     #[serde(rename = "type")]
     pub kind: String,
@@ -353,20 +285,20 @@ pub struct ComposerPackageSource {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ComposerMirror {
     pub url: Url,
     pub preferred: Option<bool>,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ComposerPackageFunding {
     #[serde(rename = "type")]
     pub kind: String, // default "other"?
     pub url: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
 #[serde(try_from = "String")]
 pub enum ComposerPackageSupportType {
@@ -409,7 +341,7 @@ impl TryFrom<String> for ComposerPackageSupportType {
 // The solution is to rely on monostate's MustBe!
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum ComposerRepository {
     #[serde(rename_all = "kebab-case")]
@@ -503,7 +435,7 @@ impl FromIterator<ComposerPackage> for ComposerRepository {
 }
 
 #[skip_serializing_none]
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ComposerRepositoryFilters {
     Only(Vec<String>),
@@ -511,7 +443,7 @@ pub enum ComposerRepositoryFilters {
 }
 
 #[serde_as]
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerLock {
     pub content_hash: String, // since 1.0: https://github.com/composer/composer/pull/4140
@@ -554,7 +486,7 @@ mod tests {
 
     use serde_test::{assert_de_tokens, assert_de_tokens_error, Token};
 
-    #[derive(Debug, PartialEq, Deserialize, Serialize, Deref)]
+    #[derive(Debug, Deref, Deserialize, PartialEq, Serialize)]
     #[serde(transparent)]
     struct ArrayIfEmpty(PhpAssocArray<String>);
 

@@ -1,8 +1,3 @@
-use std::collections::HashMap;
-use std::ops::Not;
-use std::path::Path;
-use std::string::ToString;
-
 use crate::package_manager;
 use crate::utils::regex;
 use chrono::offset::Utc;
@@ -12,6 +7,10 @@ use composer::{
 };
 use monostate::MustBe;
 use serde_json::{json, Value};
+use std::collections::HashMap;
+use std::ops::Not;
+use std::path::Path;
+use std::string::ToString;
 use url::Url;
 
 /// Adds the `heroku-sys/` package name prefix to the given input string, if not already present.
@@ -362,19 +361,17 @@ pub(crate) fn generate_platform_json(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use assert_json_diff::{assert_json_matches_no_panic, CompareMode, Config};
-    use std::collections::HashSet;
-    use std::path::PathBuf;
-    use std::{env, fs};
 
-    use crate::package_manager::composer::{
-        ensure_runtime_requirement, extract_from_lock, PlatformExtractorNotice,
-    };
-    use crate::platform::platform_repository_urls_from_defaults_and_list;
+    use crate::package_manager::composer::PlatformExtractorNotice;
+
+    use assert_json_diff::{assert_json_matches_no_panic, CompareMode, Config};
     use figment::providers::{Format, Serialized, Toml};
     use figment::{value::magic::RelativePathBuf, Figment};
     use serde::{Deserialize, Serialize};
     use serde_json::Map;
+    use std::collections::HashSet;
+    use std::path::PathBuf;
+    use std::{env, fs};
 
     #[derive(Deserialize, Serialize)]
     struct ComposerLockTestCaseConfig {
@@ -459,7 +456,7 @@ mod tests {
 
                 // FIRST: from the lock file, extract a generator config and packages list
 
-                let generator_input = extract_from_lock(&lock);
+                let generator_input = package_manager::composer::extract_from_lock(&lock);
 
                 // first check: was this even supposed to succeed or fail?
                 assert_eq!(
@@ -550,7 +547,7 @@ mod tests {
                 };
 
                 // THIRD: post-process the generated result to ensure/validate runtime requirements etc
-                let ensure_runtime_requirement_result = ensure_runtime_requirement(&mut generated_json_package);
+                let ensure_runtime_requirement_result = package_manager::composer::ensure_runtime_requirement(&mut generated_json_package);
 
                 // first check: was this even supposed to succeed or fail?
                 assert_eq!(
@@ -917,10 +914,15 @@ mod tests {
         .unwrap()];
         // anything user-supplied
         let byo_repos = env::var("HEROKU_PHP_PLATFORM_REPOSITORIES").unwrap_or_default();
-        let all_repos =
-            platform_repository_urls_from_defaults_and_list(&default_repos, byo_repos).unwrap();
+        let all_repos = crate::platform::platform_repository_urls_from_defaults_and_list(
+            &default_repos,
+            byo_repos,
+        )
+        .unwrap();
 
-        let generator_input = extract_from_lock(&l).unwrap().value;
+        let generator_input = package_manager::composer::extract_from_lock(&l)
+            .unwrap()
+            .value;
 
         let pj = serde_json::to_string_pretty(
             &generate_platform_json(

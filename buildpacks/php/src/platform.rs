@@ -1,15 +1,17 @@
+pub(crate) mod generator;
+
 use crate::PhpBuildpack;
+use composer::ComposerRootPackage;
 use libcnb::build::BuildContext;
 use libcnb::Platform;
 use std::str::FromStr;
 use url::Url;
 
-pub(crate) mod generator;
-
 enum UrlListEntry {
     Reset,
     Url(Url),
 }
+
 impl FromStr for UrlListEntry {
     type Err = url::ParseError;
 

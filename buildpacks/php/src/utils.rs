@@ -14,6 +14,13 @@ macro_rules! regex {
 }
 pub(crate) use regex;
 
+#[derive(Debug)]
+pub(crate) enum DownloadUnpackError {
+    Io(io::Error),
+    // Boxed to prevent `large_enum_variant` Clippy errors since `ureq::Error` is massive.
+    Request(Box<ureq::Error>), // TODO: does this still need boxing?
+}
+
 pub(crate) fn download_and_unpack_gzip(
     uri: &str,
     destination: &Path,
@@ -29,10 +36,9 @@ pub(crate) fn download_and_unpack_gzip(
 }
 
 #[derive(Debug)]
-pub(crate) enum DownloadUnpackError {
+pub(crate) enum CommandError {
     Io(io::Error),
-    // Boxed to prevent `large_enum_variant` Clippy errors since `ureq::Error` is massive.
-    Request(Box<ureq::Error>), // TODO: does this still need boxing?
+    NonZeroExitStatus(ExitStatus),
 }
 
 pub(crate) fn run_command(command: &mut Command) -> Result<(), CommandError> {
@@ -46,10 +52,4 @@ pub(crate) fn run_command(command: &mut Command) -> Result<(), CommandError> {
                 Err(CommandError::NonZeroExitStatus(exit_status))
             }
         })
-}
-
-#[derive(Debug)]
-pub(crate) enum CommandError {
-    Io(io::Error),
-    NonZeroExitStatus(ExitStatus),
 }

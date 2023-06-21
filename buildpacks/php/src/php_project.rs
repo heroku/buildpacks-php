@@ -76,14 +76,6 @@ impl ProjectLoader {
     }
 }
 
-#[derive(Default)]
-pub(crate) struct Project {
-    composer_json_name: String,
-    composer_lock_name: String,
-    composer_json: ComposerRootPackage,
-    composer_lock: Option<ComposerLock>,
-}
-
 #[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 pub(crate) enum ProjectLoadError {
@@ -104,6 +96,14 @@ pub(crate) enum PlatformJsonError {
 pub(crate) enum PlatformJsonNotice {
     Extractor(PlatformExtractorNotice),
     Finalizer(PlatformFinalizerNotice),
+}
+
+#[derive(Default)]
+pub(crate) struct Project {
+    composer_json_name: String,
+    composer_lock_name: String,
+    composer_json: ComposerRootPackage,
+    composer_lock: Option<ComposerLock>,
 }
 
 impl Project {
