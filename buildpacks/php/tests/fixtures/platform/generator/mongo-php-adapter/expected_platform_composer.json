@@ -13,11 +13,8 @@
     },
     "require": {
         "heroku/installer-plugin": "*",
-        "heroku-sys\/apache": "^2.4.10",
-        "heroku-sys\/nginx": "^1.8.0",
         "heroku-sys\/composer": "*",
         "heroku-sys\/composer-plugin-api": "^1",
-        "heroku/heroku-buildpack-php": "dev-master",
         "alcaeus\/mongo-php-adapter": "1.2.1",
         "jean85\/pretty-package-versions": "2.0.4",
         "mongodb\/mongodb": "1.9.0",
@@ -32,16 +29,6 @@
             "url": "..\/..\/support\/installer",
             "options": {
                 "symlink": false
-            }
-        },
-        {
-            "type": "path",
-            "url": "../../support/installer/../..",
-            "options": {
-                "symlink": false,
-                "versions": {
-                    "heroku/heroku-buildpack-php": "dev-master"
-                }
             }
         },
         {

@@ -8,7 +8,7 @@ use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libcnb::{Buildpack, Env};
-use libherokubuildpack::log::{log_header, log_info};
+use libherokubuildpack::log::log_info;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fs::File;
@@ -43,8 +43,6 @@ impl Layer for PlatformLayer<'_> {
         context: &BuildContext<Self::Buildpack>,
         layer_path: &Path,
     ) -> Result<LayerResult<Self::Metadata>, <Self::Buildpack as Buildpack>::Error> {
-        log_header("Installing platform packages");
-
         let platform_json = File::create(layer_path.join("composer.json"))
             .map_err(PlatformLayerError::PlatformJsonCreate)?;
         serde_json::to_writer_pretty(platform_json, &self.platform_json)

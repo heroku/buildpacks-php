@@ -3,7 +3,7 @@ use crate::layers::composer_env::ComposerEnvLayerError;
 use crate::layers::platform::PlatformLayerError;
 use crate::package_manager::composer::DependencyInstallationError;
 use crate::php_project::{PlatformJsonError, ProjectLoadError};
-use crate::platform::PlatformRepositoryUrlError;
+use crate::platform::{PlatformRepositoryUrlError, WebserversJsonError};
 
 #[derive(Debug)]
 pub(crate) enum PhpBuildpackError {
@@ -12,6 +12,7 @@ pub(crate) enum PhpBuildpackError {
     PlatformLayer(PlatformLayerError),
     ComposerEnvLayer(ComposerEnvLayerError),
     PlatformJson(PlatformJsonError),
+    WebserversJson(WebserversJsonError),
     PlatformRepositoryUrl(PlatformRepositoryUrlError),
     DependencyInstallation(DependencyInstallationError),
 }

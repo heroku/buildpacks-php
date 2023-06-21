@@ -12,8 +12,9 @@ use std::path::Path;
 
 const PHP_VERSION: &str = "8.1.12";
 const COMPOSER_VERSION: &str = "2.4.4";
-const INSTALLER_VERSION: &str = "heads/cnb-installer";
-pub(crate) const INSTALLER_SUBDIR: &str = "heroku-buildpack-php-cnb-installer";
+const CLASSIC_BUILDPACK_VERSION: &str = "heads/cnb-installer";
+pub(crate) const CLASSIC_BUILDPACK_SUBDIR: &str = "heroku-buildpack-php-cnb-installer";
+pub(crate) const CLASSIC_BUILDPACK_INSTALLER_SUBDIR: &str = "support/installer";
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) struct BootstrapLayerMetadata {
@@ -53,7 +54,7 @@ impl Layer for BootstrapLayer {
             context.stack_id, COMPOSER_VERSION
         );
         let installer_archive_url = format!(
-            "https://github.com/heroku/heroku-buildpack-php/archive/refs/{INSTALLER_VERSION}.tar.gz"
+            "https://github.com/heroku/heroku-buildpack-php/archive/refs/{CLASSIC_BUILDPACK_VERSION}.tar.gz"
         );
 
         utils::download_and_unpack_gzip(&php_min_archive_url, layer_path)
@@ -95,7 +96,7 @@ fn generate_layer_metadata(stack_id: &StackId) -> BootstrapLayerMetadata {
         stack: stack_id.clone(),
         php_version: PHP_VERSION.to_string(),
         composer_version: COMPOSER_VERSION.to_string(),
-        installer_version: INSTALLER_VERSION.to_string(),
+        installer_version: CLASSIC_BUILDPACK_VERSION.to_string(),
     }
 }
 
