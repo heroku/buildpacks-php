@@ -1,14 +1,13 @@
 use crate::platform::generator;
 use crate::platform::generator::PlatformJsonGeneratorInput;
-use crate::utils::{regex, CommandError};
-use crate::{utils, PhpBuildpack};
+use crate::utils::{self, regex, CommandError};
 use composer::{
     ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepository, ComposerRootPackage,
 };
-use libcnb::build::BuildContext;
 use libcnb::Env;
 use std::collections::HashMap;
 use std::ops::Not;
+use std::path::PathBuf;
 use std::process::Command;
 use warned::Warned;
 
@@ -18,12 +17,12 @@ pub(crate) enum DependencyInstallationError {
 }
 
 pub(crate) fn install_dependencies(
-    context: &BuildContext<PhpBuildpack>,
+    dir: &PathBuf,
     command_env: &mut Env,
 ) -> Result<(), DependencyInstallationError> {
     utils::run_command(
         Command::new("composer")
-            .current_dir(&context.app_dir)
+            .current_dir(dir)
             .envs(&*command_env)
             .args([
                 "install",

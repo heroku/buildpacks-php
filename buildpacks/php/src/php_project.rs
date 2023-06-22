@@ -2,13 +2,12 @@ use crate::package_manager::composer::{
     DependencyInstallationError, PlatformExtractorError, PlatformExtractorNotice,
     PlatformFinalizerError, PlatformFinalizerNotice,
 };
+use crate::platform;
 use crate::platform::generator::{PlatformGeneratorError, PlatformJsonGeneratorInput};
-use crate::{platform, PhpBuildpack};
 use ::composer::{ComposerLock, ComposerRootPackage};
-use libcnb::build::BuildContext;
 use libcnb::Env;
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{fs, io};
 use url::Url;
 use warned::Warned;
@@ -191,9 +190,9 @@ impl Project {
 
     pub(crate) fn install_dependencies(
         &self,
-        context: &BuildContext<PhpBuildpack>,
+        dir: &PathBuf,
         command_env: &mut Env,
     ) -> Result<(), DependencyInstallationError> {
-        crate::package_manager::composer::install_dependencies(context, command_env)
+        crate::package_manager::composer::install_dependencies(dir, command_env)
     }
 }
