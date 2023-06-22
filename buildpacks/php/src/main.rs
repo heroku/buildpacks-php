@@ -50,13 +50,6 @@ impl Buildpack for PhpBuildpack {
             .path
             .join(layers::bootstrap::CLASSIC_BUILDPACK_SUBDIR)
             .join(layers::bootstrap::CLASSIC_BUILDPACK_INSTALLER_SUBDIR);
-        // dbg!(&bootstrap_layer.env);
-
-        let mut platform_env = Env::from_current();
-        // dbg!(&platform_env);
-        // add this to our env
-        platform_env = bootstrap_layer.env.apply(Scope::Build, &platform_env);
-        // dbg!(&platform_env);
 
         log_header("Preparing platform packages installation");
 
@@ -77,9 +70,13 @@ impl Buildpack for PhpBuildpack {
 
         let platform_cache_layer =
             context.handle_layer(layer_name!("platform_cache"), ComposerCacheLayer)?;
-        // dbg!(&platform_cache_layer.env);
+
+        // env to execute bootstrapping steps - from current, so `git` is on $PATH etc
+        let mut platform_env = Env::from_current();
+        // plus bootstrapped PHP/Composer/installer...
+        platform_env = bootstrap_layer.env.apply(Scope::Build, &platform_env);
+        // ... and a cache
         platform_env = platform_cache_layer.env.apply(Scope::Build, &platform_env);
-        // dbg!(&platform_env);
 
         log_header("Installing platform packages");
 
@@ -111,19 +108,15 @@ impl Buildpack for PhpBuildpack {
             },
         )?;
 
-        // time for a fresh env. First, from current, so `git` is on $PATH etc
-        let mut command_env = Env::from_current();
-        // dbg!(&command_env);
-        // then we add anything from our successful platform install
-        // dbg!(&platform_layer.env);
-        command_env = platform_layer.env.apply(Scope::Build, &command_env);
-        // dbg!(&command_env);
-
         let composer_cache_layer =
             context.handle_layer(layer_name!("composer_cache"), ComposerCacheLayer)?;
-        // dbg!(&composer_cache_layer.env);
+
+        // fresh env for following command invocations - from current, so `git` is on $PATH etc
+        let mut command_env = Env::from_current();
+        // then we add anything from our successful platform install - PHP, Composer, etc
+        command_env = platform_layer.env.apply(Scope::Build, &command_env);
+        // ... and composer caching env vars
         command_env = composer_cache_layer.env.apply(Scope::Build, &command_env);
-        // dbg!(&command_env);
 
         log_header("Installing dependencies");
 
