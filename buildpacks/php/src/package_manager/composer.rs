@@ -143,7 +143,7 @@ pub(crate) fn package_with_only_platform_links(
         name: package.name.clone(),
         version: package.version.clone(),
         package: ComposerBasePackage {
-            kind: Some("metapackage".into()),
+            kind: Some("metapackage".to_string()),
             require,
             provide,
             conflict,
