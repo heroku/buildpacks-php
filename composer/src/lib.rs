@@ -403,15 +403,15 @@ pub enum ComposerRepository {
     Disabled(HashMap<String, MustBe!(false)>),
 }
 impl ComposerRepository {
-    pub fn from_path_with_options<O>(path: impl Into<PathBuf>, options: O) -> Self
-    where
-        O: IntoIterator<Item = (String, Value)>,
-    {
+    pub fn from_path_with_options(
+        path: impl Into<PathBuf>,
+        options: Option<Map<String, Value>>,
+    ) -> Self {
         Self::Path {
             #[allow(clippy::default_trait_access)]
             kind: Default::default(),
             url: path.into(),
-            options: Some(Map::from_iter(options)),
+            options,
             canonical: None,
             filters: None,
         }
@@ -465,7 +465,7 @@ pub struct ComposerLock {
 impl ComposerLock {
     pub fn new(plugin_api_version: Option<String>) -> Self {
         Self {
-            content_hash: String::new(),
+            content_hash: Default::default(),
             packages: vec![],
             packages_dev: vec![],
             platform: PhpAssocArray(Default::default()),
@@ -493,9 +493,9 @@ mod tests {
     #[test]
     fn test_php_assoc_array_populated() {
         assert_de_tokens(
-            &ArrayIfEmpty(PhpAssocArray(HashMap::<String, String>::from([(
-                "foo".into(),
-                "bar".into(),
+            &ArrayIfEmpty(PhpAssocArray(HashMap::from([(
+                "foo".to_string(),
+                "bar".to_string(),
             )]))),
             &[
                 Token::Map { len: Some(1) },

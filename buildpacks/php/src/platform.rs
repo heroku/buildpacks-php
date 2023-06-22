@@ -5,6 +5,7 @@ use crate::PhpBuildpack;
 use composer::ComposerRootPackage;
 use libcnb::build::BuildContext;
 use libcnb::Platform;
+use serde_json::json;
 use std::collections::HashMap;
 use std::path::Path;
 use std::str::FromStr;
@@ -52,7 +53,7 @@ pub(crate) fn platform_repository_urls_from_default_and_build_context(
         .platform
         .env()
         .get_string_lossy("HEROKU_PHP_PLATFORM_REPOSITORIES")
-        .unwrap_or(String::new());
+        .unwrap_or_default();
 
     platform_repository_urls_from_defaults_and_list(&default_platform_repositories, user_repos)
     // TODO: message if default disabled?
@@ -122,13 +123,12 @@ pub(crate) fn webservers_json(
         // path repo for the above heroku/heroku-buildpack-php package
         additional_repositories: Some(vec![composer::ComposerRepository::from_path_with_options(
             classic_buildpack_path,
-            [
-                ("symlink".into(), serde_json::Value::Bool(false)),
-                (
-                    "versions".to_string(),
-                    serde_json::json!({"heroku/heroku-buildpack-php": "dev-bundled"}),
-                ),
-            ],
+            json!({
+                "symlink": false,
+                "versions": {"heroku/heroku-buildpack-php": "dev-bundled"}
+            })
+            .as_object()
+            .cloned(),
         )]),
         ..Default::default()
     };

@@ -30,7 +30,7 @@ impl ProjectLoader {
         // the file name is customizable
         let composer_json_name = env
             .get_string_lossy("COMPOSER")
-            .unwrap_or("composer.json".into());
+            .unwrap_or("composer.json".to_string());
         // the lock name is the value of COMPOSER, with ".json" (if present) removed, then ".lock" added
         let composer_lock_name = format!(
             "{}.lock",

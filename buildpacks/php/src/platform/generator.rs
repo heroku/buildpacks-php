@@ -5,8 +5,7 @@ use composer::{
     ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepository,
     ComposerRepositoryFilters, ComposerRootPackage, ComposerStability,
 };
-use monostate::MustBe;
-use serde_json::{json, Value};
+use serde_json::json;
 use std::collections::HashMap;
 use std::path::Path;
 use std::string::ToString;
@@ -162,14 +161,14 @@ pub(crate) fn generate_platform_json(
         PlatformGeneratorError::InvalidStackIdentifier(stack.to_string()),
     )?;
     let stack_provide = (
-        ensure_heroku_sys_prefix(String::from(
+        ensure_heroku_sys_prefix(
             stack_captures
                 .get(1)
                 .ok_or(PlatformGeneratorError::InvalidStackIdentifier(
                     stack.to_string(),
                 ))?
                 .as_str(),
-        )),
+        ),
         format!(
             "{}.{}",
             stack_captures.get(2).map_or("1", |m| m.as_str()),
@@ -178,22 +177,20 @@ pub(crate) fn generate_platform_json(
     );
 
     // some fundamental stuff we want installed
-    let mut require: HashMap<String, String> = [
+    let mut require = HashMap::from([
         // our installer plugin - individual platform packages are also supposed to require it, but hey
-        ("heroku/installer-plugin", "*"),
-    ]
-    .iter()
-    .map(|v| (v.0.into(), v.1.into()))
-    .collect();
+        ("heroku/installer-plugin".to_string(), "*".to_string()),
+    ]);
     let mut require_dev: HashMap<String, String> = HashMap::new();
 
     // disable packagist.org (we want to userland package installs here), and add the installer plugin
     let mut repositories = vec![
-        ComposerRepository::Disabled(HashMap::from([("packagist.org".into(), MustBe!(false))])),
+        serde_json::from_value(json!({"packagist.org": false}))
+            .expect("Internal error: repository construction via serde_json"),
         // our heroku/installer-plugin
         ComposerRepository::from_path_with_options(
             installer_path,
-            [("symlink".into(), Value::Bool(false))],
+            json!({"symlink": false}).as_object().cloned(),
         ),
     ];
     // additional repositories come next; this could be e.g. path or package repos for packages in .additional_require
@@ -319,7 +316,7 @@ mod tests {
     use figment::providers::{Format, Serialized, Toml};
     use figment::{value::magic::RelativePathBuf, Figment};
     use serde::{Deserialize, Serialize};
-    use serde_json::Map;
+    use serde_json::{Map, Value};
     use std::collections::HashSet;
     use std::path::PathBuf;
     use std::{env, fs};
