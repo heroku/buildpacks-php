@@ -75,14 +75,14 @@ pub(crate) fn platform_repository_urls_from_defaults_and_list(
         .map(Ok)
         .chain(extra_urls_splits.into_iter().map(|v| v.parse()))
         .collect::<Result<Vec<_>, _>>()
-        .map(|repos| normalize_url_list(&repos).into_iter().cloned().collect())
+        .map(|repos| normalize_url_list(&repos).cloned().collect())
         .map_err(PlatformRepositoryUrlError::Parse)
 }
 
 /// For a given [`UrlListEntry`] slice, returns a [`Vec<&Url>`] containing only the inner [`Url`]
 /// values of all [`UrlListEntry::Url`] variants that follow the last [`UrlListEntry::Reset`] in the
 /// slice (or of all [`UrlListEntry::Url`] variants if no [`UrlListEntry::Reset`] is present).
-fn normalize_url_list(urls: &[UrlListEntry]) -> Vec<&Url> {
+fn normalize_url_list(urls: &[UrlListEntry]) -> impl Iterator<Item = &Url> {
     // we now have a list of URLs
     // some of these entries might be UrlListEntry::Reset, used to re-set anything to their left (i.e. typically the default repo)
     // we want all entries after the last UrlListEntry::Reset
@@ -96,7 +96,6 @@ fn normalize_url_list(urls: &[UrlListEntry]) -> Vec<&Url> {
                 "If you can see this message, you broke the rsplit predicate a few lines up."
             ),
         })
-        .collect()
 }
 
 #[derive(Debug)]
