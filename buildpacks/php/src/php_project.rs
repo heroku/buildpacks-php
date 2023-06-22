@@ -133,8 +133,6 @@ impl Project {
             Some(l) => crate::package_manager::composer::extract_from_lock(l)
                 .map_err(PlatformJsonError::Extractor)?,
             None => Warned::from(PlatformJsonGeneratorInput {
-                input_name: "auto/generated".to_string(),
-                input_revision: "main".to_string(),
                 additional_require: Some(HashMap::from([(
                     "heroku-sys/composer".to_string(),
                     "*".to_string(),

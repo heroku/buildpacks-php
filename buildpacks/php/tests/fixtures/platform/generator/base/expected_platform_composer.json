@@ -15,7 +15,6 @@
         "heroku/installer-plugin": "*",
         "heroku-sys\/composer": "*",
         "heroku-sys\/composer-plugin-api": "^2",
-        "composer.json\/composer.lock": "dev-fc385a27e5169a169062c230878645d1",
         "heroku-sys\/php": "7.4.*",
         "heroku-sys\/ext-gmp": "*",
         "heroku-sys\/ext-intl": "*",
@@ -40,25 +39,6 @@
         {
             "type": "composer",
             "url": "https:\/\/lang-php.s3.us-east-1.amazonaws.com\/dist-heroku-20-cnb\/packages.json"
-        },
-        {
-            "type": "package",
-            "package": {
-                "type": "metapackage",
-                "name": "composer.json\/composer.lock",
-                "version": "dev-fc385a27e5169a169062c230878645d1",
-                "require": {
-                    "heroku-sys\/php": "7.4.*",
-                    "heroku-sys\/ext-gmp": "*",
-                    "heroku-sys\/ext-intl": "*",
-                    "heroku-sys\/ext-mbstring": "*",
-                    "heroku-sys\/ext-redis": "*",
-                    "heroku-sys\/ext-sqlite3": "*",
-                    "heroku-sys\/ext-ldap": "*",
-                    "heroku-sys\/ext-imap": "*",
-                    "heroku-sys\/ext-blackfire": "*"
-                }
-            }
         }
     ]
 }

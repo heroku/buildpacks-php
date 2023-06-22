@@ -8,7 +8,6 @@ use composer::{
 use monostate::MustBe;
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use std::ops::Not;
 use std::path::Path;
 use std::string::ToString;
 use url::Url;
@@ -102,10 +101,6 @@ pub(crate) enum PlatformGeneratorError {
 /// Input data describing the desired packages and stabilities for [`generate_platform_json`]
 #[derive(Default, Debug)]
 pub(crate) struct PlatformJsonGeneratorInput {
-    /// A description for the source of this information, e.g. "composer.json/composer.lock", or "auto/generated"
-    pub input_name: String,
-    /// A revision or version identifier for the input, e.g. a file hash, datetime string, "0", etc
-    pub input_revision: String,
     /// The desired [`ComposerStability`] for the root package's `minimum-stability` field
     pub minimum_stability: ComposerStability,
     /// The desired value for the root package's `prefer-stable` field
@@ -128,8 +123,6 @@ pub(crate) struct PlatformJsonGeneratorInput {
 impl From<&ComposerLock> for PlatformJsonGeneratorInput {
     fn from(lock: &ComposerLock) -> Self {
         Self {
-            input_name: "composer.json/composer.lock".to_string(),
-            input_revision: lock.content_hash.clone(),
             minimum_stability: lock.minimum_stability.clone(),
             prefer_stable: lock.prefer_stable,
             platform_require: (*lock.platform).clone(),
@@ -203,6 +196,7 @@ pub(crate) fn generate_platform_json(
             [("symlink".into(), Value::Bool(false))],
         ),
     ];
+    // additional repositories come next; this could be e.g. path or package repos for packages in .additional_require
     repositories.append(
         input
             .additional_repositories
@@ -230,23 +224,15 @@ pub(crate) fn generate_platform_json(
             .as_mut(),
     );
 
-    // we take all requirements from platform(-dev) and move them into a special metapackage (named e.g. "composer.json/composer.lock")
-    // ^ this package gets those platform requirements as its "require"s, with a "heroku-sys/" prefix, of course
-    // ^ this is done because if the root package requires an extension, and there is also a dependency on a polyfill for it,
-    //   e.g. "heroku-sys/ext-mbstring" and "symfony/polyfill-mbstring" (which declares "ext-mbstring" as "provide"d),
-    //   there would be no way to know that anything required "ext-mbstring", since the solver optimizes this away,
-    //   and no install event is fired for the root package itself
-    // ^ we do however need to know this, since we have to attempt an install of the "real", "native" extension later
-    // > the solution is to wrap the platform requirements into a metapackage, for which an install event fires, where we can extract these requirements
-    //
-    // we also copy all requirements from platform(-dev) into the list of root requirements
-    // ^ we do that because otherwise, the original require of the package from the root would only be in that "composer.json/composer.lock" package mentioned earlier,
-    //   but stability flags are ignored in requirements that are not in the root package's require section - think "php: 8.4.0@RC" in the root require section
+    // we take all requirements from platform(-dev) and carry them over (with a "heroku-sys/" prefix) into our root require(-dev)
+    // ^ these also already contain the correct original stability flags, if any (think "php: 8.4.0@RC"), in their version strings
+    // ^ convenient for us, because stability flags are ignored in requirements outside the root package's require section
     // ^ this is done intentionally by Composer to prevent dependencies from pushing unstable stuff onto users without explicit opt-in
     //
-    // for all packages(-dev), create a type=metapackage for the package repo
+    // for all packages(-dev), i.e. the userland packages solved into the lock file, create a type=metapackage
     // ^ with name and version copied
-    // ^ with require, replace, provide and conflict entries that reference a platform package rewritten with heroku-sys/ prefix
+    // ^ with require, replace, provide and conflict entries that reference a platform package, again with a "heroku-sys/" prefix
+    // ^ these metapackages are inserted together as a "package" type repository, and a require(-dev) entry is written for each
     //
     // regardless of dev install or not, we process all platform-dev and packages-dev packages so the caller can tell later if there is no version requirement in all of require, but in require-dev
     // ^ this might be desired to ensure folks get the same PHP version etc as locally/CI
@@ -255,59 +241,42 @@ pub(crate) fn generate_platform_json(
     //   (--no-dev only affects dependency installation, not overall dependency resolution)
     //   (and people frequently have e.g. ext-xdebug as a dev requirement)
 
-    for (is_dev, platform, packages, requires) in [
+    for (platform, packages, requires) in [
+        (&input.platform_require, &input.packages, &mut require),
         (
-            false,
-            &input.platform_require,
-            &input.packages,
-            &mut require,
-        ),
-        (
-            true,
             &input.platform_require_dev,
             &input.packages_dev,
             &mut require_dev,
         ),
     ] {
-        let mut metapackages = Vec::new();
-
-        // first, for the root platform requires from "platform"/"platform-dev", make a special package
-        // TODO: this can go if we manage to change the installer plugin to process the root package's requirements
-        if let Some(root_package) = package_manager::composer::extract_root_requirements(
-            platform,
-            format!(
-                "{}{}",
-                &input.input_name,
-                is_dev.then_some("-require-dev").unwrap_or_default() // different names for require and require-dev
-            ),
-            format!("dev-{}", &input.input_revision),
-        ) {
-            // we verbatim copy over the requirements from the root
-            // this will take care of any stability flags for us without having to process them
-            // it also makes it easier for code later to figure out if there was a requirement for something in the root or not
-            // note:
-            // key "require" on the package is correct here regardless of whether we're handling "platform" or "platform-dev":
-            // the package we're creating here gets added to require or require-dev, and we're adding the packages to "require" or "require-dev",
-            // but the actual list taken from "platform" or "platform-dev" is always put into "require" by extract_root_requirements() since we do not want Composer to ignore it
-            requires.extend(root_package.package.require.clone().unwrap_or_default());
-            // add this package to the list for the metapackage repository we're building
-            metapackages.push(root_package);
-        }
-
-        // then, build packages for all regular requires
-        metapackages.extend(
-            packages
-                .iter()
-                .filter_map(package_manager::composer::package_with_only_platform_links),
+        // first, the root platform requirements from "platform"/"platform-dev" are simply carried over
+        requires.extend(
+            platform
+                .clone()
+                .into_iter()
+                // each requirement name gets the expected "heroku-sys/" prefix
+                .map(|(name, version)| (ensure_heroku_sys_prefix(name), version)),
         );
 
-        if metapackages.is_empty().not() {
-            for package in &metapackages {
-                // now insert a dependency into the root for each require
-                requires.insert(package.name.clone(), package.version.clone());
-            }
-            // put all packages into a ComposerPackageRepository
-            repositories.push(metapackages.into());
+        // then, we build metapackages that "mimic" all regular "packages"/"packages-dev" entries...
+        let mut metapackages = packages
+            .iter()
+            // ... but with only their platform ("php", "ext-foobar", ...) links (require/provide/conflict/replace) included (and prefixed with "heroku-sys/")
+            .filter_map(package_manager::composer::package_with_only_platform_links)
+            .peekable();
+
+        // if that even resulted in any packages (we also filtered out any packages without any platform links)
+        if metapackages.peek().is_some() {
+            // put all packages into a ComposerPackageRepository...
+            repositories.push(
+                metapackages
+                    // ... and insert a require for each of them
+                    .map(|package| {
+                        requires.insert(package.name.clone(), package.version.clone());
+                        package
+                    })
+                    .collect(),
+            );
         }
     }
 
@@ -931,8 +900,6 @@ mod tests {
         .unwrap()];
 
         let generator_input = PlatformJsonGeneratorInput {
-            input_name: "foo".to_string(),
-            input_revision: "foo".to_string(),
             additional_require: Some(HashMap::from([
                 ("heroku-sys/composer".to_string(), "*".to_string()),
                 ("heroku-sys/php".to_string(), "*".to_string()),

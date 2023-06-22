@@ -219,25 +219,6 @@ pub(crate) fn requires_for_composer_itself(
     Ok(Warned::new(requires, notices))
 }
 
-/// From the given package links (typically from the `platform` field on a [`ComposerLock`]), generates a new package with the given name and version and those package links as requirements.
-pub(crate) fn extract_root_requirements(
-    platform: &HashMap<String, String>,
-    generated_package_name: String,
-    generated_package_version: String,
-) -> Option<ComposerPackage> {
-    let root_platform_requires = extract_platform_links_with_heroku_sys(platform)?;
-
-    Some(ComposerPackage {
-        name: generated_package_name,
-        version: generated_package_version,
-        package: ComposerBasePackage {
-            kind: Some("metapackage".into()),
-            require: Some(root_platform_requires),
-            ..Default::default()
-        },
-    })
-}
-
 /// From the given [`ComposerLock`], extracts all relevant fields into a [`PlatformJsonGeneratorInput`].
 ///
 /// The returned [`Warned`] struct contains the generated input struct, and a list of [`PlatformExtractorNotice`s](PlatformExtractorNotice) encountered during processing.
