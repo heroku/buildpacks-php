@@ -15,7 +15,6 @@
         "heroku/installer-plugin": "*",
         "heroku-sys\/composer": "*",
         "heroku-sys\/composer-plugin-api": "^1",
-        "composer.json/composer.lock": "dev-a90ecf736d0c5431a479f94e52129fcf",
         "heroku-sys\/php": "7.4.*"
     },
     "repositories": [
@@ -41,17 +40,6 @@
         {
             "type": "composer",
             "url": "https:\/\/lang-php.s3.us-east-1.amazonaws.com\/dist-heroku-20-cnb\/packages.json"
-        },
-        {
-            "type": "package",
-            "package": {
-                "type": "metapackage",
-                "name": "composer.json\/composer.lock",
-                "version": "dev-a90ecf736d0c5431a479f94e52129fcf",
-                "require": {
-                    "heroku-sys\/php": "7.4.*"
-                }
-            }
         }
     ]
 }

@@ -110,8 +110,6 @@ pub(crate) fn webservers_json(
     platform_repositories: &Vec<Url>,
 ) -> Result<ComposerRootPackage, WebserversJsonError> {
     let webservers_generator_input = generator::PlatformJsonGeneratorInput {
-        input_name: "auto/generated".to_string(),
-        input_revision: "main".to_string(),
         additional_require: Some(HashMap::from([
             ("heroku-sys/apache".to_string(), "*".to_string()),
             ("heroku-sys/nginx".to_string(), "*".to_string()),

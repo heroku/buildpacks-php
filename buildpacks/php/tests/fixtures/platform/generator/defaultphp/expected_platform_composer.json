@@ -15,7 +15,6 @@
         "heroku/installer-plugin": "*",
         "heroku-sys\/composer": "*",
         "heroku-sys\/composer-plugin-api": "^2",
-        "composer.json/composer.lock": "dev-93d2b466348eca908189088d43f9fb1a",
         "heroku-sys\/ext-json": "*",
         "heroku-sys\/php": "*"
     },
@@ -33,17 +32,6 @@
         {
             "type": "composer",
             "url": "https:\/\/lang-php.s3.us-east-1.amazonaws.com\/dist-heroku-20-cnb\/packages.json"
-        },
-        {
-            "type": "package",
-            "package": {
-                "type": "metapackage",
-                "name": "composer.json\/composer.lock",
-                "version": "dev-93d2b466348eca908189088d43f9fb1a",
-                "require": {
-                    "heroku-sys\/ext-json": "*"
-                }
-            }
         }
     ]
 }
