@@ -135,6 +135,32 @@ impl From<&ComposerLock> for PlatformJsonGeneratorInput {
     }
 }
 
+fn stack_provide_from_stack_name(stack: &str) -> Result<(String, String), PlatformGeneratorError> {
+    // from the given stack string like "heroku-99", make a ("heroku-sys/heroku", "99.2023.04.05") tuple for "provide" later
+    let stack_captures = regex!(r"^(?P<stackname>[^-]+)(?:-(?P<stackversion>[0-9]+))?$")
+        .captures(stack)
+        .ok_or(PlatformGeneratorError::InvalidStackIdentifier(
+            stack.to_string(),
+        ))?;
+    Ok((
+        ensure_heroku_sys_prefix(
+            stack_captures
+                .name("stackname")
+                .ok_or(PlatformGeneratorError::InvalidStackIdentifier(
+                    stack.to_string(),
+                ))?
+                .as_str(),
+        ),
+        format!(
+            "{}.{}",
+            stack_captures
+                .name("stackversion")
+                .map_or("1", |m| m.as_str()),
+            Utc::now().format("%Y.%0m.%0d")
+        ),
+    ))
+}
+
 /// Generates a [`ComposerRootPackage`] for the given:
 /// - [`PlatformJsonGeneratorInput`],
 /// - stack name,
@@ -156,25 +182,7 @@ pub(crate) fn generate_platform_json(
         return Err(PlatformGeneratorError::EmptyPlatformRepositoriesList);
     };
 
-    // from the given stack string like "heroku-99", make a ("heroku-sys/heroku", "99.2023.04.05") tuple for "provide" later
-    let stack_captures = regex!(r"^([^-]+)(?:-([0-9]+))?$").captures(stack).ok_or(
-        PlatformGeneratorError::InvalidStackIdentifier(stack.to_string()),
-    )?;
-    let stack_provide = (
-        ensure_heroku_sys_prefix(
-            stack_captures
-                .get(1)
-                .ok_or(PlatformGeneratorError::InvalidStackIdentifier(
-                    stack.to_string(),
-                ))?
-                .as_str(),
-        ),
-        format!(
-            "{}.{}",
-            stack_captures.get(2).map_or("1", |m| m.as_str()),
-            Utc::now().format("%Y.%0m.%0d")
-        ),
-    );
+    let stack_provide = stack_provide_from_stack_name(stack)?;
 
     // some fundamental stuff we want installed
     let mut require = HashMap::from([
