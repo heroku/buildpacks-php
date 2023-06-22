@@ -13,9 +13,9 @@ use std::marker::PhantomData;
 use std::path::PathBuf;
 use url::Url;
 
-#[derive(Clone, Debug, Deref, From, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deref, From, PartialEq, Serialize)]
 pub struct PhpAssocArray<T>(HashMap<String, T>);
-impl<'de, T: Deserialize<'de>> Deserialize<'de> for PhpAssocArray<T> {
+impl<'de, T: Deserialize<'de> + Default> Deserialize<'de> for PhpAssocArray<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -26,7 +26,7 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for PhpAssocArray<T> {
 
         impl<'de, T> Visitor<'de> for EmptyPhpObjectVisitor<T>
         where
-            T: Deserialize<'de>,
+            T: Deserialize<'de> + Default,
         {
             type Value = PhpAssocArray<T>;
 
@@ -40,7 +40,7 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for PhpAssocArray<T> {
             {
                 match seq.next_element::<T>() {
                     Ok(Some(_)) | Err(_) => Err(A::Error::custom("sequence must be empty")), // if a T is in there or something else is in there
-                    Ok(None) => Ok(PhpAssocArray(HashMap::new())),
+                    Ok(None) => Ok(PhpAssocArray::default()),
                 }
             }
 
@@ -443,7 +443,7 @@ pub enum ComposerRepositoryFilters {
 }
 
 #[serde_as]
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerLock {
     pub content_hash: String, // since 1.0: https://github.com/composer/composer/pull/4140
@@ -461,23 +461,6 @@ pub struct ComposerLock {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
     pub plugin_api_version: Option<String>, // since 1.10.0: https://github.com/composer/composer/commit/0b9c658bef426a56dc3971e614028ff5078bcd95
-}
-impl ComposerLock {
-    pub fn new(plugin_api_version: Option<String>) -> Self {
-        Self {
-            content_hash: Default::default(),
-            packages: vec![],
-            packages_dev: vec![],
-            platform: PhpAssocArray(Default::default()),
-            platform_dev: PhpAssocArray(Default::default()),
-            platform_overrides: None,
-            minimum_stability: ComposerStability::Stable,
-            stability_flags: PhpAssocArray(Default::default()),
-            prefer_stable: false,
-            prefer_lowest: false,
-            plugin_api_version,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -509,7 +492,7 @@ mod tests {
     #[test]
     fn test_php_assoc_array_empty() {
         assert_de_tokens(
-            &ArrayIfEmpty(PhpAssocArray(HashMap::<String, String>::new())),
+            &ArrayIfEmpty(PhpAssocArray::default()),
             &[Token::Seq { len: Some(0) }, Token::SeqEnd],
         );
     }
