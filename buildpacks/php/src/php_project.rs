@@ -66,12 +66,17 @@ impl ProjectLoader {
         }
         .map_err(ProjectLoadError::ComposerLockRead)?;
 
-        Ok(Project::new(
-            self.composer_json_name.clone(),
-            self.composer_lock_name.clone(),
-            composer_json,
-            composer_lock,
-        ))
+        if composer_json.package.require.is_some() && composer_lock.is_none() {
+            // lock does have to exist after all if there are requirements in composer.json
+            Err(ProjectLoadError::ComposerLockMissing)
+        } else {
+            Ok(Project::new(
+                self.composer_json_name.clone(),
+                self.composer_lock_name.clone(),
+                composer_json,
+                composer_lock,
+            ))
+        }
     }
 }
 
@@ -82,6 +87,7 @@ pub(crate) enum ProjectLoadError {
     ComposerJsonParse(serde_json::Error),
     ComposerLockRead(io::Error),
     ComposerLockParse(serde_json::Error),
+    ComposerLockMissing,
 }
 
 #[derive(Debug)]
@@ -174,8 +180,6 @@ impl Project {
     }
 
     pub(crate) fn validate(&self) -> Result<(), String> {
-        // TODO: enforce presence of userland composer.lock if composer.json lists requires
-
         // TODO: call "composer validate"?
         //       ^ yes, also for lockfile freshness check
         //       ^ also as a fallback validation for when we have a Category::Data error
