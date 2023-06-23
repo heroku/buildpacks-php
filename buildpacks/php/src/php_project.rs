@@ -17,6 +17,11 @@ pub(crate) struct ProjectLoader {
     composer_lock_name: String,
 }
 
+#[derive(Debug)]
+pub(crate) enum ProjectLoaderNotice {
+    NameFromEnvVar(String),
+}
+
 impl ProjectLoader {
     pub(crate) fn new(composer_json_name: String, composer_lock_name: String) -> Self {
         Self {
@@ -25,20 +30,24 @@ impl ProjectLoader {
         }
     }
 
-    pub(crate) fn from_env(env: &Env) -> Self {
+    pub(crate) fn from_env(env: &Env) -> Warned<Self, ProjectLoaderNotice> {
+        let mut notices = vec![];
         // the file name is customizable
-        let composer_json_name = env
-            .get_string_lossy("COMPOSER")
-            .unwrap_or("composer.json".to_string());
+        let composer_json_name =
+            env.get_string_lossy("COMPOSER")
+                .map_or("composer.json".to_string(), |filename| {
+                    notices.push(ProjectLoaderNotice::NameFromEnvVar(filename.clone()));
+                    filename
+                });
         // the lock name is the value of COMPOSER, with ".json" (if present) removed, then ".lock" added
         let composer_lock_name = format!(
             "{}.lock",
             composer_json_name
-                .strip_suffix(".json") // TODO: print notice
+                .strip_suffix(".json")
                 .unwrap_or(&composer_json_name)
         );
 
-        Self::new(composer_json_name, composer_lock_name)
+        Warned::new(Self::new(composer_json_name, composer_lock_name), notices)
     }
 
     pub(crate) fn detect(&self, project_dir: &Path) -> bool {
