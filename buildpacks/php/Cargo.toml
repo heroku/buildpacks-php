@@ -10,6 +10,7 @@ chrono = "0.4"
 composer = { path = "../../composer" }
 csv = "1"
 flate2 = { version = "1", default-features = false, features = ["zlib"] }
+indoc = "2.0"
 libcnb = "0.13"
 libherokubuildpack = "0.13"
 regex = "1"

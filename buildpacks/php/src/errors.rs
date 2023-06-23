@@ -1,3 +1,5 @@
+pub(crate) mod notices;
+
 use crate::layers::bootstrap::BootstrapLayerError;
 use crate::layers::composer_env::ComposerEnvLayerError;
 use crate::layers::platform::PlatformLayerError;
