@@ -15,7 +15,7 @@ use crate::layers::bootstrap::BootstrapLayer;
 use crate::layers::composer_cache::ComposerCacheLayer;
 use crate::layers::composer_env::ComposerEnvLayer;
 use crate::layers::platform::PlatformLayer;
-use crate::php_project::PlatformJsonNotice;
+use crate::php_project::{PlatformJsonNotice, ProjectLoaderNotice};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
 use libcnb::data::{layer_name, process_type};
@@ -38,16 +38,26 @@ impl Buildpack for PhpBuildpack {
     type Error = PhpBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
-        if php_project::ProjectLoader::from_env(context.platform.env()).detect(&context.app_dir) {
+        let mut loader_notices = Vec::<ProjectLoaderNotice>::new();
+        let loader = php_project::ProjectLoader::from_env(context.platform.env())
+            .unwrap(&mut loader_notices);
+
+        if loader.detect(&context.app_dir) {
             DetectResultBuilder::pass().build()
         } else {
+            // TODO: print notices
             log_info("No PHP project files found.");
             DetectResultBuilder::fail().build()
         }
     }
 
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
-        let project = php_project::ProjectLoader::from_env(context.platform.env())
+        let mut loader_notices = Vec::<ProjectLoaderNotice>::new();
+        let loader = php_project::ProjectLoader::from_env(context.platform.env())
+            .unwrap(&mut loader_notices);
+        // TODO: print notices
+
+        let project = loader
             .load(&context.app_dir)
             .map_err(PhpBuildpackError::ProjectLoad)?;
 
