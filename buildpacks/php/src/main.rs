@@ -25,6 +25,11 @@ use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env, Platform};
 use libherokubuildpack::log::{log_header, log_info};
 
+#[cfg(test)]
+use exponential_backoff as _;
+#[cfg(test)]
+use libcnb_test as _;
+
 pub(crate) struct PhpBuildpack;
 
 impl Buildpack for PhpBuildpack {
