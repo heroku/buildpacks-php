@@ -19,7 +19,7 @@ pub(crate) struct ProjectLoader {
 
 #[derive(Debug)]
 pub(crate) enum ProjectLoaderNotice {
-    NameFromEnvVar(String),
+    NameFromEnvVar(String, String),
 }
 
 impl ProjectLoader {
@@ -36,7 +36,10 @@ impl ProjectLoader {
         let composer_json_name =
             env.get_string_lossy("COMPOSER")
                 .map_or("composer.json".to_string(), |filename| {
-                    notices.push(ProjectLoaderNotice::NameFromEnvVar(filename.clone()));
+                    notices.push(ProjectLoaderNotice::NameFromEnvVar(
+                        "COMPOSER".to_string(),
+                        filename.clone(),
+                    ));
                     filename
                 });
         // the lock name is the value of COMPOSER, with ".json" (if present) removed, then ".lock" added

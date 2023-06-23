@@ -10,6 +10,7 @@ mod platform;
 mod tests;
 mod utils;
 
+use crate::errors::notices;
 use crate::errors::PhpBuildpackError;
 use crate::layers::bootstrap::BootstrapLayer;
 use crate::layers::composer_cache::ComposerCacheLayer;
@@ -45,7 +46,10 @@ impl Buildpack for PhpBuildpack {
         if loader.detect(&context.app_dir) {
             DetectResultBuilder::pass().build()
         } else {
-            // TODO: print notices
+            loader_notices
+                .into_iter()
+                .map(PhpBuildpackNotice::ProjectLoader)
+                .for_each(notices::log);
             log_info("No PHP project files found.");
             DetectResultBuilder::fail().build()
         }
@@ -55,7 +59,10 @@ impl Buildpack for PhpBuildpack {
         let mut loader_notices = Vec::<ProjectLoaderNotice>::new();
         let loader = php_project::ProjectLoader::from_env(context.platform.env())
             .unwrap(&mut loader_notices);
-        // TODO: print notices
+        loader_notices
+            .into_iter()
+            .map(PhpBuildpackNotice::ProjectLoader)
+            .for_each(notices::log);
 
         let project = loader
             .load(&context.app_dir)
@@ -83,7 +90,10 @@ impl Buildpack for PhpBuildpack {
             )
             .map_err(PhpBuildpackError::PlatformJson)?
             .unwrap(&mut platform_json_notices); // Warned::unwrap() does not panic :)
-                                                 // TODO: print notices
+        platform_json_notices
+            .into_iter()
+            .map(PhpBuildpackNotice::PlatformJson)
+            .for_each(notices::log);
 
         let platform_cache_layer =
             context.handle_layer(layer_name!("platform_cache"), ComposerCacheLayer)?;
@@ -157,6 +167,12 @@ impl Buildpack for PhpBuildpack {
             .launch(LaunchBuilder::new().process(default_process).build())
             .build()
     }
+}
+
+#[derive(Debug)]
+pub(crate) enum PhpBuildpackNotice {
+    ProjectLoader(ProjectLoaderNotice),
+    PlatformJson(PlatformJsonNotice),
 }
 
 buildpack_main!(PhpBuildpack);
