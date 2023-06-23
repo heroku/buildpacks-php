@@ -6,6 +6,8 @@ mod layers;
 mod package_manager;
 mod php_project;
 mod platform;
+#[cfg(test)]
+mod tests;
 mod utils;
 
 use crate::errors::PhpBuildpackError;
