@@ -4,27 +4,23 @@ use libcnb::build::BuildContext;
 use libcnb::data::buildpack::StackId;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{ExistingLayerStrategy, Layer, LayerData, LayerResult, LayerResultBuilder};
-use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libcnb::Buildpack;
-use libherokubuildpack::log;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
-
-const PHP_VERSION: &str = "8.1.12";
-const COMPOSER_VERSION: &str = "2.4.4";
-const CLASSIC_BUILDPACK_VERSION: &str = "heads/cnb-installer";
-pub(crate) const CLASSIC_BUILDPACK_SUBDIR: &str = "heroku-buildpack-php-cnb-installer";
-pub(crate) const CLASSIC_BUILDPACK_INSTALLER_SUBDIR: &str = "support/installer";
+use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) struct BootstrapLayerMetadata {
     stack: StackId,
-    php_version: String,
-    composer_version: String,
-    installer_version: String,
+    url: String,
+    strip_path_components: usize,
+    directory: PathBuf,
 }
 
-pub(crate) struct BootstrapLayer;
+pub(crate) struct BootstrapLayer {
+    pub url: String,
+    pub strip_path_components: usize,
+    pub directory: PathBuf,
+}
 
 impl Layer for BootstrapLayer {
     type Buildpack = PhpBuildpack;
@@ -43,36 +39,21 @@ impl Layer for BootstrapLayer {
         context: &BuildContext<Self::Buildpack>,
         layer_path: &Path,
     ) -> Result<LayerResult<Self::Metadata>, <Self::Buildpack as Buildpack>::Error> {
-        log::log_header("Bootstrapping");
+        utils::download_and_unpack_tgz_with_components_stripped_and_only_entries_under_prefix(
+            &self.url,
+            layer_path,
+            self.strip_path_components,
+            &self.directory,
+        )
+        .map_err(BootstrapLayerError::DownloadUnpack)?;
 
-        let php_min_archive_url = format!(
-            "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-stable/php-min-{}.tar.gz",
-            context.stack_id, PHP_VERSION
+        let layer_metadata = generate_layer_metadata(
+            &context.stack_id,
+            &self.url,
+            self.strip_path_components,
+            &self.directory,
         );
-        let composer_archive_url = format!(
-            "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-stable/composer-{}.tar.gz",
-            context.stack_id, COMPOSER_VERSION
-        );
-        let installer_archive_url = format!(
-            "https://github.com/heroku/heroku-buildpack-php/archive/refs/{CLASSIC_BUILDPACK_VERSION}.tar.gz"
-        );
-
-        utils::download_and_unpack_gzip(&php_min_archive_url, layer_path)
-            .map_err(BootstrapLayerError::DownloadUnpack)?;
-        utils::download_and_unpack_gzip(&composer_archive_url, layer_path)
-            .map_err(BootstrapLayerError::DownloadUnpack)?;
-        utils::download_and_unpack_gzip(&installer_archive_url, layer_path)
-            .map_err(BootstrapLayerError::DownloadUnpack)?;
-
-        let layer_metadata = generate_layer_metadata(&context.stack_id);
-        LayerResultBuilder::new(layer_metadata)
-            .env(LayerEnv::new().chainable_insert(
-                Scope::Build,
-                ModificationBehavior::Override,
-                "COMPOSER_HOME",
-                layer_path,
-            ))
-            .build()
+        LayerResultBuilder::new(layer_metadata).build()
     }
 
     fn existing_layer_strategy(
@@ -81,9 +62,13 @@ impl Layer for BootstrapLayer {
         layer_data: &LayerData<Self::Metadata>,
     ) -> Result<ExistingLayerStrategy, <Self::Buildpack as Buildpack>::Error> {
         let old_metadata = &layer_data.content_metadata.metadata;
-        let new_metadata = generate_layer_metadata(&context.stack_id);
+        let new_metadata = generate_layer_metadata(
+            &context.stack_id,
+            &self.url,
+            self.strip_path_components,
+            &self.directory,
+        );
         if new_metadata == *old_metadata {
-            log::log_header("Bootstrapping (from cache)");
             Ok(ExistingLayerStrategy::Keep)
         } else {
             Ok(ExistingLayerStrategy::Recreate)
@@ -91,12 +76,17 @@ impl Layer for BootstrapLayer {
     }
 }
 
-fn generate_layer_metadata(stack_id: &StackId) -> BootstrapLayerMetadata {
+fn generate_layer_metadata(
+    stack: &StackId,
+    url: &str,
+    strip_path_components: usize,
+    directory: &Path,
+) -> BootstrapLayerMetadata {
     BootstrapLayerMetadata {
-        stack: stack_id.clone(),
-        php_version: PHP_VERSION.to_string(),
-        composer_version: COMPOSER_VERSION.to_string(),
-        installer_version: CLASSIC_BUILDPACK_VERSION.to_string(),
+        stack: stack.clone(),
+        url: url.to_string(),
+        strip_path_components,
+        directory: directory.to_path_buf(),
     }
 }
 

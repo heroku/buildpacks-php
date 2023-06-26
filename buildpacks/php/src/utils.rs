@@ -1,6 +1,6 @@
 use flate2::read::GzDecoder;
 use std::io;
-use std::path::Path;
+use std::path::{Component, Path, PathBuf};
 use std::process::{Command, ExitStatus};
 use tar::Archive;
 
@@ -21,18 +21,68 @@ pub(crate) enum DownloadUnpackError {
     Request(Box<ureq::Error>), // TODO: does this still need boxing?
 }
 
-pub(crate) fn download_and_unpack_gzip(
+#[allow(unused)]
+pub(crate) fn download_and_unpack_tgz(
     uri: &str,
     destination: &Path,
 ) -> Result<(), DownloadUnpackError> {
+    download_and_unpack_tgz_with_components_stripped(uri, destination, 0)
+}
+
+#[allow(unused)]
+pub(crate) fn download_and_unpack_tgz_with_components_stripped(
+    uri: &str,
+    destination: &Path,
+    strip_components: usize,
+) -> Result<(), DownloadUnpackError> {
+    download_and_unpack_tgz_with_components_stripped_and_only_entries_under_prefix(
+        uri,
+        destination,
+        strip_components,
+        PathBuf::new(),
+    )
+}
+
+pub(crate) fn download_and_unpack_tgz_with_components_stripped_and_only_entries_under_prefix(
+    uri: &str,
+    destination: &Path,
+    strip_components: usize,
+    extract_only_prefix: impl AsRef<Path>,
+) -> Result<(), DownloadUnpackError> {
+    Archive::new(GzDecoder::new(download(uri)?))
+        .entries()
+        .map_err(DownloadUnpackError::Io)? // discard invalid entries
+        .filter_map(Result::ok)
+        .try_for_each(|mut entry| {
+            entry
+                .path()
+                .map_err(DownloadUnpackError::Io)? // in case of invalid paths
+                .components()
+                // consume any leading non-"normal" path components, e.g. a possible "."
+                .skip_while(|component| !matches!(component, Component::Normal(_)))
+                // strip number of given component entries
+                .skip(strip_components)
+                .collect::<PathBuf>()
+                .strip_prefix(&extract_only_prefix)
+                // if strip_prefix worked, it means we want to extract that entry (with the prefix stripped)
+                // otherwise, we simply ignore the entry, since we do not want to extract it
+                .map_or(Ok(()), |path| {
+                    entry
+                        .unpack(&destination.join(path))
+                        .map_err(DownloadUnpackError::Io)
+                        .map(|_| ()) // instead of returning the Unpacked struct from unpack()
+                })
+        })
+}
+
+pub(crate) fn download(
+    uri: &str,
+) -> Result<Box<dyn io::Read + Send + Sync + 'static>, DownloadUnpackError> {
     // TODO: Timeouts: https://docs.rs/ureq/latest/ureq/struct.AgentBuilder.html?search=timeout
-    let response = ureq::get(uri)
+    Ok(ureq::get(uri)
         .call()
-        .map_err(|err| DownloadUnpackError::Request(Box::new(err)))?;
-    let gzip_decoder = GzDecoder::new(response.into_reader());
-    Archive::new(gzip_decoder)
-        .unpack(destination)
-        .map_err(DownloadUnpackError::Io)
+        .map_err(|err| DownloadUnpackError::Request(Box::new(err)))?
+        .into_reader())
 }
 
 #[derive(Debug)]

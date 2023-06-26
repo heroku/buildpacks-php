@@ -1,6 +1,7 @@
 #![warn(clippy::pedantic)]
 #![warn(unused_crate_dependencies)]
 
+mod bootstrap;
 mod errors;
 mod layers;
 mod package_manager;
@@ -10,9 +11,9 @@ mod platform;
 mod tests;
 mod utils;
 
+use crate::bootstrap::BootstrapResult;
 use crate::errors::notices;
 use crate::errors::PhpBuildpackError;
-use crate::layers::bootstrap::BootstrapLayer;
 use crate::layers::composer_cache::ComposerCacheLayer;
 use crate::layers::composer_env::ComposerEnvLayer;
 use crate::layers::platform::PlatformLayer;
@@ -68,12 +69,17 @@ impl Buildpack for PhpBuildpack {
             .load(&context.app_dir)
             .map_err(PhpBuildpackError::ProjectLoad)?;
 
-        // to install platform packages, we'll need PHP and Composer, as well as the Composer Installer Plugin from the classic buildpack
-        let bootstrap_layer = context.handle_layer(layer_name!("bootstrap"), BootstrapLayer)?;
-        let platform_installer_path = &bootstrap_layer
-            .path
-            .join(layers::bootstrap::CLASSIC_BUILDPACK_SUBDIR)
-            .join(layers::bootstrap::CLASSIC_BUILDPACK_INSTALLER_SUBDIR);
+        log_header("Bootstrapping");
+
+        let BootstrapResult {
+            env: mut platform_env,
+            platform_installer_path,
+            classic_buildpack_path,
+        } = bootstrap::bootstrap(&context)?;
+
+        let platform_cache_layer =
+            context.handle_layer(layer_name!("platform_cache"), ComposerCacheLayer)?;
+        platform_env = platform_cache_layer.env.apply(Scope::Build, &platform_env);
 
         log_header("Preparing platform packages installation");
 
@@ -84,7 +90,7 @@ impl Buildpack for PhpBuildpack {
         let platform_json = project
             .platform_json(
                 &context.stack_id,
-                platform_installer_path,
+                &platform_installer_path,
                 &all_repos,
                 false,
             )
@@ -94,16 +100,6 @@ impl Buildpack for PhpBuildpack {
             .into_iter()
             .map(PhpBuildpackNotice::PlatformJson)
             .for_each(notices::log);
-
-        let platform_cache_layer =
-            context.handle_layer(layer_name!("platform_cache"), ComposerCacheLayer)?;
-
-        // env to execute bootstrapping steps - from current, so `git` is on $PATH etc
-        let mut platform_env = Env::from_current();
-        // plus bootstrapped PHP/Composer/installer...
-        platform_env = bootstrap_layer.env.apply(Scope::Build, &platform_env);
-        // ... and a cache
-        platform_env = platform_cache_layer.env.apply(Scope::Build, &platform_env);
 
         log_header("Installing platform packages");
 
@@ -119,10 +115,8 @@ impl Buildpack for PhpBuildpack {
 
         let webservers_json = platform::webservers_json(
             &context.stack_id,
-            platform_installer_path,
-            &bootstrap_layer
-                .path
-                .join(layers::bootstrap::CLASSIC_BUILDPACK_SUBDIR),
+            &platform_installer_path,
+            &classic_buildpack_path,
             &all_repos,
         )
         .map_err(PhpBuildpackError::WebserversJson)?;
