@@ -124,7 +124,7 @@ pub struct ComposerBasePackage {
     pub scripts: Option<HashMap<String, Vec<String>>>,
     pub scripts_descriptions: Option<HashMap<String, String>>,
     pub source: Option<ComposerPackageSource>,
-    pub support: Option<HashMap<ComposerPackageSupportType, String>>,
+    pub support: Option<HashMap<String, String>>,
     pub suggest: Option<HashMap<String, String>>,
     pub target_dir: Option<String>,
     pub time: Option<String>, // TODO: "Package release date, in 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DDTHH:MM:SSZ' format.", but in practice it uses DateTime::__construct(), which can parse a lot of formats
@@ -296,41 +296,6 @@ pub struct ComposerPackageFunding {
     #[serde(rename = "type")]
     pub kind: String, // default "other"?
     pub url: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-#[serde(rename_all = "lowercase")]
-#[serde(try_from = "String")]
-pub enum ComposerPackageSupportType {
-    Email,
-    Issues,
-    Forum,
-    Wiki,
-    Irc,
-    Chat,
-    Source,
-    Docs,
-    Rss,
-    Security,
-}
-impl TryFrom<String> for ComposerPackageSupportType {
-    type Error = String;
-
-    fn try_from(v: String) -> Result<Self, Self::Error> {
-        match v.as_ref() {
-            "email" => Ok(ComposerPackageSupportType::Email),
-            "issues" => Ok(ComposerPackageSupportType::Issues),
-            "forum" => Ok(ComposerPackageSupportType::Forum),
-            "wiki" => Ok(ComposerPackageSupportType::Wiki),
-            "irc" => Ok(ComposerPackageSupportType::Irc),
-            "chat" => Ok(ComposerPackageSupportType::Chat),
-            "source" => Ok(ComposerPackageSupportType::Source),
-            "docs" => Ok(ComposerPackageSupportType::Docs),
-            "rss" => Ok(ComposerPackageSupportType::Rss),
-            "security" => Ok(ComposerPackageSupportType::Security),
-            _ => Err(format!("Invalid support type {v}")),
-        }
-    }
 }
 
 // this is not actually untagged, but we need to mix two entry types:
