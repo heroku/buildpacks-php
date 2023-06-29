@@ -8,6 +8,7 @@ rust-version = "1.70"
 [dependencies]
 chrono = "0.4"
 composer = { path = "../../composer" }
+const_format = "0.2"
 csv = "1"
 flate2 = { version = "1", default-features = false, features = ["zlib"] }
 indoc = "2.0"

@@ -1,6 +1,5 @@
 use crate::utils::{self, CommandError};
 use crate::{PhpBuildpack, PhpBuildpackError};
-
 use composer::ComposerRootPackage;
 use libcnb::build::BuildContext;
 use libcnb::data::buildpack::StackId;

@@ -61,26 +61,29 @@ impl ProjectLoader {
         let composer_json_path = project_dir.join(&self.composer_json_name);
         let composer_lock_path = project_dir.join(&self.composer_lock_name);
 
-        let composer_json =
-            fs::read(composer_json_path).map_err(ProjectLoadError::ComposerJsonRead)?;
+        let composer_json = fs::read(composer_json_path)
+            .map_err(|e| ProjectLoadError::ComposerJsonRead(self.composer_json_name.clone(), e))?;
 
         let composer_json = serde_json::from_slice::<ComposerRootPackage>(&composer_json)
-            .map_err(ProjectLoadError::ComposerJsonParse)?;
+            .map_err(|e| ProjectLoadError::ComposerJsonParse(self.composer_json_name.clone(), e))?;
 
         let composer_lock = match fs::read(composer_lock_path) {
-            Ok(json) => Ok(Some(
-                serde_json::from_slice(&json).map_err(ProjectLoadError::ComposerLockParse)?,
-            )),
+            Ok(json) => Ok(Some(serde_json::from_slice(&json).map_err(|e| {
+                ProjectLoadError::ComposerLockParse(self.composer_lock_name.clone(), e)
+            })?)),
             Err(err) => match err.kind() {
                 io::ErrorKind::NotFound => Ok(None), // lock does not have to exist
                 _ => Err(err),
             },
         }
-        .map_err(ProjectLoadError::ComposerLockRead)?;
+        .map_err(|e| ProjectLoadError::ComposerLockRead(self.composer_lock_name.clone(), e))?;
 
         if composer_json.package.require.is_some() && composer_lock.is_none() {
             // lock does have to exist after all if there are requirements in composer.json
-            Err(ProjectLoadError::ComposerLockMissing)
+            Err(ProjectLoadError::ComposerLockMissing(
+                self.composer_json_name.clone(),
+                self.composer_lock_name.clone(),
+            ))
         } else {
             Ok(Project::new(
                 self.composer_json_name.clone(),
@@ -95,11 +98,11 @@ impl ProjectLoader {
 #[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 pub(crate) enum ProjectLoadError {
-    ComposerJsonRead(io::Error),
-    ComposerJsonParse(serde_json::Error),
-    ComposerLockRead(io::Error),
-    ComposerLockParse(serde_json::Error),
-    ComposerLockMissing,
+    ComposerJsonRead(String, io::Error),
+    ComposerJsonParse(String, serde_json::Error),
+    ComposerLockRead(String, io::Error),
+    ComposerLockParse(String, serde_json::Error),
+    ComposerLockMissing(String, String),
 }
 
 #[derive(Debug)]

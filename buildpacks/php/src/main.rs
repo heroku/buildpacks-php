@@ -13,11 +13,16 @@ mod utils;
 
 use crate::bootstrap::BootstrapResult;
 use crate::errors::notices;
-use crate::errors::PhpBuildpackError;
+use crate::layers::bootstrap::BootstrapLayerError;
 use crate::layers::composer_cache::ComposerCacheLayer;
-use crate::layers::composer_env::ComposerEnvLayer;
-use crate::layers::platform::PlatformLayer;
-use crate::php_project::{PlatformJsonNotice, ProjectLoaderNotice};
+use crate::layers::composer_env::{ComposerEnvLayer, ComposerEnvLayerError};
+use crate::layers::platform::{PlatformLayer, PlatformLayerError};
+use crate::package_manager::composer::DependencyInstallationError;
+use crate::php_project::{
+    PlatformJsonError, PlatformJsonNotice, ProjectLoadError, ProjectLoaderNotice,
+};
+use crate::platform::{PlatformRepositoryUrlError, WebserversJsonError};
+use indoc::formatdoc;
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
 use libcnb::data::{layer_name, process_type};
@@ -25,7 +30,7 @@ use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env, Platform};
-use libherokubuildpack::log::{log_header, log_info};
+use libherokubuildpack::log::{log_error, log_header, log_info};
 
 #[cfg(test)]
 use exponential_backoff as _;
@@ -161,6 +166,34 @@ impl Buildpack for PhpBuildpack {
             .launch(LaunchBuilder::new().process(default_process).build())
             .build()
     }
+
+    fn on_error(&self, error: libcnb::Error<Self::Error>) {
+        match error {
+            libcnb::Error::BuildpackError(e) => e.on_error(),
+            libcnb_error => log_error(
+                "Internal buildpack error",
+                formatdoc! {"
+                    An unexpected internal error was reported by the framework used by this buildpack.
+                    
+                    {iehs}
+                    
+                    Details: {libcnb_error}
+                ", iehs = errors::INTERNAL_ERROR_HELP_STRING},
+            ),
+        };
+    }
+}
+
+#[derive(Debug)]
+pub(crate) enum PhpBuildpackError {
+    ProjectLoad(ProjectLoadError),
+    BootstrapLayer(BootstrapLayerError),
+    PlatformRepositoryUrl(PlatformRepositoryUrlError),
+    PlatformJson(PlatformJsonError),
+    WebserversJson(WebserversJsonError),
+    PlatformLayer(PlatformLayerError),
+    DependencyInstallation(DependencyInstallationError),
+    ComposerEnvLayer(ComposerEnvLayerError),
 }
 
 #[derive(Debug)]

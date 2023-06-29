@@ -1,5 +1,4 @@
-use crate::errors::PhpBuildpackError;
-use crate::PhpBuildpack;
+use crate::{PhpBuildpack, PhpBuildpackError};
 use libcnb::build::BuildContext;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::generic::GenericMetadata;
@@ -8,7 +7,7 @@ use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libcnb::{Buildpack, Env};
 use libherokubuildpack::log::log_header;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, ExitStatus};
 
 pub(crate) struct ComposerEnvLayer<'a> {
     pub command_env: &'a Env,
@@ -44,7 +43,7 @@ impl Layer for ComposerEnvLayer<'_> {
             .map_err(ComposerEnvLayerError::ComposerInvoke)?;
 
         if !output.status.success() {
-            Err(ComposerEnvLayerError::ComposerBinDir(output.status.code()))?;
+            Err(ComposerEnvLayerError::ComposerBinDir(output.status))?;
         }
 
         let composer_bin_dir: PathBuf = (*String::from_utf8_lossy(&output.stdout).trim()).into();
@@ -74,7 +73,7 @@ impl Layer for ComposerEnvLayer<'_> {
 #[derive(Debug)]
 pub(crate) enum ComposerEnvLayerError {
     ComposerInvoke(std::io::Error),
-    ComposerBinDir(Option<i32>),
+    ComposerBinDir(ExitStatus),
 }
 
 impl From<ComposerEnvLayerError> for PhpBuildpackError {
