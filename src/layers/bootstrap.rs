@@ -17,7 +17,6 @@ const PHP_VERSION: &str = "8.1.12";
 const COMPOSER_VERSION: &str = "2.4.4";
 const INSTALLER_VERSION: &str = "heads/cnb-installer";
 pub(crate) const INSTALLER_SUBDIR: &str = "heroku-buildpack-php-cnb-installer";
-const PLATFORM_PHP_SCRIPT: &str = include_str!("../../util/platform.php");
 
 pub(crate) struct BootstrapLayer;
 
@@ -27,7 +26,6 @@ pub(crate) struct BootstrapLayerMetadata {
     php_version: String,
     composer_version: String,
     installer_version: String,
-    platform_php_script_hash: String,
 }
 
 impl Layer for BootstrapLayer {
@@ -68,14 +66,6 @@ impl Layer for BootstrapLayer {
         utils::download_and_unpack_gzip(&installer_archive_url, layer_path)
             .map_err(BootstrapLayerError::DownloadUnpack)?;
 
-        fs::write(
-            layer_path
-                .join(INSTALLER_SUBDIR)
-                .join("bin/util/platform.php"),
-            PLATFORM_PHP_SCRIPT,
-        )
-        .expect("Failed to overwrite bin/util/platform.php");
-
         let layer_metadata = generate_layer_metadata(&context.stack_id);
         LayerResultBuilder::new(layer_metadata)
             .env(LayerEnv::new())
@@ -104,7 +94,6 @@ fn generate_layer_metadata(stack_id: &StackId) -> BootstrapLayerMetadata {
         php_version: PHP_VERSION.to_string(),
         composer_version: COMPOSER_VERSION.to_string(),
         installer_version: INSTALLER_VERSION.to_string(),
-        platform_php_script_hash: format!("{:x}", Sha256::digest(PLATFORM_PHP_SCRIPT)),
     }
 }
 

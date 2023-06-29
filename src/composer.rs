@@ -7,6 +7,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use serde_with::{formats::PreferOne, serde_as, skip_serializing_none, OneOrMany};
 use std::collections::HashMap;
+use url::Url;
 
 use std::fmt;
 use std::marker::PhantomData;
@@ -175,7 +176,7 @@ pub(crate) struct ComposerBasePackage {
     dist: Option<ComposerPackageDist>,
     extra: Option<Value>,
     funding: Option<Vec<ComposerPackageFunding>>,
-    homepage: Option<url::Url>,
+    homepage: Option<Url>,
     include_path: Option<Vec<String>>,
     keywords: Option<Vec<String>>,
     #[serde_as(as = "Option<OneOrMany<_, PreferOne>>")]
@@ -195,7 +196,7 @@ pub(crate) struct ComposerBasePackage {
     support: Option<HashMap<ComposerPackageSupportType, String>>,
     suggest: Option<HashMap<String, String>>,
     target_dir: Option<String>,
-    time: Option<String>, // TODO: "Must be in YYYY-MM-DD or YYYY-MM-DD HH:MM:SS format."
+    time: Option<String>, // TODO: "Package release date, in 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DDTHH:MM:SSZ' format.", but in practice it uses DateTime::__construct(), which can parse a lot of formats
 }
 
 #[skip_serializing_none]
@@ -262,8 +263,8 @@ impl Default for ComposerPackageAbandoned {
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub(crate) struct ComposerPackageAuthor {
     name: String,
-    email: Option<String>, // TODO: email
-    homepage: Option<url::Url>,
+    email: Option<String>, // TODO: could be EmailAddress, but Composer only warns
+    homepage: Option<Url>,
     role: Option<String>,
 }
 
@@ -296,7 +297,7 @@ pub(crate) struct ComposerPackageArchive {
 pub(crate) struct ComposerPackageDist {
     #[serde(rename = "type")]
     kind: String,
-    url: url::Url,
+    url: Url,
     reference: Option<String>,
     shasum: Option<String>,
     mirrors: Option<Vec<ComposerMirror>>,
@@ -308,7 +309,7 @@ pub(crate) struct ComposerPackageDist {
 pub(crate) struct ComposerPackageSource {
     #[serde(rename = "type")]
     kind: String,
-    url: url::Url,
+    url: Url,
     reference: Option<String>,
     mirrors: Option<Vec<ComposerMirror>>,
 }
@@ -317,7 +318,7 @@ pub(crate) struct ComposerPackageSource {
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ComposerMirror {
-    url: url::Url,
+    url: Url,
     preferred: Option<bool>,
 }
 
@@ -378,7 +379,7 @@ pub(crate) enum ComposerRepository {
     Composer {
         #[serde(rename = "type")]
         kind: MustBe!("composer"),
-        url: String, // TODO: url::Url
+        url: Url,
         #[serde(rename = "allow_ssl_downgrade")]
         allow_ssl_downgrade: Option<bool>,
         force_lazy_providers: Option<bool>,
@@ -390,7 +391,7 @@ pub(crate) enum ComposerRepository {
     Path {
         #[serde(rename = "type")]
         kind: MustBe!("path"),
-        url: String, // TODO: Path
+        url: PathBuf, // TODO: Path
         options: Option<Map<String, Value>>,
         #[serde(flatten)]
         filters: ComposerRepositoryFilters,
@@ -408,7 +409,7 @@ pub(crate) enum ComposerRepository {
     Url {
         #[serde(rename = "type")]
         kind: String,
-        url: url::Url,
+        url: Url,
         #[serde(flatten)]
         filters: ComposerRepositoryFilters,
         #[serde(flatten)]
@@ -431,7 +432,7 @@ impl From<&Path> for ComposerRepository {
     fn from(value: &Path) -> Self {
         Self::Path {
             kind: Default::default(),
-            url: value.to_string_lossy().to_string(),
+            url: value.into(),
             options: Some(Map::from_iter([("symlink".into(), Value::Bool(false))])),
             filters: ComposerRepositoryFilters {
                 canonical: None,
@@ -474,10 +475,10 @@ fn split_and_trim_list<'a>(list: &'a str, sep: &'a str) -> impl Iterator<Item = 
         .filter_map(|p| (!p.is_empty()).then_some(p))
 }
 // FIXME: this should not be in this module, at least not with the ensure_heroku_sys_prefix specialization
-impl TryFrom<url::Url> for ComposerRepository {
+impl TryFrom<Url> for ComposerRepository {
     type Error = ();
 
-    fn try_from(value: url::Url) -> Result<Self, Self::Error> {
+    fn try_from(value: Url) -> Result<Self, Self::Error> {
         let mut filters = ComposerRepositoryFilters {
             canonical: None,
             only: None,
@@ -523,7 +524,7 @@ impl TryFrom<url::Url> for ComposerRepository {
 
         Ok(Self::Composer {
             kind: Default::default(),
-            url: value.to_string(),
+            url: value,
             allow_ssl_downgrade: None,
             force_lazy_providers: None,
             options: None,
@@ -548,10 +549,10 @@ pub(crate) struct ComposerLock {
     content_hash: String, // since 1.0: https://github.com/composer/composer/pull/4140
     packages: Vec<ComposerPackage>,
     packages_dev: Vec<ComposerPackage>, // TODO: can it really be null in practice?
-    platform: PhpAssocArray<String>,    // FIXME: could also be a ComposerDependency map_to_vec
-    platform_dev: PhpAssocArray<String>, // FIXME: could also be a ComposerDependency map_to_vec
+    platform: PhpAssocArray<String>,
+    platform_dev: PhpAssocArray<String>,
     platform_overrides: Option<HashMap<String, String>>, // since 1.0: https://github.com/composer/composer/commit/a57c51e8d78156612e49dec1c54d3184f260f144
-    // aliases: HashMap<String, ComposerPackage>, // since 1.0: https://github.com/composer/composer/pull/350 - TODO: do we need to handle these? - FIXME: could also be a ComposerDependency map_to_vec
+    // aliases: HashMap<String, ComposerPackage>, // since 1.0: https://github.com/composer/composer/pull/350 - TODO: do we need to handle these?
     minimum_stability: ComposerLiteralStability, // since 1.0: https://github.com/composer/composer/pull/592
     stability_flags: PhpAssocArray<ComposerNumericStability>, // since 1.0: https://github.com/composer/composer/pull/592 - FIXME: empty will be JSON array again
     prefer_stable: bool, // since 1.0: https://github.com/composer/composer/pull/3101
