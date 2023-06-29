@@ -109,3 +109,10 @@ const PORT: u16 = 8080;
 pub(crate) fn builder() -> String {
     env::var("INTEGRATION_TEST_CNB_BUILDER").unwrap_or(DEFAULT_INTEGRATION_TEST_BUILDER.to_string())
 }
+
+pub(crate) fn default_buildpacks() -> Vec<BuildpackReference> {
+    vec![
+        BuildpackReference::Crate,
+        BuildpackReference::Other(String::from("heroku/procfile")),
+    ]
+}

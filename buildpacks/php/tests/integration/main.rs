@@ -9,12 +9,3 @@
 
 mod smoke;
 mod utils;
-
-use libcnb_test::BuildpackReference;
-
-pub(crate) fn default_buildpacks() -> Vec<BuildpackReference> {
-    vec![
-        BuildpackReference::Crate,
-        // BuildpackReference::Other(String::from("heroku/procfile")),
-    ]
-}
