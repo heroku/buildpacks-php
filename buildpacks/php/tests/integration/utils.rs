@@ -1,6 +1,7 @@
 use libcnb_test::{
     assert_contains, BuildConfig, BuildpackReference, ContainerConfig, TestContext, TestRunner,
 };
+use std::env;
 use std::path::Path;
 use std::time::Duration;
 
@@ -69,7 +70,7 @@ where
 /// builds the app again to ensure that any caching logic does not break subsequent builds.
 /// After the build, an HTTP request is made, asserting that the given string is in the response.
 pub(crate) fn smoke_test<P, B>(
-    builder_name: &str,
+    builder_name: impl AsRef<str>,
     app_dir: P,
     buildpacks: B,
     expected_http_response_body_contains: &str,
@@ -77,7 +78,7 @@ pub(crate) fn smoke_test<P, B>(
     P: AsRef<Path>,
     B: Into<Vec<BuildpackReference>>,
 {
-    let build_config = BuildConfig::new(builder_name, app_dir)
+    let build_config = BuildConfig::new(builder_name.as_ref(), app_dir)
         .buildpacks(buildpacks.into())
         .clone();
 
@@ -104,3 +105,7 @@ pub const UREQ_RESPONSE_AS_STRING_EXPECT_MESSAGE: &str =
     "http response body should be convertible to a string";
 
 const PORT: u16 = 8080;
+
+pub(crate) fn builder() -> String {
+    env::var("INTEGRATION_TEST_CNB_BUILDER").unwrap_or(DEFAULT_INTEGRATION_TEST_BUILDER.to_string())
+}
