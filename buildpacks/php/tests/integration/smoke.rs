@@ -5,8 +5,8 @@
 //!
 //! These tests are strictly happy-path tests and do not assert any output of the buildpack.
 
-use crate::default_buildpacks;
-use crate::utils::{builder, smoke_test};
+use crate::utils::{builder, default_buildpacks, smoke_test};
+use libcnb_test::BuildpackReference;
 
 #[test]
 #[ignore = "integration test"]
@@ -14,7 +14,18 @@ fn smoke_test_bundled_hello_world_app() {
     smoke_test(
         builder(),
         "tests/fixtures/smoke/hello-world",
-        default_buildpacks(),
+        vec![BuildpackReference::Crate],
         "Hello World",
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
+fn smoke_test_php_getting_started() {
+    smoke_test(
+        builder(),
+        "tests/fixtures/smoke/heroku-php-getting-started",
+        default_buildpacks(),
+        "Getting Started with PHP on Heroku",
     );
 }
