@@ -1,6 +1,5 @@
-# Heroku Cloud Native PHP Buildpacks
+# Heroku Cloud Native PHP Buildpack
 
-Heroku's official [Cloud Native Buildpacks](https://buildpacks.io) for the PHP ecosystem.
+[![CI](https://github.com/heroku/buildpacks-php/actions/workflows/ci.yml/badge.svg)](https://github.com/heroku/buildpacks-php/actions/workflows/ci.yml)
 
-## License
-Licensed under the MIT License. See [LICENSE](./LICENSE) file.
+Heroku's official [Cloud Native Buildpack](https://buildpacks.io) for the PHP ecosystem.
