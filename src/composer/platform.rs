@@ -62,19 +62,19 @@ fn normalize_url_list(urls: &[UrlListEntry]) -> Vec<&Url> {
     // we want all entries after the last UrlListEntry::Reset
     urls.rsplit(|url_entry| matches!(url_entry, UrlListEntry::Reset))
         .next() // this iterator is never empty because rsplit() will always return at least an empty slice
-        .expect("Something is rotten in the state of Denmark.") // cannot happen
+        .unwrap_or_else(|| unreachable!("Something is rotten in the state of Denmark."))
         .into_iter()
         .map(|url_entry| match url_entry {
             UrlListEntry::Url(url) => url,
-            UrlListEntry::Reset => {
-                panic!("If you can see this message, you broke the rsplit a few lines up.")
-            } // cannot happen
+            UrlListEntry::Reset => unreachable!(
+                "If you can see this message, you broke the rsplit predicate a few lines up."
+            ),
         })
         .collect()
 }
 
 #[derive(strum_macros::Display, Debug, Eq, PartialEq)]
-pub(crate) enum MakePlatformJsonError {
+pub(crate) enum PlatformGeneratorError {
     EmptyPlatformRepositoriesList,
     InvalidRepositoryFilter,
     InvalidStackIdentifier,
@@ -82,7 +82,7 @@ pub(crate) enum MakePlatformJsonError {
     RuntimeRequirementInRequireDevButNotRequire,
 }
 #[derive(strum_macros::Display, Debug, Eq, Hash, PartialEq)]
-pub(crate) enum MakePlatformJsonNotice {
+pub(crate) enum PlatformGeneratorNotice {
     NoComposerPluginApiVersionInLock(String),
     ComposerPluginApiVersionConfined(String, String),
     RuntimeRequirementInserted(String),
@@ -94,28 +94,27 @@ pub(crate) fn make_platform_json(
     installer_path: &Path,
     platform_repositories: &Vec<Url>,
     dev: bool,
-) -> Result<(ComposerRootPackage, HashSet<MakePlatformJsonNotice>), MakePlatformJsonError> {
+) -> Result<(ComposerRootPackage, HashSet<PlatformGeneratorNotice>), PlatformGeneratorError> {
     if platform_repositories.is_empty() {
-        return Err(MakePlatformJsonError::EmptyPlatformRepositoriesList);
+        return Err(PlatformGeneratorError::EmptyPlatformRepositoriesList);
     };
 
     let mut notices = HashSet::new();
 
-    let config = match json!({
+    let Value::Object(config) = json!({
         "cache-files-ttl": 0,
         "discard-changes": true,
         "allow-plugins": {
             "heroku/installer-plugin": true,
         },
-    }) {
-        Value::Object(x) => x,
-        _ => panic!("You've got some debugging to do, my friend."),
+    }) else {
+        unreachable!();
     };
 
     let caps = Regex::new(r"^([^-]+)(?:-([0-9]+))?$")
         .expect("A certain somebody broke the stack parsing regex. Yes, I am looking at you.")
         .captures(stack)
-        .ok_or(MakePlatformJsonError::InvalidStackIdentifier)?;
+        .ok_or(PlatformGeneratorError::InvalidStackIdentifier)?;
     let stack_provide = (
         format!("heroku-sys/{}", String::from(caps.get(1).unwrap().as_str())),
         format!(
@@ -153,7 +152,7 @@ pub(crate) fn make_platform_json(
             // also ensures plugins are compatible with other libraries Composer bundles (e.g. various Symfony components), as those got big version bumps in 2.3
             Some(v @ ("2.0.0" | "2.1.0" | "2.2.0")) => {
                 let r = "~2.2.0".to_string();
-                notices.insert(MakePlatformJsonNotice::ComposerPluginApiVersionConfined(
+                notices.insert(PlatformGeneratorNotice::ComposerPluginApiVersionConfined(
                     v.to_string(),
                     r.clone(),
                 ));
@@ -163,13 +162,13 @@ pub(crate) fn make_platform_json(
             Some(v) => format!(
                 "^{}",
                 v.split_once('.')
-                    .ok_or(MakePlatformJsonError::InvalidPlatformApiVersion)?
+                    .ok_or(PlatformGeneratorError::InvalidPlatformApiVersion)?
                     .0
             ),
             // nothing means it's pre-v1.10, in which case we want to just use v1
             None => {
                 let r = "^1.0.0".to_string();
-                notices.insert(MakePlatformJsonNotice::NoComposerPluginApiVersionInLock(
+                notices.insert(PlatformGeneratorNotice::NoComposerPluginApiVersionInLock(
                     r.clone(),
                 ));
                 r
@@ -188,6 +187,7 @@ pub(crate) fn make_platform_json(
     requires.insert("heroku/heroku-buildpack-php".into(), "dev-master".into());
     let mut classic_buildpack_repo =
         ComposerRepository::from(installer_path.join("../..").as_ref());
+    // FIXME: does this need error handling? or an else? not very readable IMO
     if let ComposerRepository::Path {
         ref mut options, ..
     } = classic_buildpack_repo
@@ -202,8 +202,8 @@ pub(crate) fn make_platform_json(
     let mut composer_repositories = platform_repositories
         .into_iter()
         .map(|url| {
-            ComposerRepository::try_from(url.clone()) // FIXME: erp
-                .map_err(|_| MakePlatformJsonError::InvalidRepositoryFilter)
+            ComposerRepository::try_from(url.clone()) // FIXME: do we have to clone?
+                .map_err(|_| PlatformGeneratorError::InvalidRepositoryFilter)
         })
         // repositories are passed in in ascending order of precedence
         // typically our default repo first, then user-supplied repos after that
@@ -262,6 +262,7 @@ pub(crate) fn make_platform_json(
             // we ignore those for the moment - they're not in package metadata (yet), and if they were, the versions are "frozen" at build time, but stack images get updates...
             && !name.starts_with("lib-")
             // not currently in package metadata
+            // TODO: put into package metadata so it's usable
             && name != "composer-runtime-api"
     }
 
@@ -362,17 +363,20 @@ pub(crate) fn make_platform_json(
 
     if !seen_runtime_requirement {
         if seen_runtime_dev_requirement {
-            return Err(MakePlatformJsonError::RuntimeRequirementInRequireDevButNotRequire);
+            return Err(PlatformGeneratorError::RuntimeRequirementInRequireDevButNotRequire);
         }
         let r = "*".to_string(); // TODO: is * the right value? we used to depend on stack version
-        notices.insert(MakePlatformJsonNotice::RuntimeRequirementInserted(
+        notices.insert(PlatformGeneratorNotice::RuntimeRequirementInserted(
             r.clone(),
         ));
         requires.insert("heroku-sys/php".into(), r);
     } else if !requires.contains_key("heroku-sys/php") {
         // runtime requirements from dependencies will be used
-        notices.insert(MakePlatformJsonNotice::RuntimeRequirementFromDependencies);
+        notices.insert(PlatformGeneratorNotice::RuntimeRequirementFromDependencies);
     }
+
+    // TODO: generate conflict entries for php-zts, php-debug?
+    // (hashset with (name, dev) is then easiest for lookup)
 
     Ok((
         ComposerRootPackage {
