@@ -1,13 +1,13 @@
 use crate::package_manager::composer::{
-    DependencyInstallationError, PlatformExtractorError, PlatformExtractorNotice,
-    PlatformFinalizerError, PlatformFinalizerNotice,
+    PlatformExtractorError, PlatformExtractorNotice, PlatformFinalizerError,
+    PlatformFinalizerNotice,
 };
 use crate::platform;
 use crate::platform::generator::{PlatformGeneratorError, PlatformJsonGeneratorInput};
 use ::composer::{ComposerLock, ComposerRootPackage};
 use libcnb::Env;
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::{fs, io};
 use url::Url;
 use warned::Warned;
@@ -120,8 +120,11 @@ pub(crate) enum PlatformJsonNotice {
 
 #[derive(Default)]
 pub(crate) struct Project {
+    #[allow(dead_code)]
     composer_json_name: String,
+    #[allow(dead_code)]
     composer_lock_name: String,
+    #[allow(dead_code)]
     composer_json: ComposerRootPackage,
     composer_lock: Option<ComposerLock>,
 }
@@ -194,6 +197,7 @@ impl Project {
         ))
     }
 
+    #[allow(dead_code)]
     pub(crate) fn validate(&self) -> Result<(), String> {
         // TODO: call "composer validate"?
         //       ^ yes, also for lockfile freshness check
@@ -205,13 +209,5 @@ impl Project {
         // TODO: validate COMPOSER_AUTH?
 
         todo!();
-    }
-
-    pub(crate) fn install_dependencies(
-        &self,
-        dir: &PathBuf,
-        command_env: &mut Env,
-    ) -> Result<(), DependencyInstallationError> {
-        crate::package_manager::composer::install_dependencies(dir, command_env)
     }
 }

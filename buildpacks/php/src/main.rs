@@ -146,8 +146,7 @@ impl Buildpack for PhpBuildpack {
 
         log_header("Installing dependencies");
 
-        project
-            .install_dependencies(&context.app_dir, &mut command_env)
+        package_manager::composer::install_dependencies(&context.app_dir, &mut command_env)
             .map_err(PhpBuildpackError::DependencyInstallation)?;
 
         // this just puts the userland bin-dir on $PATH
