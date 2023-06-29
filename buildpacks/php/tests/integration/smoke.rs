@@ -6,13 +6,13 @@
 //! These tests are strictly happy-path tests and do not assert any output of the buildpack.
 
 use crate::default_buildpacks;
-use crate::utils::{smoke_test, DEFAULT_INTEGRATION_TEST_BUILDER};
+use crate::utils::{builder, smoke_test};
 
 #[test]
 #[ignore = "integration test"]
 fn smoke_test_bundled_hello_world_app() {
     smoke_test(
-        DEFAULT_INTEGRATION_TEST_BUILDER,
+        builder(),
         "tests/fixtures/smoke/hello-world",
         default_buildpacks(),
         "Hello World",
