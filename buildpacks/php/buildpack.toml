@@ -2,7 +2,7 @@ api = "0.9"
 
 [buildpack]
 id = "heroku/php"
-version = "0.1.0"
+version = "0.1.1"
 name = "PHP"
 homepage = "https://github.com/heroku/buildpacks-php"
 description = "Heroku's official PHP Cloud Native Buildpack."
