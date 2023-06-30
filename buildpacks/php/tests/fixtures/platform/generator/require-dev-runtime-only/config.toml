@@ -1,0 +1,17 @@
+expect_finalizer_failure = "RuntimeRequirementInRequireDevButNotRequire"
+description = """Test that a "php" requirement in `require-dev`, but not in `require`, fails.
+
+For regular builds, we `composer install --no-dev`.
+
+If a user has, for example, no `require`s at all, but "phpunit/phpunit" in `require-dev`, then for the `require` case,
+we would auto-fill a version constraint for "php", let's say "^8.0.0".
+
+But if the "phpunit/phpunit" version in the lock's `packages-dev` section has "^7.0.0" as a requirement for "php",
+then the dev constraint and the non-dev constraint would be incompatible.
+
+A regular build would still succeed, since we have to strip the generated require-dev section before our "platform"
+`composer install` (because there's only a "platform" `composer.json`, no lock file yet, and Composer has to know the
+entire dependency tree to build a locked graph, even if we're not installing dev packages).
+
+But the PHP version the user gets on their CI runs (local, Heroku CI, …) is drastically different, and that's not good!
+"""

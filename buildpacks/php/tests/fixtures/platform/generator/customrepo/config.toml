@@ -1,0 +1,2 @@
+stack = "heroku-20"
+repositories = ["https://lang-php.s3.us-east-1.amazonaws.com/dist-heroku-20-cnb/packages.json", "https://localhost:8080/packages.json?composer-repository-canonical=0&composer-repository-only=ext-foo,ext-bar"]

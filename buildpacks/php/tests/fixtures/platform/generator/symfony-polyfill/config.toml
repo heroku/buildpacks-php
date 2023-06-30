@@ -1,0 +1,36 @@
+expected_finalizer_notices = ["RuntimeRequirementFromDependencies"]
+description = """Test that userland polyfills for native extensions do not prevent native extension installs.
+
+The extension "ext-ctype" is bundled with PHP, but it is not enabled by default, and in most builds, like Heroku's, it
+is a shared extension, loaded into the engine as a shared `.so` module via an `extension` directive in `php.ini`.
+
+For that reason, many Symfony packages declare dependencies on so-called "polyfill" packages for common extensions, with
+the required base functionality of each extension implemented in PHP. These polyfill packages skip their own code if
+they detect the native installation is present, which is necessary because
+1) the PHP implementations are slower than the native C implementations of the extensions that are "mimicked",
+2) the PHP implementationsa are usually not a complete mirror of the respective extension's C implementations,
+3) some things cannot be "faked"; the most basic example being `extension_loaded("ctype")` returning false.
+
+The problem is that we translate all "platform" packages to userland packages for our platform packages installation,
+so the real "ext-ctype" is a package named "heroku-sys/ext-ctype" (and it isn't a real package, but just points to the
+PHP version it is bundled with, but that's irrelevant here). But because the user has a dependency on package
+"symfony/polyfill-ctype" in their `composer.lock`, and because that package lists "ext-ctype" in `provide`, Composer's
+solver will, correctly, determine that an installation of "ext-ctype" (really, "heroku-sys/ext-ctype") is not necessary.
+
+We cannot simply drop the `provide` declarations from these polyfill packages when we translate them to our "platform"
+`composer.json`, since that would disable the purpose of the polyfills. For example, a project might depend on the old
+"ext-xmlrpc" extension, which was removed in PHP 8. A polyfill ("phpxmlrpc/polyfill-xmlrpc") exists for it, and if used
+in the user's `composer.json` as a dependency, should be allowed to stand in for the native extension, instead of
+failing the build entirely, or forcing the installation of PHP 7.4 instead of the latest 8.2 (even if all the other
+dependencies were to allow the install of PHP 7.4). Or, let's say someone needs PHP 8.1, and cannot upgrade to PHP 8.2
+yet (for whatever reason), but also needs the "ext-random" extension that was not added until PHP 8.2: in this case, the
+package "arokettu/random-polyfill" can be used as a replacement for "ext-random" for PHP 8.1.
+
+The solution is for us to walk through all installed packages once initial installation is complete, and then, for each
+package that has a `provide` declaration for any extensions, attempt a `composer require` for these extensions without
+changing any other requirements (e.g. without, in the "ext-xmlrpc" example above, downgrading everything to PHP 7.4).
+Behind the scenes, this is done by having our own "real" extension packages declare "ext-$extname.native" as a `provide`
+in their metadata, and then running `composer require ext-xmlrpc ext-xmlrpc.native`. If that succeeds (for instance, in
+the "ext-ctype" case, since that is bundled with all versions of PHP), then great. If it fails (for instance, in the
+"ext-xmlrpc" case, because we've already installed PHP 8, where the extension is no longer bundled), no harm done.
+"""
