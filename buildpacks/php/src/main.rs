@@ -149,6 +149,8 @@ impl Buildpack for PhpBuildpack {
         package_manager::composer::install_dependencies(&context.app_dir, &mut command_env)
             .map_err(PhpBuildpackError::DependencyInstallation)?;
 
+        log_header("Preparing Composer runtime environment");
+
         // this just puts the userland bin-dir on $PATH
         context.handle_layer(
             layer_name!("composer_env"),
