@@ -1,0 +1,2 @@
+expected_extractor_notices = ['ComposerLockVersion(NoComposerPluginApiVersionInLock("^1.0.0"))']
+description = "Tests whether for really old lock files, Composer 1 is assumed"

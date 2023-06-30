@@ -1,0 +1,81 @@
+{
+    "config": {
+        "allow-plugins": {
+            "heroku/installer-plugin": true
+        },
+        "cache-files-ttl": 0,
+        "discard-changes": true
+    },
+    "minimum-stability": "rc",
+    "prefer-stable": true,
+    "provide": {
+        "heroku-sys\/heroku": "20."
+    },
+    "require": {
+        "heroku/installer-plugin": "*",
+        "heroku-sys\/composer": "*",
+        "heroku-sys\/composer-plugin-api": "^2",
+        "symfony\/polyfill-php80": "v1.23.1",
+        "symfony\/process": "v5.1.0-RC1",
+        "heroku-sys\/ext-gmp": "*",
+        "heroku-sys\/ext-intl": "*",
+        "heroku-sys\/ext-mbstring": "*",
+        "heroku-sys\/ext-redis": "*",
+        "heroku-sys\/ext-sqlite3": "*",
+        "heroku-sys\/ext-ldap": "*",
+        "heroku-sys\/ext-imap": "*",
+        "heroku-sys\/ext-blackfire": "*"
+    },
+    "require-dev": {
+        "kahlan\/kahlan": "5.1.3",
+        "heroku-sys\/ext-pcov": "*"
+    },
+    "repositories": [
+        {
+            "packagist.org": false
+        },
+        {
+            "type": "path",
+            "url": "..\/..\/support\/installer",
+            "options": {
+                "symlink": false
+            }
+        },
+        {
+            "type": "composer",
+            "url": "https:\/\/lang-php.s3.us-east-1.amazonaws.com\/dist-heroku-20-cnb\/packages.json"
+        },
+        {
+            "type": "package",
+            "package": [
+                {
+                    "type": "metapackage",
+                    "name": "symfony\/polyfill-php80",
+                    "version": "v1.23.1",
+                    "require": {
+                        "heroku-sys\/php": ">=7.1"
+                    }
+                },
+                {
+                    "type": "metapackage",
+                    "name": "symfony\/process",
+                    "version": "v5.1.0-RC1",
+                    "require": {
+                        "heroku-sys\/php": "^7.2.5"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "package",
+            "package": {
+                "type": "metapackage",
+                "name": "kahlan\/kahlan",
+                "version": "5.1.3",
+                "require": {
+                    "heroku-sys\/php": ">=7.1"
+                }
+            }
+        }
+    ]
+}
