@@ -2,10 +2,9 @@ use crate::{PhpBuildpack, PhpBuildpackError};
 use libcnb::build::BuildContext;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::generic::GenericMetadata;
-use libcnb::layer::{ExistingLayerStrategy, Layer, LayerData, LayerResult, LayerResultBuilder};
+use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libcnb::{Buildpack, Env};
-use libherokubuildpack::log::log_header;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
@@ -31,8 +30,6 @@ impl Layer for ComposerEnvLayer<'_> {
         _context: &BuildContext<Self::Buildpack>,
         _layer_path: &Path,
     ) -> Result<LayerResult<Self::Metadata>, <Self::Buildpack as Buildpack>::Error> {
-        log_header("Preparing Composer environment");
-
         let output = Command::new("composer")
             .args(["config", "--no-plugins", "bin-dir"])
             .current_dir(self.dir)
@@ -59,14 +56,6 @@ impl Layer for ComposerEnvLayer<'_> {
                     .chainable_insert(Scope::All, ModificationBehavior::Delimiter, "PATH", ":"),
             )
             .build()
-    }
-
-    fn existing_layer_strategy(
-        &self,
-        _context: &BuildContext<Self::Buildpack>,
-        _layer_data: &LayerData<Self::Metadata>,
-    ) -> Result<ExistingLayerStrategy, <Self::Buildpack as Buildpack>::Error> {
-        Ok(ExistingLayerStrategy::Keep) // we keep this cached always, as Composer does its own cleanup from time to time
     }
 }
 
