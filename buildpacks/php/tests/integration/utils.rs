@@ -104,7 +104,7 @@ pub(crate) fn builder() -> String {
 
 pub(crate) fn default_buildpacks() -> Vec<BuildpackReference> {
     vec![
-        BuildpackReference::Crate,
+        BuildpackReference::CurrentCrate,
         BuildpackReference::Other(String::from("heroku/procfile")),
     ]
 }

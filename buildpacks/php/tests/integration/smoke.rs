@@ -14,7 +14,7 @@ fn smoke_test_bundled_hello_world_app() {
     smoke_test(
         builder(),
         "tests/fixtures/smoke/hello-world",
-        vec![BuildpackReference::Crate],
+        vec![BuildpackReference::CurrentCrate],
         "Hello World",
     );
 }
