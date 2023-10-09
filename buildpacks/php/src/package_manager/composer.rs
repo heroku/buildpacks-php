@@ -18,12 +18,12 @@ pub(crate) enum DependencyInstallationError {
 
 pub(crate) fn install_dependencies(
     dir: &PathBuf,
-    command_env: &mut Env,
+    command_env: &Env,
 ) -> Result<(), DependencyInstallationError> {
     utils::run_command(
         Command::new("composer")
             .current_dir(dir)
-            .envs(&*command_env)
+            .envs(command_env)
             .args([
                 "install",
                 "-vv",
