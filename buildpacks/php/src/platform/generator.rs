@@ -22,9 +22,7 @@ pub(crate) fn ensure_heroku_sys_prefix(name: impl AsRef<str>) -> String {
 
 /// Splits the given string by the given separator, and returns an iterator over the non-empty items, with whitespace trimmed.
 fn split_and_trim_list<'a>(list: &'a str, sep: &'a str) -> impl Iterator<Item = &'a str> {
-    list.split(sep)
-        .map(str::trim)
-        .filter_map(|p| (!p.is_empty()).then_some(p))
+    list.split(sep).map(str::trim).filter(|&p| !p.is_empty())
 }
 
 /// Parses a given repository [`Url`] with optional priority and filter query args into a [`ComposerRepository`].

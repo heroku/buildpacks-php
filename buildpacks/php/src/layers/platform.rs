@@ -133,7 +133,7 @@ impl Layer for PlatformLayer<'_> {
                         // "--no-interaction",
                         //"--no-progress",
                     ])) {
-                        Ok(_) => {}
+                        Ok(()) => {}
                         Err(_) => {
                             // TODO: Classic uses \r here
                             log_info(format!("no suitable native version of {name} available"));
