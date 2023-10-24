@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated buildpack display name and description. ([#57](https://github.com/heroku/buildpack-php/pull/57))
+
 ## [0.1.1] - 2023-06-30
 
 ### Added

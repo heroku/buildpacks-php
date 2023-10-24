@@ -3,9 +3,9 @@ api = "0.9"
 [buildpack]
 id = "heroku/php"
 version = "0.1.1"
-name = "PHP"
+name = "Heroku PHP"
 homepage = "https://github.com/heroku/buildpacks-php"
-description = "Heroku's official PHP Cloud Native Buildpack."
+description = "Heroku's buildpack for PHP applications."
 keywords = ["php", "heroku"]
 clear-env = true
 
@@ -18,7 +18,5 @@ id = "heroku-20"
 [[stacks]]
 id = "heroku-22"
 
-[metadata]
 [metadata.release]
-[metadata.release.image]
-repository = "docker.io/heroku/buildpack-php"
+image = { repository = "docker.io/heroku/buildpack-php" }
