@@ -2,8 +2,11 @@
 name = "php-buildpack"
 version = "0.0.0"
 publish = false
-edition = "2021"
-rust-version = "1.70"
+edition.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
 
 [dependencies]
 chrono = "0.4"

@@ -2,9 +2,11 @@
 name = "composer"
 version = "0.1.0"
 publish = false
-edition = "2021"
+edition.workspace = true
+rust-version.workspace = true
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lints]
+workspace = true
 
 [dependencies]
 derive_more = "0.99"
