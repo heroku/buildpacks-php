@@ -9,8 +9,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
 pub(crate) struct ComposerEnvLayer<'a> {
-    pub command_env: &'a Env,
-    pub dir: &'a PathBuf,
+    pub(crate) command_env: &'a Env,
+    pub(crate) dir: &'a PathBuf,
 }
 
 impl Layer for ComposerEnvLayer<'_> {

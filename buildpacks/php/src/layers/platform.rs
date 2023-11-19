@@ -21,8 +21,8 @@ pub(crate) struct PlatformLayerMetadata {
 }
 
 pub(crate) struct PlatformLayer<'a> {
-    pub command_env: &'a Env,
-    pub platform_json: &'a ComposerRootPackage,
+    pub(crate) command_env: &'a Env,
+    pub(crate) platform_json: &'a ComposerRootPackage,
 }
 
 impl Layer for PlatformLayer<'_> {

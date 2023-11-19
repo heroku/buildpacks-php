@@ -17,9 +17,9 @@ pub(crate) struct BootstrapLayerMetadata {
 }
 
 pub(crate) struct BootstrapLayer {
-    pub url: String,
-    pub strip_path_components: usize,
-    pub directory: PathBuf,
+    pub(crate) url: String,
+    pub(crate) strip_path_components: usize,
+    pub(crate) directory: PathBuf,
 }
 
 impl Layer for BootstrapLayer {

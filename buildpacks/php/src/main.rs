@@ -34,7 +34,7 @@ use exponential_backoff as _;
 #[cfg(test)]
 use libcnb_test as _;
 
-pub(crate) struct PhpBuildpack;
+struct PhpBuildpack;
 
 impl Buildpack for PhpBuildpack {
     type Platform = GenericPlatform;
@@ -183,7 +183,7 @@ impl Buildpack for PhpBuildpack {
 }
 
 #[derive(Debug)]
-pub(crate) enum PhpBuildpackError {
+enum PhpBuildpackError {
     ProjectLoad(ProjectLoadError),
     BootstrapLayer(BootstrapLayerError),
     PlatformRepositoryUrl(PlatformRepositoryUrlError),
@@ -195,7 +195,7 @@ pub(crate) enum PhpBuildpackError {
 }
 
 #[derive(Debug)]
-pub(crate) enum PhpBuildpackNotice {
+enum PhpBuildpackNotice {
     ProjectLoader(ProjectLoaderNotice),
     PlatformJson(PlatformJsonNotice),
 }

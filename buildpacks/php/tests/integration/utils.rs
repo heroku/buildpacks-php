@@ -15,7 +15,7 @@ use std::time::Duration;
 ///a
 /// The smoke integration tests need to ensure the container runs as expected.
 /// This function is catering to that use-case and is not useful in other contexts.
-pub(crate) fn start_container_assert_basic_http_response(
+fn start_container_assert_basic_http_response(
     context: &TestContext,
     expected_http_response_body_contains: &str,
 ) {
@@ -36,7 +36,7 @@ pub(crate) fn start_container_assert_basic_http_response(
     );
 }
 
-pub(crate) fn http_request_backoff<F, T, E>(request_fn: F) -> Result<T, E>
+fn http_request_backoff<F, T, E>(request_fn: F) -> Result<T, E>
 where
     F: Fn() -> Result<T, E>,
 {
@@ -89,11 +89,11 @@ pub(crate) fn smoke_test<P, B>(
     });
 }
 
-pub const DEFAULT_INTEGRATION_TEST_BUILDER: &str = "heroku/builder:22";
+const DEFAULT_INTEGRATION_TEST_BUILDER: &str = "heroku/builder:22";
 
-pub const UREQ_RESPONSE_RESULT_EXPECT_MESSAGE: &str = "http request should be successful";
+const UREQ_RESPONSE_RESULT_EXPECT_MESSAGE: &str = "http request should be successful";
 
-pub const UREQ_RESPONSE_AS_STRING_EXPECT_MESSAGE: &str =
+const UREQ_RESPONSE_AS_STRING_EXPECT_MESSAGE: &str =
     "http response body should be convertible to a string";
 
 const PORT: u16 = 8080;
