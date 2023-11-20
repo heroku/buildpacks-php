@@ -1,6 +1,3 @@
-#![warn(clippy::pedantic)]
-#![warn(unused_crate_dependencies)]
-
 mod bootstrap;
 mod errors;
 mod layers;
