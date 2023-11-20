@@ -99,23 +99,23 @@ pub(crate) enum PlatformGeneratorError {
 #[derive(Default, Debug)]
 pub(crate) struct PlatformJsonGeneratorInput {
     /// The desired [`ComposerStability`] for the root package's `minimum-stability` field
-    pub minimum_stability: ComposerStability,
+    pub(crate) minimum_stability: ComposerStability,
     /// The desired value for the root package's `prefer-stable` field
-    pub prefer_stable: bool,
+    pub(crate) prefer_stable: bool,
     /// The direct platform requirements from the root dependencies of the source project
-    pub platform_require: HashMap<String, String>,
+    pub(crate) platform_require: HashMap<String, String>,
     /// The direct platform dev requirements from the root dependencies of the source project
-    pub platform_require_dev: HashMap<String, String>,
+    pub(crate) platform_require_dev: HashMap<String, String>,
     /// A list of packages from the source project's locked dependencies
-    pub packages: Vec<ComposerPackage>,
+    pub(crate) packages: Vec<ComposerPackage>,
     /// A list of packages from the source project's locked dev dependencies
-    pub packages_dev: Vec<ComposerPackage>,
+    pub(crate) packages_dev: Vec<ComposerPackage>,
     /// A list of additional requirements to be placed into the generated package's root requirements
-    pub additional_require: Option<HashMap<String, String>>,
+    pub(crate) additional_require: Option<HashMap<String, String>>,
     /// A list of additional requirements to be placed into the generated package's root dev requirements
-    pub additional_require_dev: Option<HashMap<String, String>>,
+    pub(crate) additional_require_dev: Option<HashMap<String, String>>,
     /// Additional [`ComposerRepository`] entries to be placed into the generated package
-    pub additional_repositories: Option<Vec<ComposerRepository>>,
+    pub(crate) additional_repositories: Option<Vec<ComposerRepository>>,
 }
 impl From<&ComposerLock> for PlatformJsonGeneratorInput {
     fn from(lock: &ComposerLock) -> Self {

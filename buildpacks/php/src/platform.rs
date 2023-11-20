@@ -62,7 +62,7 @@ pub(crate) fn platform_repository_urls_from_default_and_build_context(
 
 /// Returns a list of platform repository [`Url`s](Url), computed from the given default [`Url`s](Url)
 /// and space-separated list of additional URL strings (typically user-supplied).
-pub(crate) fn platform_repository_urls_from_defaults_and_list(
+fn platform_repository_urls_from_defaults_and_list(
     default_urls: &[Url],
     extra_urls_list: impl AsRef<str>,
 ) -> Result<Vec<Url>, PlatformRepositoryUrlError> {

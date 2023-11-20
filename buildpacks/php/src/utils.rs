@@ -75,9 +75,7 @@ pub(crate) fn download_and_unpack_tgz_with_components_stripped_and_only_entries_
         })
 }
 
-pub(crate) fn download(
-    uri: &str,
-) -> Result<Box<dyn io::Read + Send + Sync + 'static>, DownloadUnpackError> {
+fn download(uri: &str) -> Result<Box<dyn io::Read + Send + Sync + 'static>, DownloadUnpackError> {
     // TODO: Timeouts: https://docs.rs/ureq/latest/ureq/struct.AgentBuilder.html?search=timeout
     Ok(ureq::get(uri)
         .call()

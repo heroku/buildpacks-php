@@ -58,7 +58,7 @@ pub(crate) enum PlatformExtractorNotice {
 }
 
 /// Checks whether the given package name represents what Composer refers to as a "platform package".
-pub(crate) fn is_platform_package(name: impl AsRef<str>) -> bool {
+fn is_platform_package(name: impl AsRef<str>) -> bool {
     let name = name.as_ref();
     // same regex used by Composer as well
     regex!(r"^(?i)(?:php(?:-64bit|-ipv6|-zts|-debug)?|hhvm|(?:ext|lib)-[a-z0-9](?:[_.-]?[a-z0-9]+)*|composer(?:-(?:plugin|runtime)-api)?)$")
@@ -73,12 +73,12 @@ pub(crate) fn is_platform_package(name: impl AsRef<str>) -> bool {
 }
 
 /// Checks whether the given list of package links (typically from "require") contains a requirement for a language runtime.
-pub(crate) fn has_runtime_link(links: &HashMap<String, String>) -> bool {
+fn has_runtime_link(links: &HashMap<String, String>) -> bool {
     links.contains_key("heroku-sys/php")
 }
 
 /// Extracts links to platform packages (see [`is_platform_package`]) and prefix them using [`ensure_heroku_sys_prefix`].
-pub(crate) fn extract_platform_links_with_heroku_sys<T: Clone>(
+fn extract_platform_links_with_heroku_sys<T: Clone>(
     links: &HashMap<String, T>,
 ) -> Option<HashMap<String, T>> {
     let ret = links
@@ -166,7 +166,7 @@ pub(crate) enum ComposerLockVersionError {
 /// Generates requirements for Composer and the Composer Plugin API version that match the given [`ComposerLock`].
 ///
 /// The returned [`Warned`] struct contains a hash map of the generated requirements, and a list of [`PlatformExtractorNotice`s](PlatformExtractorNotice) encountered during processing.
-pub(crate) fn requires_for_composer_itself(
+fn requires_for_composer_itself(
     lock: &ComposerLock,
 ) -> Result<Warned<HashMap<String, String>, ComposerLockVersionNotice>, ComposerLockVersionError> {
     let mut notices = Vec::new();

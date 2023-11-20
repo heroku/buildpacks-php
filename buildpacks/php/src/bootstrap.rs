@@ -9,12 +9,12 @@ use std::path::PathBuf;
 const PHP_VERSION: &str = "8.1.12";
 const COMPOSER_VERSION: &str = "2.4.4";
 const CLASSIC_BUILDPACK_VERSION: &str = "heads/cnb-installer";
-pub(crate) const CLASSIC_BUILDPACK_INSTALLER_SUBDIR: &str = "support/installer";
+const CLASSIC_BUILDPACK_INSTALLER_SUBDIR: &str = "support/installer";
 
 pub(crate) struct BootstrapResult {
-    pub env: Env,
-    pub platform_installer_path: PathBuf,
-    pub classic_buildpack_path: PathBuf,
+    pub(crate) env: Env,
+    pub(crate) platform_installer_path: PathBuf,
+    pub(crate) classic_buildpack_path: PathBuf,
 }
 
 pub(crate) fn bootstrap(
