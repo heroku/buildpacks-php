@@ -119,6 +119,7 @@ pub(crate) enum PlatformJsonNotice {
 }
 
 #[derive(Default)]
+#[allow(clippy::struct_field_names)]
 pub(crate) struct Project {
     #[allow(dead_code)]
     composer_json_name: String,
