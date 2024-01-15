@@ -185,7 +185,7 @@ dependencies = [
 
 [[package]]
 name = "composer"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "derive_more",
  "monostate",
