@@ -174,7 +174,7 @@ pub(crate) fn generate_platform_json(
     input: &PlatformJsonGeneratorInput,
     stack: &str,
     installer_path: &Path,
-    platform_repositories: &Vec<Url>,
+    platform_repositories: &[Url],
 ) -> Result<ComposerRootPackage, PlatformGeneratorError> {
     if platform_repositories.is_empty() {
         return Err(PlatformGeneratorError::EmptyPlatformRepositoriesList);

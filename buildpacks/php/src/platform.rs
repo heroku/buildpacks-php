@@ -107,7 +107,7 @@ pub(crate) fn webservers_json(
     stack: &str,
     installer_path: &Path,
     classic_buildpack_path: &Path,
-    platform_repositories: &Vec<Url>,
+    platform_repositories: &[Url],
 ) -> Result<ComposerRootPackage, WebserversJsonError> {
     let webservers_generator_input = generator::PlatformJsonGeneratorInput {
         additional_require: Some(HashMap::from([
