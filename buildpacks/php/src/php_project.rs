@@ -149,7 +149,7 @@ impl Project {
         &self,
         stack: &str,
         installer_path: &Path,
-        platform_repositories: &Vec<Url>,
+        platform_repositories: &[Url],
         dev: bool,
     ) -> Result<Warned<ComposerRootPackage, PlatformJsonNotice>, PlatformJsonError> {
         let mut extractor_notices = Vec::new();
