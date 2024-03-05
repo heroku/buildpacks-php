@@ -9,17 +9,13 @@
 for PHP applications. It builds PHP application source code into production application images with
 minimal configuration.
 
->note
-This is a [Cloud Native Buildpack](https://buildpacks.io), and is a component
-of the [Heroku Cloud Native Buildpacks](https://github.com/heroku/buildpacks)
-project. If you are looking for the Heroku Classic Buildpack for PHP (for use
-on the Heroku platform) instead, you may find it [here](https://github.com/heroku/heroku-buildpack-php).
+> [!IMPORTANT]
+> This is a [Cloud Native Buildpack](https://buildpacks.io), and is a component of the [Heroku Cloud Native Buildpacks](https://github.com/heroku/buildpacks) project. If you are looking for the Heroku Classic Buildpack for PHP (for use on the Heroku platform) instead, you may find it [here](https://github.com/heroku/heroku-buildpack-php).
 
 ## Usage
 
->note
-Before getting started, ensure you have the `pack` CLI installed. Installation
-instructions are available [here](https://buildpacks.io/docs/for-platform-operators/how-to/integrate-ci/pack/).
+> [!NOTE]
+> Before getting started, ensure you have the `pack` CLI installed. Installation instructions are available [here](https://buildpacks.io/docs/for-platform-operators/how-to/integrate-ci/pack/).
 
 To build a PHP application codebase into a production image:
 
