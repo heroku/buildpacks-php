@@ -1,9 +1,9 @@
 # Heroku Cloud Native Buildpack: PHP
 
-[![Cloud Native Buildpacks Registry: heroku/php](registry-badge)](registry-url)
-[![CI on Github Actions: heroku/php](ci-badge)](ci-url)
+[![Cloud Native Buildpacks Registry: heroku/php][registry-badge]][registry-url]
+[![CI on Github Actions: heroku/php][ci-badge]][ci-url]
 
-![Heroku Cloud Native Buildpack: heroku/php](cnb-banner)
+![Heroku Cloud Native Buildpack: heroku/php][cnb-banner]
 
 `heroku/php` is the [Heroku Cloud Native Buildpack](heroku-buildpacks)
 for PHP applications. It builds PHP application source code into application images with
