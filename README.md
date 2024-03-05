@@ -6,11 +6,11 @@
 ![Heroku Cloud Native Buildpack: heroku/php](https://cloud.githubusercontent.com/assets/51578/13712789/9569dce4-e793-11e5-9147-1fe28dc802d6.png)
 
 `heroku/php` is the [Heroku Cloud Native Buildpack](https://github.com/heroku/buildpacks)
-for PHP applications. It builds PHP application source code into production application images with
+for PHP applications. It builds PHP application source code into application images with
 minimal configuration.
 
 > [!IMPORTANT]
-> This is a [Cloud Native Buildpack](https://buildpacks.io), and is a component of the [Heroku Cloud Native Buildpacks](https://github.com/heroku/buildpacks) project. If you are looking for the Heroku Classic Buildpack for PHP (for use on the Heroku platform) instead, you may find it [here](https://github.com/heroku/heroku-buildpack-php).
+> This is a [Cloud Native Buildpack](https://buildpacks.io), and is a component of the [Heroku Cloud Native Buildpacks](https://github.com/heroku/buildpacks) project. If you are instead looking for the Heroku Classic Buildpack for PHP (for use on the Heroku platform), you may find it [here](https://github.com/heroku/heroku-buildpack-php).
 
 ## Usage
 
