@@ -105,8 +105,6 @@ pub(crate) fn builder() -> String {
 pub(crate) fn default_buildpacks() -> Vec<BuildpackReference> {
     vec![
         BuildpackReference::CurrentCrate,
-        // Using an explicit version from Docker Hub to prevent failures when there
-        // are multiple Procfile buildpack versions in the builder image.
-        BuildpackReference::Other(String::from("docker://docker.io/heroku/procfile-cnb:2.0.1")),
+        BuildpackReference::Other(String::from("heroku/procfile")),
     ]
 }
