@@ -10,7 +10,7 @@ for PHP applications. It builds PHP application source code into application ima
 minimal configuration.
 
 > [!IMPORTANT]
-> This is a [Cloud Native Buildpack][cnb], and is a component of the [Heroku Cloud Native Buildpacks][heroku-buildpacks] project, which is in beta. If you are instead looking for the Heroku Classic Buildpack for PHP (for use on the Heroku platform), you may find it [here][classic-buildpack].
+> This is a [Cloud Native Buildpack][cnb], and is a component of the [Heroku Cloud Native Buildpacks][heroku-buildpacks] project, which is in preview. If you are instead looking for the Heroku Classic Buildpack for PHP (for use on the Heroku platform), you may find it [here][classic-buildpack].
 
 ## Usage
 
