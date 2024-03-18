@@ -29,14 +29,6 @@ Then run the image:
 docker run --rm -it -e "PORT=8080" -p 8080:8080 sample-app
 ```
 
-## Application Requirements
-
-TODO
-
-## Configuration
-
-TODO
-
 ## Contributing
 
 Issues and pull requests are welcome. See our [contributing guidelines](./CONTRIBUTING.md) if you would like to help.
