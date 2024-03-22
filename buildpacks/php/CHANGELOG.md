@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `buildpack.toml` declaration of `[[stacks]]` has been replaced with `[[targets]]`, currently supporting Ubuntu 20.04 and 22.04 (both `amd64`)
 - Bump versions of Composer and minimal PHP for bootstrapping to 2.7.6 and 8.3.7
 
+### Fixed
+
+- Strings should be allowed as values in `scripts` object in `composer.json` ([#90](https://github.com/heroku/buildpacks-php/issues/90))
+
 ## [0.1.2] - 2023-10-24
 
 ### Changed
