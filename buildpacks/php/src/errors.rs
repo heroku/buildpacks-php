@@ -391,8 +391,10 @@ fn on_composer_env_layer_error(e: ComposerEnvLayerError) -> (String, String) {
             
             {INTERNAL_ERROR_HELP_STRING}
         "},
-        ComposerEnvLayerError::ComposerBinDir(_) => formatdoc! {"
+        ComposerEnvLayerError::ComposerBinDir(e) => formatdoc! {"
             Could not determine Composer 'bin-dir' config value.
+            
+            Composer exited with status: {e}
             
             {INTERNAL_ERROR_HELP_STRING}
         "},
