@@ -18,7 +18,7 @@ use crate::package_manager::composer::DependencyInstallationError;
 use crate::php_project::{
     PlatformJsonError, PlatformJsonNotice, ProjectLoadError, ProjectLoaderNotice,
 };
-use crate::platform::{PlatformRepositoryUrlError, WebserversJsonError};
+use crate::platform::{get_stack_name_for_target, PlatformRepositoryUrlError, WebserversJsonError};
 use indoc::formatdoc;
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
@@ -91,7 +91,7 @@ impl Buildpack for PhpBuildpack {
         let mut platform_json_notices = Vec::<PlatformJsonNotice>::new();
         let platform_json = project
             .platform_json(
-                &context.stack_id,
+                &get_stack_name_for_target(&context.target),
                 &platform_installer_path,
                 &all_repos,
                 false,
@@ -116,7 +116,7 @@ impl Buildpack for PhpBuildpack {
         log_header("Installing web servers");
 
         let webservers_json = platform::webservers_json(
-            &context.stack_id,
+            &get_stack_name_for_target(&context.target),
             &platform_installer_path,
             &classic_buildpack_path,
             &all_repos,

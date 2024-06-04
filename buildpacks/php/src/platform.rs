@@ -4,7 +4,7 @@ use crate::platform::generator::PlatformGeneratorError;
 use crate::PhpBuildpack;
 use composer::ComposerRootPackage;
 use libcnb::build::BuildContext;
-use libcnb::Platform;
+use libcnb::{Platform, Target};
 use serde_json::json;
 use std::collections::HashMap;
 use std::path::Path;
@@ -33,6 +33,62 @@ pub(crate) enum PlatformRepositoryUrlError {
     Parse(url::ParseError),
 }
 
+pub(crate) fn get_stack_name_for_target(target: &Target) -> String {
+    match target {
+        Target {
+            os,
+            distro_name,
+            distro_version,
+            ..
+        } if os == "linux" && distro_name == "ubuntu" => format!(
+            "heroku-{}",
+            distro_version.strip_suffix(".04").unwrap_or(distro_version)
+        ),
+        Target {
+            os,
+            distro_name,
+            distro_version,
+            ..
+        } => format!("{os}-{distro_name}-{distro_version}"),
+    }
+}
+
+pub(crate) fn get_platform_base_url_for_target(target: &Target) -> Url {
+    let stack_identifier = match target {
+        Target {
+            os,
+            distro_name,
+            distro_version,
+            ..
+        } if os == "linux"
+            && distro_name == "ubuntu"
+            && (distro_version == "20.04" || distro_version == "22.04") =>
+        {
+            get_stack_name_for_target(target)
+        }
+        Target {
+            os,
+            arch,
+            distro_name,
+            ..
+        } if os == "linux" && distro_name == "ubuntu" => {
+            format!("{}-{}", get_stack_name_for_target(target), arch)
+        }
+        Target {
+            os,
+            arch,
+            distro_name,
+            distro_version,
+            ..
+        } => format!("{os}-{arch}-{distro_name}-{distro_version}"),
+    };
+
+    Url::parse(&format!(
+        "https://lang-php.s3.us-east-1.amazonaws.com/dist-{stack_identifier}-cnb/",
+    ))
+    .expect("Internal error: failed to generate default repository URL")
+}
+
 /// Returns a list of platform repository [`Url`s](Url), computed from the given [`BuildContext`]'s
 /// stack ID and processed `HEROKU_PHP_PLATFORM_REPOSITORIES` environment variable.
 ///
@@ -42,11 +98,7 @@ pub(crate) fn platform_repository_urls_from_default_and_build_context(
     context: &BuildContext<PhpBuildpack>,
 ) -> Result<Vec<Url>, PlatformRepositoryUrlError> {
     // our default repo
-    let default_platform_repositories = vec![Url::parse(&format!(
-        "https://lang-php.s3.us-east-1.amazonaws.com/dist-{}-cnb/",
-        context.stack_id,
-    ))
-    .expect("Internal error: failed to parse default repository URL")];
+    let default_platform_repositories = vec![get_platform_base_url_for_target(&context.target)];
 
     // anything user-supplied
     let user_repos = context

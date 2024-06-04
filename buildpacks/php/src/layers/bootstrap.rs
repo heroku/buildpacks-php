@@ -1,16 +1,17 @@
 use crate::utils;
 use crate::{PhpBuildpack, PhpBuildpackError};
 use libcnb::build::BuildContext;
-use libcnb::data::buildpack::StackId;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{ExistingLayerStrategy, Layer, LayerData, LayerResult, LayerResultBuilder};
-use libcnb::Buildpack;
+use libcnb::{Buildpack, Target};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) struct BootstrapLayerMetadata {
-    stack: StackId,
+    arch: String,
+    distro_name: String,
+    distro_version: String,
     url: String,
     strip_path_components: usize,
     directory: PathBuf,
@@ -35,7 +36,7 @@ impl Layer for BootstrapLayer {
     }
 
     fn create(
-        &self,
+        &mut self,
         context: &BuildContext<Self::Buildpack>,
         layer_path: &Path,
     ) -> Result<LayerResult<Self::Metadata>, <Self::Buildpack as Buildpack>::Error> {
@@ -48,7 +49,7 @@ impl Layer for BootstrapLayer {
         .map_err(BootstrapLayerError::DownloadUnpack)?;
 
         let layer_metadata = generate_layer_metadata(
-            &context.stack_id,
+            &context.target,
             &self.url,
             self.strip_path_components,
             &self.directory,
@@ -57,13 +58,13 @@ impl Layer for BootstrapLayer {
     }
 
     fn existing_layer_strategy(
-        &self,
+        &mut self,
         context: &BuildContext<Self::Buildpack>,
         layer_data: &LayerData<Self::Metadata>,
     ) -> Result<ExistingLayerStrategy, <Self::Buildpack as Buildpack>::Error> {
         let old_metadata = &layer_data.content_metadata.metadata;
         let new_metadata = generate_layer_metadata(
-            &context.stack_id,
+            &context.target,
             &self.url,
             self.strip_path_components,
             &self.directory,
@@ -77,13 +78,15 @@ impl Layer for BootstrapLayer {
 }
 
 fn generate_layer_metadata(
-    stack: &StackId,
+    target: &Target,
     url: &str,
     strip_path_components: usize,
     directory: &Path,
 ) -> BootstrapLayerMetadata {
     BootstrapLayerMetadata {
-        stack: stack.clone(),
+        arch: target.arch.clone(),
+        distro_name: target.distro_name.clone(),
+        distro_version: target.distro_version.clone(),
         url: url.to_string(),
         strip_path_components,
         directory: directory.to_path_buf(),
