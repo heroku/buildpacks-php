@@ -2,11 +2,10 @@ use crate::utils::{self, CommandError};
 use crate::{PhpBuildpack, PhpBuildpackError};
 use composer::ComposerRootPackage;
 use libcnb::build::BuildContext;
-use libcnb::data::buildpack::StackId;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
-use libcnb::{Buildpack, Env};
+use libcnb::{Buildpack, Env, Target};
 use libherokubuildpack::log::log_info;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -17,7 +16,9 @@ use std::process::Command;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct PlatformLayerMetadata {
-    stack: StackId,
+    arch: String,
+    distro_name: String,
+    distro_version: String,
 }
 
 pub(crate) struct PlatformLayer<'a> {
@@ -38,7 +39,7 @@ impl Layer for PlatformLayer<'_> {
     }
 
     fn create(
-        &self,
+        &mut self,
         context: &BuildContext<Self::Buildpack>,
         layer_path: &Path,
     ) -> Result<LayerResult<Self::Metadata>, <Self::Buildpack as Buildpack>::Error> {
@@ -143,16 +144,18 @@ impl Layer for PlatformLayer<'_> {
             }
         }
 
-        let layer_metadata = generate_layer_metadata(&context.stack_id);
+        let layer_metadata = generate_layer_metadata(&context.target);
         LayerResultBuilder::new(layer_metadata)
             .env(layer_env)
             .build()
     }
 }
 
-fn generate_layer_metadata(stack_id: &StackId) -> PlatformLayerMetadata {
+fn generate_layer_metadata(target: &Target) -> PlatformLayerMetadata {
     PlatformLayerMetadata {
-        stack: stack_id.clone(),
+        arch: target.arch.clone(),
+        distro_name: target.distro_name.clone(),
+        distro_version: target.distro_version.clone(),
     }
 }
 

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add PHP/8.3, update PHP runtimes, extensions, Composers, web servers (#104)
+
+### Changed
+
+- Use Buildpack API 0.10 (requires `lifecycle` 0.17 or newer)
+- `buildpack.toml` declaration of `[[stacks]]` has been replaced with `[[targets]]`, currently supporting Ubuntu 20.04 and 22.04 (both `amd64`)
+- Bump versions of Composer and minimal PHP for bootstrapping to 2.7.6 and 8.3.7
+
 ## [0.1.2] - 2023-10-24
 
 ### Changed

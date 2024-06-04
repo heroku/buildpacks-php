@@ -1,4 +1,4 @@
-api = "0.9"
+api = "0.10"
 
 [buildpack]
 id = "heroku/php"
@@ -7,16 +7,21 @@ name = "Heroku PHP"
 homepage = "https://github.com/heroku/buildpacks-php"
 description = "Heroku's buildpack for PHP applications."
 keywords = ["php", "heroku"]
-clear-env = true
 
 [[buildpack.licenses]]
 type = "BSD-3-Clause"
 
-[[stacks]]
-id = "heroku-20"
+[[targets]]
+os = "linux"
+arch = "amd64"
 
-[[stacks]]
-id = "heroku-22"
+[[targets.distros]]
+name = "ubuntu"
+version = "20.04"
+
+[[targets.distros]]
+name = "ubuntu"
+version = "22.04"
 
 [metadata.release]
 image = { repository = "docker.io/heroku/buildpack-php" }

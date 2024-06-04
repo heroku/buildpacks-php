@@ -18,7 +18,9 @@ use crate::package_manager::composer::DependencyInstallationError;
 use crate::php_project::{
     PlatformJsonError, PlatformJsonNotice, ProjectLoadError, ProjectLoaderNotice,
 };
-use crate::platform::{PlatformRepositoryUrlError, WebserversJsonError};
+use crate::platform::{
+    heroku_stack_name_for_target, PlatformRepositoryUrlError, WebserversJsonError,
+};
 use indoc::formatdoc;
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
@@ -59,6 +61,9 @@ impl Buildpack for PhpBuildpack {
     }
 
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
+        let stack_name = heroku_stack_name_for_target(&context.target)
+            .expect("Internal error: could not determine Heroku stack name for OS/distro");
+
         let mut loader_notices = Vec::<ProjectLoaderNotice>::new();
         let loader = php_project::ProjectLoader::from_env(context.platform.env())
             .unwrap(&mut loader_notices);
@@ -90,12 +95,7 @@ impl Buildpack for PhpBuildpack {
 
         let mut platform_json_notices = Vec::<PlatformJsonNotice>::new();
         let platform_json = project
-            .platform_json(
-                &context.stack_id,
-                &platform_installer_path,
-                &all_repos,
-                false,
-            )
+            .platform_json(&stack_name, &platform_installer_path, &all_repos, false)
             .map_err(PhpBuildpackError::PlatformJson)?
             .unwrap(&mut platform_json_notices); // Warned::unwrap() does not panic :)
         platform_json_notices
@@ -116,7 +116,7 @@ impl Buildpack for PhpBuildpack {
         log_header("Installing web servers");
 
         let webservers_json = platform::webservers_json(
-            &context.stack_id,
+            &stack_name,
             &platform_installer_path,
             &classic_buildpack_path,
             &all_repos,
