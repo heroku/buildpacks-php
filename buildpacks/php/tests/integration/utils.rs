@@ -73,9 +73,17 @@ pub(crate) fn smoke_test<P, B>(
     P: AsRef<Path>,
     B: Into<Vec<BuildpackReference>>,
 {
-    let build_config = BuildConfig::new(builder_name.as_ref(), app_dir)
+    let mut build_config = BuildConfig::new(builder_name.as_ref(), app_dir)
         .buildpacks(buildpacks.into())
         .clone();
+
+    let target_triple = match builder_name.as_ref() {
+        // Compile the buildpack for ARM64 iff the builder supports multi-arch and the host is ARM64.
+        "heroku/builder:24" if cfg!(target_arch = "aarch64") => "aarch64-unknown-linux-musl",
+        _ => "x86_64-unknown-linux-musl",
+    };
+
+    build_config.target_triple(target_triple);
 
     TestRunner::default().build(&build_config, |context| {
         start_container_assert_basic_http_response(&context, expected_http_response_body_contains);
@@ -89,7 +97,7 @@ pub(crate) fn smoke_test<P, B>(
     });
 }
 
-const DEFAULT_INTEGRATION_TEST_BUILDER: &str = "heroku/builder:22";
+const DEFAULT_INTEGRATION_TEST_BUILDER: &str = "heroku/builder:24";
 
 const UREQ_RESPONSE_RESULT_EXPECT_MESSAGE: &str = "http request should be successful";
 

@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add PHP/8.3, update PHP runtimes, extensions, Composers, web servers (#104)
+- Support Ubuntu 24.04 (and, as a result, Heroku-24 and `heroku/builder:24`)
+- Support `arm64` CPU architecture (Ubuntu 24.04 / Heroku-24 only)
 
 ### Changed
 
