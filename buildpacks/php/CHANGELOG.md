@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2024-06-04
+
 ### Added
 
 - Add PHP/8.3, update PHP runtimes, extensions, Composers, web servers (#104)
@@ -35,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation
 
-[unreleased]: https://github.com/heroku/buildpacks-php/compare/v0.1.2...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-php/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/heroku/buildpacks-php/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/heroku/buildpacks-php/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/heroku/buildpacks-php/releases/tag/v0.1.1
