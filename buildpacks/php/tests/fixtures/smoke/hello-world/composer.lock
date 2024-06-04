@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "767603e605f5ae2ca56f0f0d4e2d5f21",
+    "content-hash": "0c2875f1f824866b345f0f523e3ae428",
     "packages": [
         {
             "name": "alrik11es/cowsayphp",
@@ -110,16 +110,16 @@
         },
         {
             "name": "bramus/monolog-colored-line-formatter",
-            "version": "3.1.1",
+            "version": "3.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bramus/monolog-colored-line-formatter.git",
-                "reference": "bbbffb43b0cbfff5cb6bb8e2c1dd15c99de8bd32"
+                "reference": "1ce52a13d5accdc425fb912f9b96c84f6be2ea72"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bramus/monolog-colored-line-formatter/zipball/bbbffb43b0cbfff5cb6bb8e2c1dd15c99de8bd32",
-                "reference": "bbbffb43b0cbfff5cb6bb8e2c1dd15c99de8bd32",
+                "url": "https://api.github.com/repos/bramus/monolog-colored-line-formatter/zipball/1ce52a13d5accdc425fb912f9b96c84f6be2ea72",
+                "reference": "1ce52a13d5accdc425fb912f9b96c84f6be2ea72",
                 "shasum": ""
             },
             "require": {
@@ -150,7 +150,7 @@
             "description": "Colored Line Formatter for Monolog",
             "support": {
                 "issues": "https://github.com/bramus/monolog-colored-line-formatter/issues",
-                "source": "https://github.com/bramus/monolog-colored-line-formatter/tree/3.1.1"
+                "source": "https://github.com/bramus/monolog-colored-line-formatter/tree/3.1.2"
             },
             "funding": [
                 {
@@ -158,20 +158,20 @@
                     "type": "github"
                 }
             ],
-            "time": "2023-04-11T12:52:29+00:00"
+            "time": "2023-08-18T13:44:29+00:00"
         },
         {
             "name": "monolog/monolog",
-            "version": "3.3.1",
+            "version": "3.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Seldaek/monolog.git",
-                "reference": "9b5daeaffce5b926cac47923798bba91059e60e2"
+                "reference": "4b18b21a5527a3d5ffdac2fd35d3ab25a9597654"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Seldaek/monolog/zipball/9b5daeaffce5b926cac47923798bba91059e60e2",
-                "reference": "9b5daeaffce5b926cac47923798bba91059e60e2",
+                "url": "https://api.github.com/repos/Seldaek/monolog/zipball/4b18b21a5527a3d5ffdac2fd35d3ab25a9597654",
+                "reference": "4b18b21a5527a3d5ffdac2fd35d3ab25a9597654",
                 "shasum": ""
             },
             "require": {
@@ -186,7 +186,7 @@
                 "doctrine/couchdb": "~1.0@dev",
                 "elasticsearch/elasticsearch": "^7 || ^8",
                 "ext-json": "*",
-                "graylog2/gelf-php": "^1.4.2 || ^2@dev",
+                "graylog2/gelf-php": "^1.4.2 || ^2.0",
                 "guzzlehttp/guzzle": "^7.4.5",
                 "guzzlehttp/psr7": "^2.2",
                 "mongodb/mongodb": "^1.8",
@@ -194,7 +194,7 @@
                 "phpstan/phpstan": "^1.9",
                 "phpstan/phpstan-deprecation-rules": "^1.0",
                 "phpstan/phpstan-strict-rules": "^1.4",
-                "phpunit/phpunit": "^9.5.26",
+                "phpunit/phpunit": "^10.5.17",
                 "predis/predis": "^1.1 || ^2",
                 "ruflin/elastica": "^7",
                 "symfony/mailer": "^5.4 || ^6",
@@ -247,7 +247,7 @@
             ],
             "support": {
                 "issues": "https://github.com/Seldaek/monolog/issues",
-                "source": "https://github.com/Seldaek/monolog/tree/3.3.1"
+                "source": "https://github.com/Seldaek/monolog/tree/3.6.0"
             },
             "funding": [
                 {
@@ -259,7 +259,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2023-02-06T13:46:10+00:00"
+            "time": "2024-04-12T21:02:21+00:00"
         },
         {
             "name": "psr/log",
@@ -313,16 +313,16 @@
         },
         {
             "name": "symfony/polyfill-mbstring",
-            "version": "v1.27.0",
+            "version": "v1.29.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-mbstring.git",
-                "reference": "8ad114f6b39e2c98a8b0e3bd907732c207c2b534"
+                "reference": "9773676c8a1bb1f8d4340a62efe641cf76eda7ec"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/8ad114f6b39e2c98a8b0e3bd907732c207c2b534",
-                "reference": "8ad114f6b39e2c98a8b0e3bd907732c207c2b534",
+                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/9773676c8a1bb1f8d4340a62efe641cf76eda7ec",
+                "reference": "9773676c8a1bb1f8d4340a62efe641cf76eda7ec",
                 "shasum": ""
             },
             "require": {
@@ -336,9 +336,6 @@
             },
             "type": "library",
             "extra": {
-                "branch-alias": {
-                    "dev-main": "1.27-dev"
-                },
                 "thanks": {
                     "name": "symfony/polyfill",
                     "url": "https://github.com/symfony/polyfill"
@@ -376,7 +373,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.27.0"
+                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.29.0"
             },
             "funding": [
                 {
@@ -392,7 +389,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2022-11-03T14:55:06+00:00"
+            "time": "2024-01-29T20:11:03+00:00"
         }
     ],
     "packages-dev": [],
@@ -402,7 +399,7 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "8.1.*",
+        "php": "8.*",
         "ext-gmp": "*",
         "ext-intl": "*",
         "ext-mbstring": "*",
@@ -413,5 +410,5 @@
         "ext-pq": "*"
     },
     "platform-dev": [],
-    "plugin-api-version": "2.3.0"
+    "plugin-api-version": "2.6.0"
 }

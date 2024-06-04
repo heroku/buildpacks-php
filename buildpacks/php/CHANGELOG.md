@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add PHP/8.3, update PHP runtimes, extensions, Composers, web servers (#104)
+
 ### Changed
 
 - Use Buildpack API 0.10 (requires `lifecycle` 0.17 or newer)
