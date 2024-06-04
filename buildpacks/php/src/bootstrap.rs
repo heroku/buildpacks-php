@@ -26,7 +26,7 @@ pub(crate) fn bootstrap(
     let php_layer_data = context.handle_layer(
         layer_name!("bootstrap_php"),
         BootstrapLayer {
-            url: platform::get_platform_base_url_for_target(&context.target)
+            url: platform::platform_base_url_for_target(&context.target)
                 .join(&format!("php-min-{PHP_VERSION}.tar.gz"))
                 .expect("Internal error: failed to generate bootstrap download URL for PHP")
                 .to_string(),
@@ -39,7 +39,7 @@ pub(crate) fn bootstrap(
     let composer_layer_data = context.handle_layer(
         layer_name!("bootstrap_composer"),
         BootstrapLayer {
-            url: platform::get_platform_base_url_for_target(&context.target)
+            url: platform::platform_base_url_for_target(&context.target)
                 .join(&format!("composer-{COMPOSER_VERSION}.tar.gz"))
                 .expect("Internal error: failed to generate bootstrap download URL for Composer")
                 .to_string(),

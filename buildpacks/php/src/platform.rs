@@ -33,54 +33,40 @@ pub(crate) enum PlatformRepositoryUrlError {
     Parse(url::ParseError),
 }
 
-pub(crate) fn get_stack_name_for_target(target: &Target) -> String {
-    match target {
-        Target {
-            os,
-            distro_name,
-            distro_version,
-            ..
-        } if os == "linux" && distro_name == "ubuntu" => format!(
-            "heroku-{}",
-            distro_version.strip_suffix(".04").unwrap_or(distro_version)
-        ),
-        Target {
-            os,
-            distro_name,
-            distro_version,
-            ..
-        } => format!("{os}-{distro_name}-{distro_version}"),
+pub(crate) fn heroku_stack_name_for_target(target: &Target) -> Result<String, String> {
+    let Target {
+        os,
+        distro_name,
+        distro_version,
+        ..
+    } = target;
+    match (os.as_str(), distro_name.as_str(), distro_version.as_str()) {
+        ("linux", "ubuntu", v @ ("20.04" | "22.04")) => {
+            Ok(format!("heroku-{}", v.strip_suffix(".04").unwrap_or(v)))
+        }
+        _ => Err(format!("{os}-{distro_name}-{distro_version}")),
     }
 }
 
-pub(crate) fn get_platform_base_url_for_target(target: &Target) -> Url {
-    let stack_identifier = match target {
-        Target {
-            os,
-            distro_name,
-            distro_version,
-            ..
-        } if os == "linux"
-            && distro_name == "ubuntu"
-            && (distro_version == "20.04" || distro_version == "22.04") =>
-        {
-            get_stack_name_for_target(target)
+pub(crate) fn platform_base_url_for_target(target: &Target) -> Url {
+    let Target {
+        os,
+        arch,
+        distro_name,
+        distro_version,
+        ..
+    } = target;
+    let stack_identifier = if let ("linux", "ubuntu", v) =
+        (os.as_str(), distro_name.as_str(), distro_version.as_str())
+    {
+        let stack_name = heroku_stack_name_for_target(target)
+            .expect("Internal error: could not determine Heroku stack name for OS/distro");
+        match v {
+            "20.04" | "22.04" => stack_name,
+            _ => format!("{stack_name}-{arch}"),
         }
-        Target {
-            os,
-            arch,
-            distro_name,
-            ..
-        } if os == "linux" && distro_name == "ubuntu" => {
-            format!("{}-{}", get_stack_name_for_target(target), arch)
-        }
-        Target {
-            os,
-            arch,
-            distro_name,
-            distro_version,
-            ..
-        } => format!("{os}-{arch}-{distro_name}-{distro_version}"),
+    } else {
+        format!("{os}-{arch}-{distro_name}-{distro_version}")
     };
 
     Url::parse(&format!(
@@ -98,7 +84,7 @@ pub(crate) fn platform_repository_urls_from_default_and_build_context(
     context: &BuildContext<PhpBuildpack>,
 ) -> Result<Vec<Url>, PlatformRepositoryUrlError> {
     // our default repo
-    let default_platform_repositories = vec![get_platform_base_url_for_target(&context.target)];
+    let default_platform_repositories = vec![platform_base_url_for_target(&context.target)];
 
     // anything user-supplied
     let user_repos = context
