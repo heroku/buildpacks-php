@@ -16,5 +16,12 @@
 	},
 	"config":{
 		"bin-dir": "sbin"
+	},
+	"scripts": {
+		"foo": "echo 'foo'",
+		"bar": [
+			"echo 'one'",
+			"echo 'two'"
+		]
 	}
 }
