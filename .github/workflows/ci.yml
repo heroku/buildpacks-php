@@ -51,7 +51,7 @@ jobs:
             arch: "arm64"
           - builder: "builder:20"
             arch: "arm64"
-    runs-on: ${{ matrix.arch == 'arm64' && 'pub-hk-ubuntu-22.04-arm-large' || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.arch == 'arm64' && 'pub-hk-ubuntu-22.04-arm-medium' || 'ubuntu-latest' }}
     env:
       INTEGRATION_TEST_CNB_BUILDER: heroku/${{ matrix.builder }}
     steps:
@@ -75,4 +75,4 @@ jobs:
       # only those and not the unit tests, via the `--ignored` option. On the latest stack
       # we run all integration tests, but on older stacks we only run stack-specific tests.
       - name: Run integration tests (all tests)
-        run: cargo test --locked -- --ignored --test-threads 5
+        run: cargo test --locked -- --ignored --test-threads $(($(nproc)+1))
