@@ -7,8 +7,8 @@ use libcnb::layer_env::Scope;
 use libcnb::Env;
 use std::path::PathBuf;
 
-const PHP_VERSION: &str = "8.1.12";
-const COMPOSER_VERSION: &str = "2.4.4";
+const PHP_VERSION: &str = "8.3.7";
+const COMPOSER_VERSION: &str = "2.7.6";
 const CLASSIC_BUILDPACK_VERSION: &str = "heads/cnb-installer";
 const CLASSIC_BUILDPACK_INSTALLER_SUBDIR: &str = "support/installer";
 
