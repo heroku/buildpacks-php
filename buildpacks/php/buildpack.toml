@@ -11,6 +11,14 @@ keywords = ["php", "heroku"]
 [[buildpack.licenses]]
 type = "BSD-3-Clause"
 
+# Temporary workaround until Buildpacks GHAs get a release
+# which includes Pack 0.34.0 or later:
+# https://github.com/buildpacks/github-actions/releases
+# https://github.com/buildpacks/pack/releases/tag/v0.34.0
+# https://github.com/buildpacks/pack/pull/2081
+[[stacks]]
+id = "*"
+
 [[targets]]
 os = "linux"
 arch = "amd64"
