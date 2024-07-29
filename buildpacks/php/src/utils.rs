@@ -68,7 +68,7 @@ pub(crate) fn download_and_unpack_tgz_with_components_stripped_and_only_entries_
                 // otherwise, we simply ignore the entry, since we do not want to extract it
                 .map_or(Ok(()), |path| {
                     entry
-                        .unpack(&destination.join(path))
+                        .unpack(destination.join(path))
                         .map_err(DownloadUnpackError::Io)
                         .map(|_| ()) // instead of returning the Unpacked struct from unpack()
                 })
