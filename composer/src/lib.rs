@@ -136,14 +136,17 @@ pub struct ComposerBasePackage {
 }
 
 impl ComposerBasePackage {
+    #[must_use]
     pub fn get_script(&self, key: &str) -> Option<&ScriptValue> {
         self.scripts.as_ref().and_then(|scripts| scripts.get(key))
     }
 
+    #[must_use]
     pub fn scripts_len(&self) -> usize {
-        self.scripts.as_ref().map_or(0, |scripts| scripts.len())
+        self.scripts.as_ref().map_or(0, HashMap::len)
     }
 
+    #[must_use]
     pub fn has_script(&self, key: &str) -> bool {
         self.scripts.as_ref().map_or(false, |scripts| scripts.contains_key(key))
     }
