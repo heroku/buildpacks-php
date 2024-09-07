@@ -85,6 +85,14 @@ pub struct ComposerPackage {
     pub package: ComposerBasePackage,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum ScriptValue {
+    String(String),
+    Vec(Vec<String>),
+    ScriptObject(HashMap<String, String>),
+}
+
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -118,14 +126,27 @@ pub struct ComposerBasePackage {
     pub repositories: Option<Vec<ComposerRepository>>,
     pub require: Option<HashMap<String, String>>,
     pub require_dev: Option<HashMap<String, String>>,
-    #[serde_as(as = "Option<HashMap<_, OneOrMany<_, PreferOne>>>")]
-    pub scripts: Option<HashMap<String, Vec<String>>>,
+    pub scripts: Option<HashMap<String, ScriptValue>>,
     pub scripts_descriptions: Option<HashMap<String, String>>,
     pub source: Option<ComposerPackageSource>,
     pub support: Option<HashMap<String, String>>,
     pub suggest: Option<HashMap<String, String>>,
     pub target_dir: Option<String>,
     pub time: Option<String>, // TODO: "Package release date, in 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DDTHH:MM:SSZ' format.", but in practice it uses DateTime::__construct(), which can parse a lot of formats
+}
+
+impl ComposerBasePackage {
+    pub fn get_script(&self, key: &str) -> Option<&ScriptValue> {
+        self.scripts.as_ref().and_then(|scripts| scripts.get(key))
+    }
+
+    pub fn scripts_len(&self) -> usize {
+        self.scripts.as_ref().map_or(0, |scripts| scripts.len())
+    }
+
+    pub fn has_script(&self, key: &str) -> bool {
+        self.scripts.as_ref().map_or(false, |scripts| scripts.contains_key(key))
+    }
 }
 
 #[skip_serializing_none]
@@ -428,6 +449,7 @@ pub struct ComposerLock {
 
 #[cfg(test)]
 mod tests {
+    use serde_json::from_str;
     use super::*;
 
     use serde_test::{assert_de_tokens, assert_de_tokens_error, Token};
@@ -474,5 +496,187 @@ mod tests {
             &[Token::Seq { len: Some(1) }, Token::U8(42), Token::SeqEnd],
             "sequence must be empty",
         );
+    }
+
+    #[test]
+    fn test_composer_scripts_array() {
+        let composer_json = r#"{
+            "scripts": {
+                "pre-install-cmd": ["echo 'pre-install-cmd'"],
+                "post-install-cmd": ["echo 'post-install-cmd'"]
+            }
+        }"#;
+
+        let composer: ComposerBasePackage = from_str(composer_json).unwrap();
+
+        assert_eq!(composer.scripts_len(), 2);
+
+        assert!(composer.has_script("pre-install-cmd"));
+        assert_eq!(
+            composer.get_script("pre-install-cmd"),
+            Some(&ScriptValue::Vec(vec!["echo 'pre-install-cmd'".to_string()]))
+        );
+
+        assert!(composer.has_script("post-install-cmd"));
+        assert_eq!(
+            composer.get_script("post-install-cmd"),
+            Some(&ScriptValue::Vec(vec!["echo 'post-install-cmd'".to_string()]))
+        );
+    }
+
+    #[test]
+    fn test_composer_scripts_object() {
+        let composer_json = r#"{
+            "scripts": {
+                "auto-scripts": {
+                    "cache:clear": "symfony-cmd",
+                    "assets:install %PUBLIC_DIR%": "symfony-cmd"
+                },
+                "post-install-cmd": ["@auto-scripts"],
+                "post-update-cmd": ["@auto-scripts"]
+            }
+        }"#;
+
+        let composer: ComposerBasePackage = from_str(composer_json).unwrap();
+
+        assert_eq!(composer.scripts_len(), 3);
+        assert!(composer.has_script("auto-scripts"));
+        if let Some(ScriptValue::ScriptObject(auto_scripts)) = composer.get_script("auto-scripts") {
+            assert_eq!(auto_scripts.len(), 2);
+            assert_eq!(auto_scripts.get("cache:clear"), Some(&"symfony-cmd".to_string()));
+            assert_eq!(auto_scripts.get("assets:install %PUBLIC_DIR%"), Some(&"symfony-cmd".to_string()));
+        } else {
+            panic!("auto-scripts is not of type AutoScripts");
+        }
+
+        assert!(composer.has_script("post-install-cmd"));
+        assert_eq!(
+            composer.get_script("post-install-cmd"),
+            Some(&ScriptValue::Vec(vec!["@auto-scripts".to_string()]))
+        );
+
+        assert!(composer.has_script("post-update-cmd"));
+        assert_eq!(
+            composer.get_script("post-update-cmd"),
+            Some(&ScriptValue::Vec(vec!["@auto-scripts".to_string()]))
+        );
+    }
+
+    #[test]
+    fn test_composer_scripts_key_value() {
+        let json = r#"{
+            "scripts": {
+                "foo": "bar"
+            }
+        }"#;
+
+        let composer: ComposerBasePackage = from_str(json).unwrap();
+
+        assert_eq!(composer.scripts_len(), 1);
+        assert!(composer.has_script("foo"));
+        assert_eq!(
+            composer.get_script("foo"),
+            Some(&ScriptValue::String("bar".to_string()))
+        );
+
+        if let Some(scripts) = &composer.scripts {
+            assert_eq!(scripts.len(), 1);
+            assert_eq!(scripts.get("foo"), Some(&ScriptValue::String("bar".to_string())));
+        } else {
+            panic!("scripts field is None");
+        }
+    }
+
+    #[test]
+    fn test_composer_no_scripts_field() {
+        let json = r#"{}"#; // No scripts field
+        let composer_package: ComposerBasePackage = from_str(json).unwrap();
+
+        assert!(composer_package.scripts.is_none());
+        assert_eq!(composer_package.scripts_len(), 0);
+    }
+
+    #[test]
+    fn test_composer_empty_scripts_field() {
+        let json = r#"{"scripts": {}}"#; // Empty scripts field
+        let composer_package: ComposerBasePackage = from_str(json).unwrap();
+
+        // Check that scripts is Some, but empty
+        assert!(composer_package.scripts.is_some());
+        assert_eq!(composer_package.scripts.as_ref().unwrap().len(), 0);
+        assert_eq!(composer_package.scripts_len(), 0);
+    }
+
+    // https://github.com/heroku/buildpacks-php/issues/90
+    #[test]
+    fn test_composer_mixed_scripts() {
+        let json = r#"
+        {
+            "scripts": {
+                "compile": [
+                    "bin/doctrine orm:generate-proxies"
+                ],
+                "cs": [
+                    "phpcs"
+                ],
+                "cs:fix": "phpcbf",
+                "test": "phpunit",
+                "test:ordered": [
+                    "phpunit --testsuite unit",
+                    "phpunit --testsuite functional"
+                ],
+                "serve": "php -S 0.0.0.0:8080 -t public/"
+            }
+        }"#;
+
+        let composer_package: ComposerBasePackage = from_str(json).unwrap();
+
+        // Check the total number of scripts
+        assert_eq!(composer_package.scripts_len(), 6);
+
+        // Test array scripts
+        assert!(composer_package.has_script("compile"));
+        assert_eq!(
+            composer_package.get_script("compile"),
+            Some(&ScriptValue::Vec(vec!["bin/doctrine orm:generate-proxies".to_string()]))
+        );
+
+        assert!(composer_package.has_script("cs"));
+        assert_eq!(
+            composer_package.get_script("cs"),
+            Some(&ScriptValue::Vec(vec!["phpcs".to_string()]))
+        );
+
+        assert!(composer_package.has_script("test:ordered"));
+        assert_eq!(
+            composer_package.get_script("test:ordered"),
+            Some(&ScriptValue::Vec(vec![
+                "phpunit --testsuite unit".to_string(),
+                "phpunit --testsuite functional".to_string()
+            ]))
+        );
+
+        // Test string scripts
+        assert!(composer_package.has_script("cs:fix"));
+        assert_eq!(
+            composer_package.get_script("cs:fix"),
+            Some(&ScriptValue::String("phpcbf".to_string()))
+        );
+
+        assert!(composer_package.has_script("test"));
+        assert_eq!(
+            composer_package.get_script("test"),
+            Some(&ScriptValue::String("phpunit".to_string()))
+        );
+
+        assert!(composer_package.has_script("serve"));
+        assert_eq!(
+            composer_package.get_script("serve"),
+            Some(&ScriptValue::String("php -S 0.0.0.0:8080 -t public/".to_string()))
+        );
+
+        // Test non-existent script
+        assert!(!composer_package.has_script("non_existent"));
+        assert_eq!(composer_package.get_script("non_existent"), None);
     }
 }
