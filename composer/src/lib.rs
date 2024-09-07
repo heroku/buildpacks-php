@@ -589,7 +589,7 @@ mod tests {
 
     #[test]
     fn test_composer_no_scripts_field() {
-        let json = r#"{}"#; // No scripts field
+        let json = r"{}"; // No scripts field
         let composer_package: ComposerBasePackage = from_str(json).unwrap();
 
         assert!(composer_package.scripts.is_none());
