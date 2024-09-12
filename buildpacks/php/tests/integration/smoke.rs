@@ -29,3 +29,14 @@ fn smoke_test_php_getting_started() {
         "Getting Started with PHP on Heroku",
     );
 }
+
+#[test]
+#[ignore = "integration test"]
+fn smoke_test_php_symfony_minimal() {
+    smoke_test(
+        builder(),
+        "tests/fixtures/smoke/symfony-minimal",
+        default_buildpacks(),
+        "Symfony Minimal",
+    );
+}
