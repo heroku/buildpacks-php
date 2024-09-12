@@ -274,9 +274,8 @@ pub(crate) fn generate_platform_json(
             repositories.push(
                 metapackages
                     // ... and insert a require for each of them
-                    .map(|package| {
+                    .inspect(|package| {
                         requires.insert(package.name.clone(), package.version.clone());
-                        package
                     })
                     .collect(),
             );
