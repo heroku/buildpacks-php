@@ -21,7 +21,7 @@ To build a PHP application codebase into a production image:
 
 ```bash
 $ cd ~/workdir/sample-php-app
-$ pack build sample-app --builder heroku/builder:22
+$ pack build sample-app --builder heroku/builder:24
 ```
 
 Then run the image:
