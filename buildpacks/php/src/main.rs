@@ -60,6 +60,8 @@ impl Buildpack for PhpBuildpack {
         }
     }
 
+    // TODO: Switch to libcnb's struct layer API.
+    #[allow(deprecated)]
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         let stack_name = heroku_stack_name_for_target(&context.target)
             .expect("Internal error: could not determine Heroku stack name for OS/distro");

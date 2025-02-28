@@ -18,6 +18,8 @@ pub(crate) struct BootstrapResult {
     pub(crate) classic_buildpack_path: PathBuf,
 }
 
+// TODO: Switch to libcnb's struct layer API.
+#[allow(deprecated)]
 pub(crate) fn bootstrap(
     context: &BuildContext<PhpBuildpack>,
 ) -> libcnb::Result<BootstrapResult, <PhpBuildpack as libcnb::Buildpack>::Error> {
