@@ -1,3 +1,6 @@
+// TODO: Switch to libcnb's struct layer API.
+#![allow(deprecated)]
+
 use crate::PhpBuildpack;
 use libcnb::build::BuildContext;
 use libcnb::data::layer_content_metadata::LayerTypes;
