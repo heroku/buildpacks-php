@@ -15,7 +15,7 @@ flate2 = { version = "1", default-features = false, features = ["zlib"] }
 indoc = "2"
 # libcnb has a much bigger impact on buildpack behaviour than any other dependencies,
 # so it's pinned to an exact version to isolate it from lockfile refreshes.
-libcnb = "=0.27.0"
+libcnb = { version = "=0.27.0", features = ["trace"] }
 libherokubuildpack = { version = "=0.27.0", default-features = false, features = ["log"] }
 regex = "1"
 serde = { version = "1", features = ["derive"] }
