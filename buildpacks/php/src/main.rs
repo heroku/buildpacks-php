@@ -178,7 +178,7 @@ impl Buildpack for PhpBuildpack {
                     Details: {libcnb_error}
                 ", iehs = errors::INTERNAL_ERROR_HELP_STRING},
             ),
-        };
+        }
     }
 }
 
