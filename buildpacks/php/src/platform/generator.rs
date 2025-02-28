@@ -58,7 +58,7 @@ fn composer_repository_from_repository_url(
             ONLY_QUERY_ARG_NAME | EXCLUDE_QUERY_ARG_NAME => {
                 if filters.is_some() {
                     return Err(ComposerRepositoryFromRepositoryUrlError::MultipleFilters);
-                };
+                }
                 let filter_list = split_and_trim_list(v, ",")
                     .map(ensure_heroku_sys_prefix)
                     .collect();
@@ -178,7 +178,7 @@ pub(crate) fn generate_platform_json(
 ) -> Result<ComposerRootPackage, PlatformGeneratorError> {
     if platform_repositories.is_empty() {
         return Err(PlatformGeneratorError::EmptyPlatformRepositoriesList);
-    };
+    }
 
     let stack_provide = stack_provide_from_stack_name(stack)?;
 
@@ -274,9 +274,8 @@ pub(crate) fn generate_platform_json(
             repositories.push(
                 metapackages
                     // ... and insert a require for each of them
-                    .map(|package| {
+                    .inspect(|package| {
                         requires.insert(package.name.clone(), package.version.clone());
-                        package
                     })
                     .collect(),
             );

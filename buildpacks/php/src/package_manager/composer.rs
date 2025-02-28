@@ -285,7 +285,7 @@ pub(crate) fn ensure_runtime_requirement(
             ),
         ] {
             for (name, _) in requirements.clone().unwrap_or_default() {
-                *marker |= metapackages.get(&name).map_or(false, |package| {
+                *marker |= metapackages.get(&name).is_some_and(|package| {
                     // here, we only look at a package's require list, not require-dev, which only has an effect in the root of a composer.json
                     // (since every library has its own list of dev requirements for testing etc, and that should never be installed into a project using that library)
                     has_runtime_link(&package.package.require.clone().unwrap_or_default())
