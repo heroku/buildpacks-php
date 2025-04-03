@@ -1226,6 +1226,7 @@ dependencies = [
  "serde_json",
  "shell-words",
  "tar",
+ "tempfile",
  "ureq",
  "url",
  "warned",

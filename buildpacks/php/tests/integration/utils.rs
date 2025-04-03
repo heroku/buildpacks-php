@@ -2,6 +2,7 @@ use libcnb_test::{
     assert_contains, BuildConfig, BuildpackReference, ContainerConfig, TestContext, TestRunner,
 };
 use std::env;
+use std::fs::{self, DirEntry};
 use std::path::Path;
 use std::time::Duration;
 
@@ -116,4 +117,16 @@ pub(crate) fn default_buildpacks() -> Vec<BuildpackReference> {
         BuildpackReference::CurrentCrate,
         BuildpackReference::Other(String::from("heroku/procfile")),
     ]
+}
+
+pub(crate) fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result<()> {
+    fs::create_dir_all(&dst)?;
+    for entry in fs::read_dir(src.as_ref())?.collect::<Result<Vec<DirEntry>, std::io::Error>>()? {
+        if entry.file_type()?.is_dir() {
+            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        } else {
+            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        }
+    }
+    Ok(())
 }

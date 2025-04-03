@@ -31,3 +31,4 @@ assert-json-diff = "2"
 exponential-backoff = "1"
 figment = { version = "0.10", features = ["toml"] }
 libcnb-test = "=0.28.1"
+tempfile = "3.19.1"
