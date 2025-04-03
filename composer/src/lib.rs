@@ -118,8 +118,6 @@ pub struct ComposerBasePackage {
     pub repositories: Option<Vec<ComposerRepository>>,
     pub require: Option<HashMap<String, String>>,
     pub require_dev: Option<HashMap<String, String>>,
-    #[serde_as(as = "Option<HashMap<_, OneOrMany<_, PreferOne>>>")]
-    pub scripts: Option<HashMap<String, Vec<String>>>,
     pub scripts_descriptions: Option<HashMap<String, String>>,
     pub source: Option<ComposerPackageSource>,
     pub support: Option<HashMap<String, String>>,

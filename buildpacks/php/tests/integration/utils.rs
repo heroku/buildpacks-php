@@ -1,3 +1,5 @@
+use fs::DirEntry;
+use fs_err as fs;
 use libcnb_test::{
     assert_contains, BuildConfig, BuildpackReference, ContainerConfig, TestContext, TestRunner,
 };
@@ -72,17 +74,10 @@ pub(crate) fn smoke_test<P, B>(
     P: AsRef<Path>,
     B: Into<Vec<BuildpackReference>>,
 {
-    let mut build_config = BuildConfig::new(builder_name.as_ref(), app_dir)
+    let build_config = BuildConfig::new(builder_name.as_ref(), app_dir)
         .buildpacks(buildpacks.into())
-        .clone();
-
-    let target_triple = match builder_name.as_ref() {
-        // Compile the buildpack for ARM64 iff the builder supports multi-arch and the host is ARM64.
-        "heroku/builder:24" if cfg!(target_arch = "aarch64") => "aarch64-unknown-linux-musl",
-        _ => "x86_64-unknown-linux-musl",
-    };
-
-    build_config.target_triple(target_triple);
+        .target_triple(target_triple(builder_name))
+        .to_owned();
 
     TestRunner::default().build(&build_config, |context| {
         start_container_assert_basic_http_response(&context, expected_http_response_body_contains);
@@ -94,6 +89,15 @@ pub(crate) fn smoke_test<P, B>(
             );
         });
     });
+}
+
+pub(crate) fn target_triple(builder_name: impl AsRef<str>) -> String {
+    let target_triple = match builder_name.as_ref() {
+        // Compile the buildpack for ARM64 iff the builder supports multi-arch and the host is ARM64.
+        "heroku/builder:24" if cfg!(target_arch = "aarch64") => "aarch64-unknown-linux-musl",
+        _ => "x86_64-unknown-linux-musl",
+    };
+    target_triple.to_string()
 }
 
 const DEFAULT_INTEGRATION_TEST_BUILDER: &str = "heroku/builder:24";
@@ -114,4 +118,16 @@ pub(crate) fn default_buildpacks() -> Vec<BuildpackReference> {
         BuildpackReference::CurrentCrate,
         BuildpackReference::Other(String::from("heroku/procfile")),
     ]
+}
+
+pub(crate) fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result<()> {
+    fs::create_dir_all(&dst)?;
+    for entry in fs::read_dir(src.as_ref())?.collect::<Result<Vec<DirEntry>, std::io::Error>>()? {
+        if entry.file_type()?.is_dir() {
+            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        } else {
+            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        }
+    }
+    Ok(())
 }

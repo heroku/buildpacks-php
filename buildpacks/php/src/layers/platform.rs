@@ -4,6 +4,7 @@
 use crate::utils::{self, CommandError};
 use crate::{PhpBuildpack, PhpBuildpackError};
 use composer::ComposerRootPackage;
+use fs_err::File;
 use libcnb::build::BuildContext;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
@@ -12,7 +13,6 @@ use libcnb::{Buildpack, Env, Target};
 use libherokubuildpack::log::log_info;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
-use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::process::Command;

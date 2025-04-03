@@ -59,6 +59,7 @@ or testing this buildpack.
 
 ### Testing
 
+- `git submodule update --init --recursive` to pull in submodules
 - `cargo test` performs Rust unit tests.
 - `cargo test -- --ignored` performs all integration tests.
 

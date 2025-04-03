@@ -4,9 +4,9 @@ use crate::tests::platform::ComposerLockTestCaseConfig;
 use assert_json_diff::{assert_json_matches_no_panic, CompareMode, Config};
 use figment::providers::{Format, Serialized, Toml};
 use figment::Figment;
+use fs_err as fs;
 use serde_json::{Map, Value};
 use std::collections::HashSet;
-use std::fs;
 use std::path::{Path, PathBuf};
 
 #[allow(clippy::too_many_lines)]
