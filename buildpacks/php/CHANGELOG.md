@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2025-04-03
+
 ### Changed
 
 - Updated libcnb to 0.28.1, which includes tracing improvements/fixes. ([#165](https://github.com/heroku/buildpacks-php/pull/165))
@@ -47,7 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation
 
-[unreleased]: https://github.com/heroku/buildpacks-php/compare/v0.2.1...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-php/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/heroku/buildpacks-php/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/heroku/buildpacks-php/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/heroku/buildpacks-php/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/heroku/buildpacks-php/compare/v0.1.1...v0.1.2
