@@ -85,6 +85,10 @@ pub struct ComposerPackage {
     pub package: ComposerBasePackage,
 }
 
+/// Represents the PHP application's `composer.json`
+///
+/// Fields not specfified are quietly discarded by serde. This allows the
+/// application to have additional fields not listed below.
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -92,38 +96,12 @@ pub struct ComposerPackage {
 pub struct ComposerBasePackage {
     #[serde(rename = "type")]
     pub kind: Option<String>,
-    pub abandoned: Option<ComposerPackageAbandoned>,
-    pub archive: Option<ComposerPackageArchive>,
-    pub authors: Option<Vec<ComposerPackageAuthor>>,
-    pub autoload: Option<ComposerPackageAutoload>,
-    pub autoload_dev: Option<ComposerPackageAutoload>,
-    #[serde_as(as = "Option<OneOrMany<_, PreferOne>>")]
-    pub bin: Option<Vec<String>>,
     pub conflict: Option<HashMap<String, String>>,
-    pub description: Option<String>,
-    pub dist: Option<ComposerPackageDist>,
-    pub extra: Option<Value>,
-    pub funding: Option<Vec<ComposerPackageFunding>>,
-    pub homepage: Option<Url>,
-    pub include_path: Option<Vec<String>>,
-    pub keywords: Option<Vec<String>>,
-    #[serde_as(as = "Option<OneOrMany<_, PreferOne>>")]
-    pub license: Option<Vec<String>>,
-    pub minimum_stability: Option<ComposerStability>,
-    pub non_feature_branches: Option<Vec<String>>,
-    pub prefer_stable: Option<bool>,
     pub provide: Option<HashMap<String, String>>,
-    pub readme: Option<PathBuf>,
     pub replace: Option<HashMap<String, String>>,
     pub repositories: Option<Vec<ComposerRepository>>,
     pub require: Option<HashMap<String, String>>,
     pub require_dev: Option<HashMap<String, String>>,
-    pub scripts_descriptions: Option<HashMap<String, String>>,
-    pub source: Option<ComposerPackageSource>,
-    pub support: Option<HashMap<String, String>>,
-    pub suggest: Option<HashMap<String, String>>,
-    pub target_dir: Option<String>,
-    pub time: Option<String>, // TODO: "Package release date, in 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DDTHH:MM:SSZ' format.", but in practice it uses DateTime::__construct(), which can parse a lot of formats
 }
 
 #[skip_serializing_none]
