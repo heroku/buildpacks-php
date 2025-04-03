@@ -42,9 +42,9 @@ fn smoke_test_composer_json_scripts_as_objects() {
         "scripts".to_string(),
         json!({
             "auto-scripts": {
-                "cache:clear": "symfony-cmd",
-                "assets:install %PUBLIC_DIR%": "symfony-cmd",
-                "importmap:install": "symfony-cmd"
+                "cache:clear": "echo 'cache:clear'",
+                "assets:install %PUBLIC_DIR%": "echo 'assets:install'",
+                "importmap:install": "echo 'importmap:install'"
             },
             "post-install-cmd": [
                 "@auto-scripts"
