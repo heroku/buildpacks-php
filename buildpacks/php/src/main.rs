@@ -35,6 +35,8 @@ use libherokubuildpack::log::{log_error, log_header, log_info};
 use exponential_backoff as _;
 #[cfg(test)]
 use libcnb_test as _;
+#[cfg(test)]
+use tempfile as _;
 
 struct PhpBuildpack;
 
