@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The "scripts" key in `composer.json` no longer fails when provided with an object as a sub-value. ([#168](https://github.com/heroku/buildpacks-php/pull/168))
+
 ## [0.2.2] - 2025-04-03
 
 ### Changed
