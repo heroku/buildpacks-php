@@ -29,7 +29,7 @@ warned = "0.1"
 
 [dev-dependencies]
 assert-json-diff = "2"
-exponential-backoff = "1"
+exponential-backoff = "2"
 figment = { version = "0.10", features = ["toml"] }
 libcnb-test = "=0.28.1"
 tempfile = "3"
