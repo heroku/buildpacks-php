@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Update build output style ([#171](https://github.com/heroku/buildpacks-php/pull/171))
+
 ## [0.2.4] - 2025-04-10
 
 ### Fixed
