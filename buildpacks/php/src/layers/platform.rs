@@ -3,6 +3,7 @@
 
 use crate::utils::{self, CommandError};
 use crate::{PhpBuildpack, PhpBuildpackError};
+use bullet_stream::global::print;
 use composer::ComposerRootPackage;
 use fs_err::File;
 use libcnb::build::BuildContext;
@@ -10,7 +11,6 @@ use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libcnb::{Buildpack, Env, Target};
-use libherokubuildpack::log::log_info;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::io::BufReader;
@@ -120,7 +120,7 @@ impl Layer for PlatformLayer<'_> {
             for result in rdr.deserialize() {
                 let (provider_name, provides): (String, Vec<String>) =
                     result.map_err(PlatformLayerError::ProvidedPackagesLogRead)?;
-                log_info(format!(
+                print::sub_bullet(format!(
                     "Attempting native package installs for {provider_name}"
                 ));
 
@@ -140,7 +140,9 @@ impl Layer for PlatformLayer<'_> {
                         Ok(()) => {}
                         Err(_) => {
                             // TODO: Classic uses \r here
-                            log_info(format!("no suitable native version of {name} available"));
+                            print::sub_bullet(format!(
+                                "no suitable native version of {name} available"
+                            ));
                         }
                     }
                 }
