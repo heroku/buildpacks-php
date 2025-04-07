@@ -30,7 +30,7 @@ use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env, Platform};
-use libherokubuildpack::log::{log_error, log_info};
+use libherokubuildpack::log::log_error;
 
 #[cfg(test)]
 use exponential_backoff as _;
@@ -54,11 +54,13 @@ impl Buildpack for PhpBuildpack {
         if loader.detect(&context.app_dir) {
             DetectResultBuilder::pass().build()
         } else {
+            print::bullet("PHP detection");
             loader_notices
                 .into_iter()
                 .map(PhpBuildpackNotice::ProjectLoader)
                 .for_each(notices::log);
-            log_info("No PHP project files found.");
+
+            print::sub_bullet("No PHP project files found.");
             DetectResultBuilder::fail().build()
         }
     }
