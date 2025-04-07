@@ -8,6 +8,8 @@ mod platform;
 mod tests;
 mod utils;
 
+use std::time::Instant;
+
 use crate::bootstrap::BootstrapResult;
 use crate::errors::notices;
 use crate::layers::bootstrap::BootstrapLayerError;
@@ -67,6 +69,7 @@ impl Buildpack for PhpBuildpack {
     // TODO: Switch to libcnb's struct layer API.
     #[allow(deprecated)]
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
+        let started = Instant::now();
         print::h2("Heroku PHP Buildpack");
 
         let stack_name = heroku_stack_name_for_target(&context.target)
@@ -168,6 +171,8 @@ impl Buildpack for PhpBuildpack {
         let default_process = ProcessBuilder::new(process_type!("web"), vec!["heroku-php-apache2"])
             .default(true)
             .build();
+
+        print::all_done(&Some(started));
         BuildResultBuilder::new()
             .launch(LaunchBuilder::new().process(default_process).build())
             .build()
