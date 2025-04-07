@@ -1,7 +1,7 @@
 use flate2::read::GzDecoder;
 use std::io;
 use std::path::{Component, Path, PathBuf};
-use std::process::{Command, ExitStatus};
+use std::process::ExitStatus;
 use tar::Archive;
 
 macro_rules! regex {
@@ -87,17 +87,4 @@ fn download(uri: &str) -> Result<Box<dyn io::Read + Send + Sync + 'static>, Down
 pub(crate) enum CommandError {
     Io(io::Error),
     NonZeroExitStatus(ExitStatus),
-}
-
-pub(crate) fn run_command(command: &mut Command) -> Result<(), CommandError> {
-    command
-        .status()
-        .map_err(CommandError::Io)
-        .and_then(|exit_status| {
-            if exit_status.success() {
-                Ok(())
-            } else {
-                Err(CommandError::NonZeroExitStatus(exit_status))
-            }
-        })
 }
