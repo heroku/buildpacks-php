@@ -30,7 +30,6 @@ use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env, Platform};
-use libherokubuildpack::log::log_error;
 
 #[cfg(test)]
 use exponential_backoff as _;
@@ -177,16 +176,15 @@ impl Buildpack for PhpBuildpack {
     fn on_error(&self, error: libcnb::Error<Self::Error>) {
         match error {
             libcnb::Error::BuildpackError(e) => e.on_error(),
-            libcnb_error => log_error(
-                "Internal buildpack error",
-                formatdoc! {"
+            libcnb_error => print::error(formatdoc! {"
+                    Internal buildpack error
+
                     An unexpected internal error was reported by the framework used by this buildpack.
 
                     {iehs}
 
                     Details: {libcnb_error}
-                ", iehs = errors::INTERNAL_ERROR_HELP_STRING},
-            ),
+                ", iehs = errors::INTERNAL_ERROR_HELP_STRING}),
         }
     }
 }
