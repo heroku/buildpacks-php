@@ -12,6 +12,7 @@ composer = { path = "../../composer" }
 const_format = "0.2"
 csv = "1"
 flate2 = { version = "1", default-features = false, features = ["zlib"] }
+fs-err = "3"
 indoc = "2"
 # libcnb has a much bigger impact on buildpack behaviour than any other dependencies,
 # so it's pinned to an exact version to isolate it from lockfile refreshes.

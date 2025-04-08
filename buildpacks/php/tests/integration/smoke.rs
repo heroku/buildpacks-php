@@ -6,9 +6,9 @@
 //! These tests are strictly happy-path tests and do not assert any output of the buildpack.
 
 use crate::utils::{builder, default_buildpacks, smoke_test, target_triple};
+use fs_err as fs;
 use libcnb_test::{BuildConfig, BuildpackReference, TestRunner};
 use serde_json::json;
-use std::fs;
 
 #[test]
 #[ignore = "integration test"]
