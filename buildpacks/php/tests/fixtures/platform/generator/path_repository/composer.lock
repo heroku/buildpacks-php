@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0746a4f4cf831b61e42581ec68d0de81",
+    "content-hash": "fd1c6ebc72e04813f8b180cecafb060c",
     "packages": [
         {
             "name": "fig/http-message-util",
@@ -448,16 +448,15 @@
         },
         {
             "name": "psr/clock",
-            "version": "dev-master",
-            "source": {
-                "type": "git",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
                 "url": "./clock",
-                "reference": "fb246b49699693265d21cb078d9173db28658665"
+                "reference": "80062f8284d0c1637d10fd832160bb3620457dcf"
             },
             "require": {
                 "php": "^7.0 || ^8.0"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -485,7 +484,9 @@
             "support": {
                 "source": "https://github.com/php-fig/clock"
             },
-            "time": "2023-09-21T14:30:18+00:00"
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "psr/container",

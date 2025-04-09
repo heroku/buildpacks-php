@@ -90,7 +90,7 @@
                         "heroku-sys/php": "^7.0 || ^8.0"
                     },
                     "type": "metapackage",
-                    "version": "dev-master"
+                    "version": "dev-main"
                 },
                 {
                     "name": "psr/container",
@@ -243,7 +243,7 @@
         "php-di/invoker": "2.3.4",
         "php-di/php-di": "7.0.7",
         "php-di/slim-bridge": "3.4.1",
-        "psr/clock": "dev-master",
+        "psr/clock": "dev-main",
         "psr/container": "2.0.2",
         "psr/http-factory": "1.1.0",
         "psr/http-message": "2.0",
