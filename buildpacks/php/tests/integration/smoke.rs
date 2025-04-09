@@ -8,7 +8,7 @@
 use crate::utils::{builder, default_buildpacks, smoke_test, target_triple};
 use libcnb_test::{BuildConfig, BuildpackReference, TestRunner};
 use serde_json::json;
-use std::fs;
+use std::{fs, process::Command};
 
 #[test]
 #[ignore = "integration test"]
@@ -19,6 +19,35 @@ fn smoke_test_bundled_hello_world_app() {
         vec![BuildpackReference::CurrentCrate],
         "Hello World",
     );
+}
+
+#[test]
+#[ignore = "integration test"]
+fn smoke_test_path_require() {
+    let build_config = BuildConfig::new(builder(), "tests/fixtures/smoke/hello-world")
+        .buildpacks(vec![BuildpackReference::CurrentCrate])
+        .target_triple(target_triple(builder()))
+        .app_dir_preprocessor(|app_dir| {
+            fs::remove_dir_all(&app_dir).unwrap();
+            fs::create_dir_all(&app_dir).unwrap();
+            Command::new("git")
+                .arg("clone")
+                .args(["-b", "schneems/reproduction-buildpacks-php-issue-105"])
+                .arg("https://github.com/heroku/php-getting-started")
+                .arg(&app_dir)
+                .spawn()
+                .and_then(|mut child| child.wait())
+                .map(|status| {
+                    if status.success() {
+                    } else {
+                        panic!("Command failed")
+                    }
+                })
+                .unwrap();
+        })
+        .to_owned();
+
+    TestRunner::default().build(&build_config, |_context| {});
 }
 
 #[test]
