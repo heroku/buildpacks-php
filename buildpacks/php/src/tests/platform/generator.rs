@@ -30,6 +30,9 @@ fn make_platform_json_with_fixtures() {
         });
 
     for case in cases {
+        if let Some(name) = case.name.as_ref() {
+            println!("Testing `{name}`");
+        }
         let lock = serde_json::from_str(
             // .relative() will allow specifying the file name in the config
             &fs::read_to_string(case.lock.as_ref().unwrap().relative()).unwrap(),
