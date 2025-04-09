@@ -32,8 +32,7 @@ fn smoke_test_path_require() {
             fs::create_dir_all(&app_dir).unwrap();
             Command::new("git")
                 .arg("clone")
-                .args(["-b", "schneems/reproduction-buildpacks-php-issue-105"])
-                .arg("https://github.com/heroku/php-getting-started")
+                .arg("https://github.com/sharpstone/php_path_dependency")
                 .arg(&app_dir)
                 .spawn()
                 .and_then(|mut child| child.wait())
