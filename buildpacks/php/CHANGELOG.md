@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix `composer.lock` parsing when "dist" key contains a `"type": "path"`. ([#176](https://github.com/heroku/buildpacks-php/pull/176))
+
 ## [0.2.3] - 2025-04-08
 
 ### Fixed
