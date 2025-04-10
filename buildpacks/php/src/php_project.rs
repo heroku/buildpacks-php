@@ -5,10 +5,11 @@ use crate::package_manager::composer::{
 use crate::platform;
 use crate::platform::generator::{PlatformGeneratorError, PlatformJsonGeneratorInput};
 use ::composer::{ComposerLock, ComposerRootPackage};
+use fs_err as fs;
 use libcnb::Env;
 use std::collections::HashMap;
+use std::io;
 use std::path::Path;
-use std::{fs, io};
 use url::Url;
 use warned::Warned;
 

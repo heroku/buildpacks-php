@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix `composer.lock` parsing when "dist" key contains a `"type": "path"`. ([#176](https://github.com/heroku/buildpacks-php/pull/176))
+- All raw file system errors now include the filenames via the `fs-err` crate. ([#174](https://github.com/heroku/buildpacks-php/pull/174))
 
 ## [0.2.3] - 2025-04-08
 
