@@ -61,12 +61,7 @@ impl Layer for PlatformLayer<'_> {
             Command::new("composer")
                 .current_dir(layer_path)
                 .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
-                .args([
-                    "install",
-                    "--no-dev",
-                    "--no-interaction",
-                    //"--no-progress",
-                ])
+                .args(["install", "--no-dev", "--no-interaction", "--no-progress"])
                 .env("layer_env_file_path", &layer_env_file_path)
                 .env(
                     "providedextensionslog_file_path",
