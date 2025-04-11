@@ -386,19 +386,15 @@ fn on_dependency_installation_error(e: DependencyInstallationError) -> (String, 
 }
 
 fn on_composer_env_layer_error(e: ComposerEnvLayerError) -> (String, String) {
-    let heading = "Failed to prepare Composer runtime environment".to_string();
+    let heading = "Could not determine Composer 'bin-dir' config value".to_string();
     let message = match e {
-        ComposerEnvLayerError::ComposerInvoke(e) => formatdoc! {"
-            An unexpected error occurred while invoking Composer.
+        ComposerEnvLayerError::ComposerError(cmd_error) => formatdoc! {"
+            Without this value the buildpack cannot place the binaries installed by composer on the PATH
+            which is needed to run the application. The buildpack cannot continue.
 
-            Details: {e}
+            Error details:
 
-            {INTERNAL_ERROR_HELP_STRING}
-        "},
-        ComposerEnvLayerError::ComposerBinDir(e) => formatdoc! {"
-            Could not determine Composer 'bin-dir' config value.
-
-            Composer exited with status: {e}
+            {cmd_error}
 
             {INTERNAL_ERROR_HELP_STRING}
         "},
