@@ -16,6 +16,7 @@ use crate::utils::{CommandError, DownloadUnpackError};
 use crate::PhpBuildpackError;
 use bullet_stream::global::print;
 use const_format::formatcp;
+use fun_run::CmdError;
 use indoc::{formatdoc, indoc};
 use serde_json::error::Category;
 use std::io;
@@ -227,17 +228,17 @@ fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
             "Failed to parse platform installer log".to_string(),
             INTERNAL_ERROR_HELP_STRING.to_string(),
         ),
-        PlatformLayerError::InstallCommand(e) => (
+        PlatformLayerError::ComposerInstall(cmd_error) => (
             "Failed to install platform dependencies".to_string(),
-            match e {
-                CommandError::Io(e) => formatdoc! {"
+            match &cmd_error {
+                CmdError::SystemError(_, _) => formatdoc! {"
                     An unexpected error occurred during platform packages installation:
 
-                    {e}
+                    {cmd_error}
 
                     {INTERNAL_ERROR_HELP_STRING}
                 "},
-                CommandError::NonZeroExitStatus(e) => formatdoc! {"
+                _ => formatdoc! {"
                     Your platform requirements (for runtimes and extensions) could
                     not be resolved to an installable set of dependencies, or a
                     platform package repository was unreachable.
@@ -246,9 +247,9 @@ fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
                     on a combination of PHP versions and/or extensions that are
                     currently not available on Heroku.
 
-                    The following is the full output from the installation attempt:
+                    Error details:
 
-                    {e}
+                    {cmd_error}
 
                     Please verify that all requirements for runtime versions in
                     'composer.lock' are compatible with the list below, and ensure
