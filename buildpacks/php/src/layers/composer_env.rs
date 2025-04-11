@@ -2,6 +2,8 @@
 #![allow(deprecated)]
 
 use crate::{PhpBuildpack, PhpBuildpackError};
+use bullet_stream::global::print;
+use fun_run::CmdError;
 use libcnb::build::BuildContext;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::generic::GenericMetadata;
@@ -33,20 +35,23 @@ impl Layer for ComposerEnvLayer<'_> {
         _context: &BuildContext<Self::Buildpack>,
         _layer_path: &Path,
     ) -> Result<LayerResult<Self::Metadata>, <Self::Buildpack as Buildpack>::Error> {
-        let output = Command::new("composer")
-            .args(["config", "--no-plugins", "bin-dir"])
-            .current_dir(self.dir)
-            .envs(self.command_env)
-            .env("PHP_INI_SCAN_DIR", "")
-            .env("COMPOSER_AUTH", "")
-            .output()
-            .map_err(ComposerEnvLayerError::ComposerInvoke)?;
+        let output = print::sub_time_cmd(
+            Command::new("composer")
+                .args(["config", "--no-plugins", "bin-dir"])
+                .current_dir(self.dir)
+                .envs(self.command_env)
+                .env("PHP_INI_SCAN_DIR", "")
+                .env("COMPOSER_AUTH", ""),
+        )
+        .map_err(|cmd_err| match cmd_err {
+            CmdError::SystemError(_, error) => ComposerEnvLayerError::ComposerInvoke(error),
+            CmdError::NonZeroExitAlreadyStreamed(output)
+            | CmdError::NonZeroExitNotStreamed(output) => {
+                ComposerEnvLayerError::ComposerBinDir(output.status().to_owned())
+            }
+        })?;
 
-        if !output.status.success() {
-            Err(ComposerEnvLayerError::ComposerBinDir(output.status))?;
-        }
-
-        let composer_bin_dir: PathBuf = (*String::from_utf8_lossy(&output.stdout).trim()).into();
+        let composer_bin_dir: PathBuf = (*output.stdout_lossy().trim()).into();
         LayerResultBuilder::new(GenericMetadata::default())
             .env(
                 LayerEnv::new()
