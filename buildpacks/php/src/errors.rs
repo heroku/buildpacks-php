@@ -12,7 +12,7 @@ use crate::platform::generator::{
     ComposerRepositoryFromRepositoryUrlError, PlatformGeneratorError,
 };
 use crate::platform::{PlatformRepositoryUrlError, WebserversJsonError};
-use crate::utils::{CommandError, DownloadUnpackError};
+use crate::utils::DownloadUnpackError;
 use crate::PhpBuildpackError;
 use bullet_stream::global::print;
 use const_format::formatcp;
@@ -356,13 +356,13 @@ fn on_dependency_installation_error(e: DependencyInstallationError) -> (String, 
     (
         "Failed to install dependencies".to_string(),
         match e {
-            DependencyInstallationError::InstallCommand(e) => match e {
-                CommandError::Io(e) => formatdoc! {"
+            DependencyInstallationError::ComposerInstall(e) => match e {
+                CmdError::SystemError(_, _) => formatdoc! {"
                     An unexpected error occurred during dependencies installation:
 
                     {e}
                 "},
-                CommandError::NonZeroExitStatus(_) => indoc! {"
+                _ => formatdoc! {"
                     Dependency installation failed!
 
                     The 'composer install' process failed with an error. The cause
@@ -372,6 +372,10 @@ fn on_dependency_installation_error(e: DependencyInstallationError) -> (String, 
 
                     Typical error cases are out-of-date or missing parts of code,
                     timeouts when making external connections, or memory limits.
+
+                    Details:
+
+                    {e}
 
                     Check the above error output closely to determine the cause of
                     the problem, ensure the code you're pushing is functioning
