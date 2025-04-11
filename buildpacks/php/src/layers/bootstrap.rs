@@ -3,7 +3,7 @@
 //! Documenting usage outside of the current code:
 //!
 //! This layer is called twice to generate a layer path and download contents into it. See
-//! [crate::bootstrap] module docs for usage docs.
+//! [`crate::bootstrap`] module docs for usage docs.
 
 // TODO: Switch to libcnb's struct layer API.
 #![allow(deprecated)]
