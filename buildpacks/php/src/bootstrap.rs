@@ -1,3 +1,59 @@
+//! Installs shared build tooling
+//!
+//! > Note
+//! > Docs contain implementation details which may diverge from code.
+//!
+//! Generates two layers and downloads code into them.
+//!
+//! ## PHP minimal
+//!
+//! This version of PHP is used to ...
+//!
+//! URL: <https://lang-php.s3.us-east-1.amazonaws.com/dist-heroku-24-arm64-cnb/php-min-8.3.7.tar.gz>
+//!
+//! This artifact is downloaded into the layer directory with contents:
+//!
+//! ```shell
+//! $ exa --tree
+//! .
+//! └── bin
+//!   └── php
+//! ```
+//!
+//! This adds a version of `php` to that can be invoked for the rest of the buildpack invocation. It is
+//! not exported to other buildpacks or to the app's "launch" layer.
+//!
+//! ## PHP classic buildpack version and "installer"
+//!
+//! URL: <https://github.com/heroku/heroku-buildpack-php/archive/refs/heads/cnb-installer.tar.gz>
+//!
+//! This file comes from the `cnb-installer` branch of the <https://github.com/heroku/heroku-buildpack-php>.
+//! It represents the entirety of that branch of that repo.
+//!
+//! This artifact is downloaded and the env var `COMPOSER_HOME` is set to this path.
+//!
+//! The installed components include this "classic buildpack installer subdirectory":
+//!
+//! ```term
+//! $ ls -1 /layers/heroku_php/bootstrap_installer/support/installer
+//!
+//!   README.md
+//!   composer.json
+//!   src
+//! ```
+//!
+//! This path is returned as `platform_installer_path` which is explained in the
+//! attached readme <https://github.com/heroku/heroku-buildpack-php/blob/cnb-installer/support/installer/README.md>
+//!
+//! > It then installs a minimal PHP runtime and Composer for bootstrapping. It invokes Composer to
+//! > install the dependencies listed in the generated "platform.json", which, using this custom
+//! > Composer Installer Plugin, will cause the installation of our builds of PHP, extensions, and
+//! > programs such as the web servers - all pulled from our "platform" repository, hosted on S3.
+//! > Even Composer (the right version the user's app needs) is installed a second time by this
+//! > step, as well as any shared libraries that e.g. an extension needs (such as librdkafka for
+//! > ext-rdkafka).
+//!
+
 use crate::layers::bootstrap::BootstrapLayer;
 use crate::platform;
 use crate::PhpBuildpack;
