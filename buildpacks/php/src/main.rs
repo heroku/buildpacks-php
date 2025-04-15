@@ -161,7 +161,8 @@ impl Buildpack for PhpBuildpack {
             },
         )?;
 
-        let default_process = ProcessBuilder::new(process_type!("web"), vec!["heroku-php-apache2"])
+        let default_process = ProcessBuilder::new(process_type!("web"), ["bash", "-c"])
+            .arg("heroku-php-apache2")
             .default(true)
             .build();
         BuildResultBuilder::new()
