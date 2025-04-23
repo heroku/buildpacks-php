@@ -8,8 +8,6 @@ mod platform;
 mod tests;
 mod utils;
 
-use std::time::Instant;
-
 use crate::bootstrap::BootstrapResult;
 use crate::errors::notices;
 use crate::layers::bootstrap::BootstrapLayerError;
@@ -32,6 +30,7 @@ use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env, Platform};
+use std::time::Instant;
 
 #[cfg(test)]
 use exponential_backoff as _;
