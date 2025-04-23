@@ -148,7 +148,7 @@ impl Layer for PlatformLayer<'_> {
                         Err(_) => {
                             // TODO: Classic uses \r here
                             print::sub_bullet(format!(
-                                "no suitable native version of {name} available"
+                                "No suitable native version of {name} available"
                             ));
                         }
                     }
