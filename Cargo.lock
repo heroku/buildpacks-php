@@ -136,6 +136,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bullet_stream"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adc54f3252b0ff30201f78a466a017afef4da0ec6c669efcabef8d4cec7c0d58"
+dependencies = [
+ "fun_run",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -508,6 +517,15 @@ name = "fs_extra"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42703706b716c37f96a77aea830392ad231f44c9e9a67872fa5548707e11b11c"
+
+[[package]]
+name = "fun_run"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60475c9540e62902b2b2e292be87f61df540c7e0f0bdb92416fd5ae792450049"
+dependencies = [
+ "regex",
+]
 
 [[package]]
 name = "futures-channel"
@@ -1016,15 +1034,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "libherokubuildpack"
-version = "0.28.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8e4422e835fefe01c384b1267628d483e7b572c0710b7c2e3bf81244df53906"
-dependencies = [
- "termcolor",
-]
-
-[[package]]
 name = "libredox"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1219,6 +1228,7 @@ name = "php-buildpack"
 version = "0.0.0"
 dependencies = [
  "assert-json-diff",
+ "bullet_stream",
  "chrono",
  "composer",
  "const_format",
@@ -1227,10 +1237,10 @@ dependencies = [
  "figment",
  "flate2",
  "fs-err",
+ "fun_run",
  "indoc",
  "libcnb",
  "libcnb-test",
- "libherokubuildpack",
  "regex",
  "serde",
  "serde_json",
@@ -1695,15 +1705,6 @@ dependencies = [
  "once_cell",
  "rustix 1.0.5",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "termcolor"
-version = "1.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
-dependencies = [
- "winapi-util",
 ]
 
 [[package]]
