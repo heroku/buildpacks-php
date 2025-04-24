@@ -7,7 +7,7 @@ use bullet_stream::global::print;
 use indoc::{formatdoc, indoc};
 
 pub(crate) fn log(notice: PhpBuildpackNotice) {
-    print::sub_bullet(format!("NOTICE: {}", get_message(notice).trim()));
+    print::plain(format!("NOTICE: {}", get_message(notice).trim()));
 }
 
 #[rustfmt::skip] // formatting is much more consistent this way (line lengths!)

@@ -54,13 +54,11 @@ impl Buildpack for PhpBuildpack {
         if loader.detect(&context.app_dir) {
             DetectResultBuilder::pass().build()
         } else {
-            print::bullet("PHP detection");
+            print::plain(loader.detect_fail_message());
             loader_notices
                 .into_iter()
                 .map(PhpBuildpackNotice::ProjectLoader)
                 .for_each(notices::log);
-
-            print::sub_bullet("No PHP project files found.");
             DetectResultBuilder::fail().build()
         }
     }
