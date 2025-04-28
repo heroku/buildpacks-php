@@ -43,7 +43,7 @@ impl Layer for ComposerEnvLayer<'_> {
                 .env("PHP_INI_SCAN_DIR", "")
                 .env("COMPOSER_AUTH", ""),
         )
-        .map_err(ComposerEnvLayerError::ComposerError)?;
+        .map_err(ComposerEnvLayerError::ConfigBinDirCmd)?;
 
         let composer_bin_dir: PathBuf = (*output.stdout_lossy().trim()).into();
         LayerResultBuilder::new(GenericMetadata::default())
@@ -63,7 +63,7 @@ impl Layer for ComposerEnvLayer<'_> {
 
 #[derive(Debug)]
 pub(crate) enum ComposerEnvLayerError {
-    ComposerError(CmdError),
+    ConfigBinDirCmd(CmdError),
 }
 
 impl From<ComposerEnvLayerError> for PhpBuildpackError {
