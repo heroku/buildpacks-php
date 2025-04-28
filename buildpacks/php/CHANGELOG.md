@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2025-04-28
+
 ### Changed
 
 - Update build output style. ([#171](https://github.com/heroku/buildpacks-php/pull/171))
@@ -66,7 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation
 
-[unreleased]: https://github.com/heroku/buildpacks-php/compare/v0.2.4...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/heroku/buildpacks-php/compare/v0.2.4...v1.0.0
 [0.2.4]: https://github.com/heroku/buildpacks-php/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/heroku/buildpacks-php/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/heroku/buildpacks-php/compare/v0.2.1...v0.2.2
