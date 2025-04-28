@@ -391,18 +391,19 @@ fn on_dependency_installation_error(e: DependencyInstallationError) -> (String, 
 }
 
 fn on_composer_env_layer_error(e: ComposerEnvLayerError) -> (String, String) {
-    let heading = "Could not determine Composer 'bin-dir' config value".to_string();
-    let message = match e {
-        ComposerEnvLayerError::BinDirConfigCmd(cmd_error) => formatdoc! {"
-            Without this value, the buildpack cannot place the binaries installed by composer on the PATH,
-            which is needed to run the application. The buildpack cannot continue.
+    match e {
+        ComposerEnvLayerError::ConfigBinDirCmd(cmd_error) => (
+            "Could not determine Composer 'bin-dir' config value".to_string(),
+            formatdoc! {"
+                Without this value, the buildpack cannot place the binaries installed by composer on the PATH,
+                which is needed to run the application. The buildpack cannot continue.
 
-            Error details:
+                Error details:
 
-            {cmd_error}
+                {cmd_error}
 
-            {INTERNAL_ERROR_HELP_STRING}
-        "},
-    };
-    (heading, message)
+                {INTERNAL_ERROR_HELP_STRING}
+            "},
+        ),
+    }
 }
