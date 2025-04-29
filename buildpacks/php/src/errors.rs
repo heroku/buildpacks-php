@@ -12,10 +12,11 @@ use crate::platform::generator::{
     ComposerRepositoryFromRepositoryUrlError, PlatformGeneratorError,
 };
 use crate::platform::{PlatformRepositoryUrlError, WebserversJsonError};
-use crate::utils::{CommandError, DownloadUnpackError};
+use crate::utils::DownloadUnpackError;
 use crate::PhpBuildpackError;
 use bullet_stream::global::print;
 use const_format::formatcp;
+use fun_run::CmdError;
 use indoc::{formatdoc, indoc};
 use serde_json::error::Category;
 use std::io;
@@ -227,17 +228,17 @@ fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
             "Failed to parse platform installer log".to_string(),
             INTERNAL_ERROR_HELP_STRING.to_string(),
         ),
-        PlatformLayerError::InstallCommand(e) => (
+        PlatformLayerError::ComposerInstall(cmd_error) => (
             "Failed to install platform dependencies".to_string(),
-            match e {
-                CommandError::Io(e) => formatdoc! {"
+            match &cmd_error {
+                CmdError::SystemError(_, _) => formatdoc! {"
                     An unexpected error occurred during platform packages installation:
 
-                    {e}
+                    {cmd_error}
 
                     {INTERNAL_ERROR_HELP_STRING}
                 "},
-                CommandError::NonZeroExitStatus(e) => formatdoc! {"
+                _ => formatdoc! {"
                     Your platform requirements (for runtimes and extensions) could
                     not be resolved to an installable set of dependencies, or a
                     platform package repository was unreachable.
@@ -246,9 +247,9 @@ fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
                     on a combination of PHP versions and/or extensions that are
                     currently not available on Heroku.
 
-                    The following is the full output from the installation attempt:
+                    Error details:
 
-                    {e}
+                    {cmd_error}
 
                     Please verify that all requirements for runtime versions in
                     'composer.lock' are compatible with the list below, and ensure
@@ -355,13 +356,13 @@ fn on_dependency_installation_error(e: DependencyInstallationError) -> (String, 
     (
         "Failed to install dependencies".to_string(),
         match e {
-            DependencyInstallationError::InstallCommand(e) => match e {
-                CommandError::Io(e) => formatdoc! {"
+            DependencyInstallationError::ComposerInstall(e) => match e {
+                CmdError::SystemError(_, _) => formatdoc! {"
                     An unexpected error occurred during dependencies installation:
 
                     {e}
                 "},
-                CommandError::NonZeroExitStatus(_) => indoc! {"
+                _ => formatdoc! {"
                     Dependency installation failed!
 
                     The 'composer install' process failed with an error. The cause
@@ -371,6 +372,10 @@ fn on_dependency_installation_error(e: DependencyInstallationError) -> (String, 
 
                     Typical error cases are out-of-date or missing parts of code,
                     timeouts when making external connections, or memory limits.
+
+                    Details:
+
+                    {e}
 
                     Check the above error output closely to determine the cause of
                     the problem, ensure the code you're pushing is functioning
@@ -386,22 +391,19 @@ fn on_dependency_installation_error(e: DependencyInstallationError) -> (String, 
 }
 
 fn on_composer_env_layer_error(e: ComposerEnvLayerError) -> (String, String) {
-    let heading = "Failed to prepare Composer runtime environment".to_string();
-    let message = match e {
-        ComposerEnvLayerError::ComposerInvoke(e) => formatdoc! {"
-            An unexpected error occurred while invoking Composer.
+    match e {
+        ComposerEnvLayerError::ConfigBinDirCmd(cmd_error) => (
+            "Could not determine Composer 'bin-dir' config value".to_string(),
+            formatdoc! {"
+                Without this value, the buildpack cannot place the binaries installed by composer on the PATH,
+                which is needed to run the application. The buildpack cannot continue.
 
-            Details: {e}
+                Error details:
 
-            {INTERNAL_ERROR_HELP_STRING}
-        "},
-        ComposerEnvLayerError::ComposerBinDir(e) => formatdoc! {"
-            Could not determine Composer 'bin-dir' config value.
+                {cmd_error}
 
-            Composer exited with status: {e}
-
-            {INTERNAL_ERROR_HELP_STRING}
-        "},
-    };
-    (heading, message)
+                {INTERNAL_ERROR_HELP_STRING}
+            "},
+        ),
+    }
 }

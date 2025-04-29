@@ -1,7 +1,6 @@
 // TODO: Switch to libcnb's struct layer API.
 #![allow(deprecated)]
 
-use crate::utils::CommandError;
 use crate::{PhpBuildpack, PhpBuildpackError};
 use bullet_stream::global::print;
 use composer::ComposerRootPackage;
@@ -74,14 +73,7 @@ impl Layer for PlatformLayer<'_> {
                     &provided_packages_log_file_path,
                 ),
         )
-        .map_err(|cmd_err| match cmd_err {
-            CmdError::SystemError(_, error) => CommandError::Io(error),
-            CmdError::NonZeroExitNotStreamed(named_output)
-            | CmdError::NonZeroExitAlreadyStreamed(named_output) => {
-                CommandError::NonZeroExitStatus(named_output.status().to_owned())
-            }
-        })
-        .map_err(PlatformLayerError::InstallCommand)?;
+        .map_err(PlatformLayerError::ComposerInstall)?;
         // FIXME: we have to do that now, not later, since the installer gets invoked again
         // ^ to be solved on the installer side, which has to merge the values from later calls...
 
@@ -220,7 +212,7 @@ pub(crate) enum PlatformLayerError {
     PlatformJsonWrite(serde_json::Error),
     ProvidedPackagesLogRead(csv::Error),
     ProvidedPackagesLogParse,
-    InstallCommand(CommandError),
+    ComposerInstall(CmdError),
     ReadLayerEnv(std::io::Error),
     ParseLayerEnv(serde_json::Error),
 }

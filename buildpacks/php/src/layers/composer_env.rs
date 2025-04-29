@@ -11,7 +11,7 @@ use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libcnb::{Buildpack, Env};
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitStatus};
+use std::process::Command;
 
 pub(crate) struct ComposerEnvLayer<'a> {
     pub(crate) command_env: &'a Env,
@@ -43,13 +43,7 @@ impl Layer for ComposerEnvLayer<'_> {
                 .env("PHP_INI_SCAN_DIR", "")
                 .env("COMPOSER_AUTH", ""),
         )
-        .map_err(|cmd_err| match cmd_err {
-            CmdError::SystemError(_, error) => ComposerEnvLayerError::ComposerInvoke(error),
-            CmdError::NonZeroExitAlreadyStreamed(output)
-            | CmdError::NonZeroExitNotStreamed(output) => {
-                ComposerEnvLayerError::ComposerBinDir(output.status().to_owned())
-            }
-        })?;
+        .map_err(ComposerEnvLayerError::ConfigBinDirCmd)?;
 
         let composer_bin_dir: PathBuf = (*output.stdout_lossy().trim()).into();
         LayerResultBuilder::new(GenericMetadata::default())
@@ -69,8 +63,7 @@ impl Layer for ComposerEnvLayer<'_> {
 
 #[derive(Debug)]
 pub(crate) enum ComposerEnvLayerError {
-    ComposerInvoke(std::io::Error),
-    ComposerBinDir(ExitStatus),
+    ConfigBinDirCmd(CmdError),
 }
 
 impl From<ComposerEnvLayerError> for PhpBuildpackError {

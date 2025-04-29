@@ -1,6 +1,6 @@
 use crate::platform::generator;
 use crate::platform::generator::PlatformJsonGeneratorInput;
-use crate::utils::{regex, CommandError};
+use crate::utils::regex;
 use bullet_stream::global::print;
 use composer::{
     ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepository, ComposerRootPackage,
@@ -15,7 +15,7 @@ use warned::Warned;
 
 #[derive(Debug)]
 pub(crate) enum DependencyInstallationError {
-    InstallCommand(CommandError),
+    ComposerInstall(CmdError),
 }
 
 pub(crate) fn install_dependencies(
@@ -42,14 +42,7 @@ pub(crate) fn install_dependencies(
                 //         }),
                 // ),
     )
-    .map_err(|cmd_err| match cmd_err {
-        CmdError::SystemError(_, error) => CommandError::Io(error),
-        CmdError::NonZeroExitNotStreamed(named_output)
-        | CmdError::NonZeroExitAlreadyStreamed(named_output) => {
-            CommandError::NonZeroExitStatus(named_output.status().to_owned())
-        }
-    })
-    .map_err(DependencyInstallationError::InstallCommand)?;
+    .map_err(DependencyInstallationError::ComposerInstall)?;
 
     // TODO: run `composer compile`? but is that still a good name?
 
