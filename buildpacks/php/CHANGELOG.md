@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2025-04-29
+
+## Fixed
+
+- Errors from command executions now include the command being run in addition to the exit status. ([#180](https://github.com/heroku/buildpacks-php/pull/180))
+
 ## [1.0.0] - 2025-04-28
 
 ### Changed
@@ -68,7 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation
 
-[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/heroku/buildpacks-php/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/heroku/buildpacks-php/compare/v0.2.4...v1.0.0
 [0.2.4]: https://github.com/heroku/buildpacks-php/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/heroku/buildpacks-php/compare/v0.2.2...v0.2.3
