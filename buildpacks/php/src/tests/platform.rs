@@ -23,6 +23,7 @@ struct ComposerLockTestCaseConfig {
 
 impl Default for ComposerLockTestCaseConfig {
     fn default() -> Self {
+        // EOL Stack version used for dependency injection in test cases
         let stack = "heroku-20";
         Self {
             name: None,
