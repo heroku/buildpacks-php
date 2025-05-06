@@ -1,5 +1,6 @@
 pub(crate) mod generator;
 
+use crate::bootstrap;
 use crate::platform::generator::PlatformGeneratorError;
 use crate::PhpBuildpack;
 use composer::ComposerRootPackage;
@@ -70,7 +71,7 @@ pub(crate) fn platform_base_url_for_target(target: &Target) -> Url {
     };
 
     Url::parse(&format!(
-        "https://lang-php.s3.us-east-1.amazonaws.com/dist-{stack_identifier}-cnb/",
+        "https://lang-php.s3.us-east-1.amazonaws.com/dist-{stack_identifier}-cnb-stable/",
     ))
     .expect("Internal error: failed to generate default repository URL")
 }
@@ -84,7 +85,9 @@ pub(crate) fn platform_repository_urls_from_default_and_build_context(
     context: &BuildContext<PhpBuildpack>,
 ) -> Result<Vec<Url>, PlatformRepositoryUrlError> {
     // our default repo
-    let default_platform_repositories = vec![platform_base_url_for_target(&context.target)];
+    let default_platform_repositories = vec![platform_base_url_for_target(&context.target)
+        .join(format!("packages-{}.json", bootstrap::PLATFORM_REPOSITORY_SNAPSHOT).as_str())
+        .expect("Internal error: failed to generate default repository URL")];
 
     // anything user-supplied
     let user_repos = context

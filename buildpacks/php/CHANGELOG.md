@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Drop support for heroku-20 ([#197](https://github.com/heroku/buildpacks-php/pull/197))
+- Use repository snapshots for platform packages ([#197](https://github.com/heroku/buildpacks-php/pull/197))
 
 ## [1.0.1] - 2025-04-29
 
