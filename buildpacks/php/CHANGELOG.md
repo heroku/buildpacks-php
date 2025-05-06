@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- PHP 8.4 and 8.3 security updates are now available. ([#193](https://github.com/heroku/buildpacks-php/pull/193))
+
 ## [1.0.1] - 2025-04-29
 
 ### Fixed

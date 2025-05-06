@@ -70,7 +70,7 @@ pub(crate) fn platform_base_url_for_target(target: &Target) -> Url {
     };
 
     Url::parse(&format!(
-        "https://lang-php.s3.us-east-1.amazonaws.com/dist-{stack_identifier}-cnb/",
+        "https://lang-php.s3.us-east-1.amazonaws.com/dist-{stack_identifier}-cnb-stable/",
     ))
     .expect("Internal error: failed to generate default repository URL")
 }
