@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Stack `heroku-20` (Ubuntu 20.04) is no longer supported. ([#193](https://github.com/heroku/buildpacks-php/pull/193))
+
 ### Added
 
 - PHP 8.4 and 8.3 security updates are now available. ([#193](https://github.com/heroku/buildpacks-php/pull/193))
