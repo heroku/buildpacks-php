@@ -1,3 +1,18 @@
+//! Place the composer `bin-dir` on the PATH
+//!
+//! Running `composer config bin-dir` will return an output of the location of composer generated
+//! binaries. For example:
+//!
+//! ```term
+//! $ composer config bin-dir
+//! vendor/bin
+//! $ ls -1 vendor/bin
+//! heroku-php-apache2
+//! heroku-php-nginx
+//! ```
+//!
+//! The binaries from composer need to be on the `PATH` so they can be executed.
+
 // TODO: Switch to libcnb's struct layer API.
 #![allow(deprecated)]
 

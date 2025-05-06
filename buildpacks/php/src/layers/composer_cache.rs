@@ -1,3 +1,13 @@
+//! Creates a cache dir that composer can use
+//!
+//! Creates a directory and defines the `COMPOSER_CACHE_DIR` env var which composer
+//! uses (docs: <https://getcomposer.org/doc/03-cli.md#composer-cache-dir>).
+//!
+//! From <https://getcomposer.org/doc/06-config.md#cache-files-ttl>
+//!
+//! > Composer caches all dist (zip, tar, ...) packages that it downloads. Those are purged after
+//! > six months of being unused by default.
+
 // TODO: Switch to libcnb's struct layer API.
 #![allow(deprecated)]
 

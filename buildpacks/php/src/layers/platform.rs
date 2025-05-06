@@ -1,3 +1,14 @@
+//! Install dependencies
+//!
+//! Runs `composer install`. The dependencies to be installed are configured via a
+//! passed in representation of `composer.json` which is then written to the root of the layer.
+//! This functionality allow this layer to be called multiple times with different input values.
+//!
+//! For example it can be used to install "webserver" dependencies and "platform"
+//! dependencies to different layers.
+//!
+//! The result of the installation is not cached between deploys.
+
 // TODO: Switch to libcnb's struct layer API.
 #![allow(deprecated)]
 
