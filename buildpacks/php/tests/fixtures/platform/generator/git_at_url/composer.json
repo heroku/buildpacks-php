@@ -1,0 +1,13 @@
+{
+    "repositories": [
+        {
+            "type": "git",
+            "url": "git@github.com:heroku/heroku-buildpack-php.git",
+            "no-api": true
+        }
+    ],
+    "require": {
+        "php": "8.*",
+        "heroku/heroku-buildpack-php": "*"
+    }
+}

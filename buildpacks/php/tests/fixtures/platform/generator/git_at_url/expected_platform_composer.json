@@ -1,0 +1,36 @@
+{
+    "config": {
+        "allow-plugins": {
+            "heroku/installer-plugin": true
+        },
+        "cache-files-ttl": 0,
+        "discard-changes": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": false,
+    "provide": {
+        "heroku-sys/heroku": "20.2025.05.07"
+    },
+    "repositories": [
+        {
+            "packagist.org": false
+        },
+        {
+            "type": "path",
+            "url": "../../support/installer",
+            "options": {
+                "symlink": false
+            }
+        },
+        {
+            "type": "composer",
+            "url": "https://lang-php.s3.us-east-1.amazonaws.com/dist-heroku-20-cnb/packages.json"
+        }
+    ],
+    "require": {
+        "heroku-sys/composer-plugin-api": "^2",
+        "heroku/installer-plugin": "*",
+        "heroku-sys/composer": "*",
+        "heroku-sys/php": "8.*"
+    }
+}
