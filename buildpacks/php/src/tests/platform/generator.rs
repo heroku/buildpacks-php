@@ -180,8 +180,8 @@ fn make_platform_json_with_fixtures() {
                 .unwrap_or_default()
                 .into_iter()
                 .collect::<HashSet<String>>(),
-            "case {}: mismatched finalizer notices (left = generated, right = expected)",
-            case.name.as_ref().unwrap()
+            "case `{name}`: mismatched finalizer notices. Update the `{name}/config.toml` or fix the behavior. (left = generated, right = expected)",
+            name = case.name.as_ref().unwrap()
         );
 
         if !case.install_dev {
