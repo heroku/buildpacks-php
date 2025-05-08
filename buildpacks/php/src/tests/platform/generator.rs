@@ -28,8 +28,28 @@ fn make_platform_json_with_fixtures() {
             case.lock.is_some().then_some(case)
         });
 
+    // Prints the original message on failure
+    std::panic::set_hook(Box::new(|info| {
+        eprintln!("Failed: {info}");
+    }));
+
+    let mut failed_cases = Vec::new();
     for case in cases {
-        assert_case(installer_path, case);
+        let name = case.name.clone().map_or("<unknown>".to_string(), |v| v);
+        // Discards the panic, logs the failed count and continues
+        if std::panic::catch_unwind(|| assert_case(installer_path, case)).is_err() {
+            failed_cases.push(format!("- `{name}`"));
+        }
+    }
+
+    // If 1 or more failures occur, fails the test so all error messages are visible
+    #[allow(clippy::manual_assert)]
+    if !failed_cases.is_empty() {
+        panic!(
+            "Failed {} test case(s):\n\n{}",
+            failed_cases.len(),
+            failed_cases.join("\n")
+        )
     }
 }
 
