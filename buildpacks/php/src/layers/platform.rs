@@ -111,11 +111,6 @@ impl Layer for PlatformLayer<'_> {
             .flexible(true) // variable number of "fields"
             .from_path(&provided_packages_log_file_path)
         {
-            let mut composer_require_base = Command::new("composer");
-            composer_require_base
-                .current_dir(layer_path)
-                // .env("layer_env_file_path", &layer_env_file_path)
-                .envs(self.command_env); // we're invoking 'composer' from the bootstrap layer
             for result in rdr.deserialize() {
                 let (provider_name, provides): (String, Vec<String>) =
                     result.map_err(PlatformLayerError::ProvidedPackagesLogRead)?;
@@ -129,13 +124,19 @@ impl Layer for PlatformLayer<'_> {
                         .ok_or(PlatformLayerError::ProvidedPackagesLogParse)?;
                     // TODO: output filtering and error display (Classic uses echo -n)
                     // TODO: keep in mind that this could, in turn, pull in dependencies
-                    match print::sub_stream_cmd(composer_require_base.args([
-                        "require",
-                        &format!("{name}.native:*"),
-                        // "--no-dev",
-                        // "--no-interaction",
-                        //"--no-progress",
-                    ])) {
+                    match print::sub_stream_cmd(
+                        Command::new("composer")
+                            .current_dir(layer_path)
+                            // .env("layer_env_file_path", &layer_env_file_path)
+                            .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
+                            .args([
+                                "require",
+                                &format!("{name}.native:*"),
+                                // "--no-dev",
+                                // "--no-interaction",
+                                //"--no-progress",
+                            ]),
+                    ) {
                         Ok(_) => {}
                         Err(_) => {
                             // TODO: Classic uses \r here
