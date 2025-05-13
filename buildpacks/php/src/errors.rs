@@ -20,6 +20,7 @@ use fun_run::CmdError;
 use indoc::{formatdoc, indoc};
 use serde_json::error::Category;
 use std::io;
+use std::os::unix::process::ExitStatusExt;
 
 #[rustfmt::skip]
 pub(crate) const INTERNAL_ERROR_HELP_STRING: &str = {"\
@@ -200,7 +201,12 @@ fn on_bootstrap_layer_error(e: BootstrapLayerError) -> (String, String) {
 
 fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
     match e {
-        PlatformLayerError::PlatformJsonCreate(e) | PlatformLayerError::ReadLayerEnv(e) => (
+        PlatformLayerError::PlatformJsonCreate(e)
+        | PlatformLayerError::InstallLogCreate(e)
+        | PlatformLayerError::OutputFdSetup(e)
+        | PlatformLayerError::ComposerInvocation(e)
+        | PlatformLayerError::InstallLogRead(e)
+        | PlatformLayerError::ReadLayerEnv(e) => (
             "An I/O error occurred during platform packages installation".to_string(),
             formatdoc! {"
                 Details: {e}
@@ -211,6 +217,14 @@ fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
         PlatformLayerError::PlatformJsonWrite(e) => (
             "Failed to write platform dependencies file".to_string(),
             formatdoc! {"
+                Details: {e}
+
+                {INTERNAL_ERROR_HELP_STRING}
+            "},
+        ),
+        PlatformLayerError::OutputFdMapping(e) => (
+            "Failed to initialize file descriptors for progress display".to_string(),
+            formatdoc! {"\
                 Details: {e}
 
                 {INTERNAL_ERROR_HELP_STRING}
@@ -228,28 +242,20 @@ fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
             "Failed to parse platform installer packages log".to_string(),
             INTERNAL_ERROR_HELP_STRING.to_string(),
         ),
-        PlatformLayerError::ComposerInstall(cmd_error) => (
+        PlatformLayerError::ComposerInstall(exit_status, output) => (
             "Failed to install platform dependencies".to_string(),
-            match &cmd_error {
-                CmdError::SystemError(_, _) => formatdoc! {"
-                    An unexpected error occurred during platform packages installation:
-
-                    {cmd_error}
-
-                    {INTERNAL_ERROR_HELP_STRING}
-                "},
-                _ => formatdoc! {"
+            match &exit_status.code() {
+                Some(2) => formatdoc! {"
                     Your platform requirements (for runtimes and extensions) could
-                    not be resolved to an installable set of dependencies, or a
-                    platform package repository was unreachable.
+                    not be resolved to an installable set of dependencies.
 
                     This usually means that you (or packages you are using) depend
                     on a combination of PHP versions and/or extensions that are
                     currently not available on Heroku.
 
-                    Error details:
+                    The following is the full output from the installation attempt:
 
-                    {cmd_error}
+                    {output}
 
                     Please verify that all requirements for runtime versions in
                     'composer.lock' are compatible with the list below, and ensure
@@ -262,6 +268,22 @@ fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
                     For a list of supported runtimes & extensions on Heroku, please
                     refer to: https://devcenter.heroku.com/articles/php-support
                 "},
+                Some(exit_code) => formatdoc! {"
+                    An error ({exit_code}) occurred during installation.
+
+                    The following is the full output from the installation attempt:
+
+                    {output}
+                "},
+                None => formatdoc! {"
+                    The operation was terminated (signal: {signal})
+
+                    Output until termination:
+
+                    {output}
+                    ",
+                    signal = &exit_status.signal().unwrap_or(-1)
+                },
             },
         ),
         PlatformLayerError::ParseLayerEnv(e) => (

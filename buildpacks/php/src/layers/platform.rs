@@ -3,9 +3,9 @@
 
 use crate::{PhpBuildpack, PhpBuildpackError};
 use bullet_stream::global::print;
+use command_fds::{CommandFdExt, FdMapping, FdMappingCollision};
 use composer::ComposerRootPackage;
 use fs_err::File;
-use fun_run::CmdError;
 use libcnb::build::BuildContext;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
@@ -13,7 +13,8 @@ use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libcnb::{Buildpack, Env, Target};
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
-use std::io::BufReader;
+use std::io::{BufReader, Read, Seek};
+use std::os::fd::AsFd;
 use std::path::Path;
 use std::process::Command;
 
@@ -41,6 +42,7 @@ impl Layer for PlatformLayer<'_> {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     fn create(
         &mut self,
         context: &BuildContext<Self::Buildpack>,
@@ -56,24 +58,63 @@ impl Layer for PlatformLayer<'_> {
         // a log of native packages not installed because of userland provides is written to this file
         let provided_packages_log_file_path = layer_path.join("provided_packages.tsv"); // TODO: truncate?
 
-        // TODO: output filtering and error display
-        print::sub_stream_cmd(
-            Command::new("composer")
-                .current_dir(layer_path)
-                .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
-                .args([
-                    "install",
-                    "--no-dev",
-                    "--no-interaction",
-                    //"--no-progress",
-                ])
-                .env("layer_env_file_path", &layer_env_file_path)
-                .env(
-                    "providedextensionslog_file_path",
-                    &provided_packages_log_file_path,
-                ),
-        )
-        .map_err(PlatformLayerError::ComposerInstall)?;
+        let mut install_log = File::create_new(layer_path.join("install.log"))
+            .map_err(PlatformLayerError::InstallLogCreate)?
+            .into_file();
+        let outputs = install_log
+            .try_clone()
+            .map_err(PlatformLayerError::InstallLogCreate)?;
+        let errors = outputs
+            .try_clone()
+            .map_err(PlatformLayerError::InstallLogCreate)?;
+
+        let mut install_cmd = Command::new("composer");
+        install_cmd
+            .current_dir(layer_path)
+            .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
+            .args([
+                "install",
+                "--no-dev",
+                "--no-interaction",
+                //"--no-progress",
+            ])
+            .env("layer_env_file_path", &layer_env_file_path)
+            .env(
+                "providedextensionslog_file_path",
+                &provided_packages_log_file_path,
+            )
+            .env("NO_COLOR", "1")
+            .env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO", "10")
+            .env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT", "2")
+            .stdout(outputs)
+            .stderr(errors);
+        install_cmd
+            .fd_mappings(vec![FdMapping {
+                parent_fd: std::io::stdout()
+                    .as_fd()
+                    .try_clone_to_owned()
+                    .map_err(PlatformLayerError::OutputFdSetup)?,
+                child_fd: 10,
+            }])
+            .map_err(PlatformLayerError::OutputFdMapping)?;
+
+        let status = install_cmd
+            .status()
+            .map_err(PlatformLayerError::ComposerInvocation)?;
+
+        if !status.success() {
+            let mut output = String::new();
+            install_log
+                .rewind()
+                .map_err(PlatformLayerError::InstallLogRead)?;
+            install_log
+                .read_to_string(&mut output)
+                .map_err(PlatformLayerError::InstallLogRead)?;
+            return Err(PhpBuildpackError::PlatformLayer(
+                PlatformLayerError::ComposerInstall(status, output),
+            ));
+        }
+
         // FIXME: we have to do that now, not later, since the installer gets invoked again
         // ^ to be solved on the installer side, which has to merge the values from later calls...
 
@@ -122,28 +163,46 @@ impl Layer for PlatformLayer<'_> {
                     let (name, _version) = provide
                         .split_once(':')
                         .ok_or(PlatformLayerError::ProvidedPackagesLogParse)?;
-                    // TODO: output filtering and error display (Classic uses echo -n)
-                    // TODO: keep in mind that this could, in turn, pull in dependencies
-                    match print::sub_stream_cmd(
-                        Command::new("composer")
-                            .current_dir(layer_path)
-                            // .env("layer_env_file_path", &layer_env_file_path)
-                            .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
-                            .args([
-                                "require",
-                                &format!("{name}.native:*"),
-                                // "--no-dev",
-                                // "--no-interaction",
-                                //"--no-progress",
-                            ]),
-                    ) {
-                        Ok(_) => {}
-                        Err(_) => {
-                            // TODO: Classic uses \r here
-                            print::sub_bullet(format!(
-                                "No suitable native version of {name} available"
-                            ));
-                        }
+                    let outputs = install_log
+                        .try_clone()
+                        .map_err(PlatformLayerError::InstallLogCreate)?;
+                    let errors = outputs
+                        .try_clone()
+                        .map_err(PlatformLayerError::InstallLogCreate)?;
+                    let mut install_cmd = Command::new("composer");
+                    install_cmd
+                        .current_dir(layer_path)
+                        // .env("layer_env_file_path", &layer_env_file_path)
+                        .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
+                        .args([
+                            "require",
+                            &format!("{name}.native:*"),
+                            "--no-interaction",
+                            //"--no-progress",
+                        ])
+                        .env("NO_COLOR", "1")
+                        .env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO", "10")
+                        .env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT", "4")
+                        .stdout(outputs)
+                        .stderr(errors);
+                    install_cmd
+                        .fd_mappings(vec![FdMapping {
+                            parent_fd: std::io::stdout()
+                                .as_fd()
+                                .try_clone_to_owned()
+                                .map_err(PlatformLayerError::OutputFdSetup)?,
+                            child_fd: 10,
+                        }])
+                        .map_err(PlatformLayerError::OutputFdMapping)?;
+                    if !install_cmd
+                        .status()
+                        .map_err(PlatformLayerError::ComposerInvocation)?
+                        .success()
+                    {
+                        // the 'composer install' call was not successful, which means there was no "{name}:native" package available
+                        print::plain(format!(
+                            "    - No suitable native version of {name} available"
+                        ));
                     }
                 }
             }
@@ -211,9 +270,14 @@ where
 pub(crate) enum PlatformLayerError {
     PlatformJsonCreate(std::io::Error),
     PlatformJsonWrite(serde_json::Error),
+    InstallLogCreate(std::io::Error),
+    OutputFdSetup(std::io::Error),
+    OutputFdMapping(FdMappingCollision),
+    ComposerInvocation(std::io::Error),
+    InstallLogRead(std::io::Error),
+    ComposerInstall(std::process::ExitStatus, String),
     ProvidedPackagesLogRead(csv::Error),
     ProvidedPackagesLogParse,
-    ComposerInstall(CmdError),
     ReadLayerEnv(std::io::Error),
     ParseLayerEnv(serde_json::Error),
 }
