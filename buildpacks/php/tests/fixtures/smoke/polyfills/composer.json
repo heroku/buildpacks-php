@@ -1,0 +1,22 @@
+{
+	"require": {
+		"php": "8.3.*",
+		"ext-soap": "*",
+		"ext-redis": "*",
+		"ext-intl": "*",
+		"ext-imagick": "*",
+		"ext-bcmath": "*",
+		"ext-oauth": "*",
+		"ext-gd": "*",
+		"ext-mbstring": "*",
+		"ext-iconv": "*",
+		"ext-ctype": "*",
+		"symfony/polyfill-ctype": "*",
+		"symfony/polyfill-mbstring": "*",
+		"phpseclib/mcrypt_compat": "*",
+		"ext-mcrypt": "*"
+	},
+	"require-dev": {
+		"heroku/heroku-buildpack-php": "*"
+	}
+}
