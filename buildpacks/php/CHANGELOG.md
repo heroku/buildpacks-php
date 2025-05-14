@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- PHP/8.3.21
+- PHP/8.4.7
+- ext-phalcon/5.9.3
+- ext-grpc/1.72.0
+- ext-uuid/1.3.0
+- librdkafka/2.10.0
+- Nginx/1.28.0
+- Composer/2.8.9
+
 ## [1.0.2] - 2025-05-13
 
 ### Changed
