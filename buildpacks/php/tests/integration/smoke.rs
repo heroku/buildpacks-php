@@ -80,8 +80,17 @@ fn smoke_test_php_polyfills() {
         .to_owned();
 
     TestRunner::default().build(&build_config, |context| {
-        assert_contains!(context.pack_stderr, r#"composer require "heroku-sys/ext-mcrypt.native:*""#);
-        assert_contains!(context.pack_stderr, r#"composer require "heroku-sys/ext-ctype.native:*""#);
-        assert_contains!(context.pack_stderr, r#"composer require "heroku-sys/ext-mbstring.native:*""#);
+        assert_contains!(
+            context.pack_stderr,
+            r#"composer require "heroku-sys/ext-mcrypt.native:*""#
+        );
+        assert_contains!(
+            context.pack_stderr,
+            r#"composer require "heroku-sys/ext-ctype.native:*""#
+        );
+        assert_contains!(
+            context.pack_stderr,
+            r#"composer require "heroku-sys/ext-mbstring.native:*""#
+        );
     });
 }
