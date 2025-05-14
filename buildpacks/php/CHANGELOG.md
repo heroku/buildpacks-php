@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nginx/1.28.0
 - Composer/2.8.9
 
+### Fixed
+
+- Nginx fails to start ([#186](https://github.com/heroku/buildpacks-php/issues/186))
+
 ## [1.0.2] - 2025-05-13
 
 ### Changed
