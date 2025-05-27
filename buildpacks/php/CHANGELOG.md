@@ -11,6 +11,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix `docker run ... bash` when using the `heroku/php` buildpack's default `web` process type. ([#185](https://github.com/heroku/buildpacks-php/pull/185))
 
+## [1.0.3] - 2025-05-15
+
+### Added
+
+- PHP/8.3.21
+- PHP/8.4.7
+- ext-phalcon/5.9.3
+- ext-grpc/1.72.0
+- ext-uuid/1.3.0
+- librdkafka/2.10.0
+- Nginx/1.28.0
+- Composer/2.8.9
+
+### Fixed
+
+- Nginx fails to start ([#186](https://github.com/heroku/buildpacks-php/issues/186))
+
+## [1.0.2] - 2025-05-13
+
+### Changed
+
+- Drop support for heroku-20 ([#197](https://github.com/heroku/buildpacks-php/pull/197))
+- Use repository snapshots for platform packages ([#197](https://github.com/heroku/buildpacks-php/pull/197))
+
+### Fixed
+
+- Installation of multiple "polyfill" packages fails due to reused Command struct ([#197](https://github.com/heroku/buildpacks-php/pull/197))
+
+## [1.0.1] - 2025-04-29
+
+### Fixed
+
+- Errors from command executions now include the command being run in addition to the exit status. ([#180](https://github.com/heroku/buildpacks-php/pull/180))
+
+## [1.0.0] - 2025-04-28
+
+### Changed
+
+- Update build output style. ([#171](https://github.com/heroku/buildpacks-php/pull/171))
+
 ## [0.2.4] - 2025-04-10
 
 ### Fixed
@@ -66,7 +106,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation
 
-[unreleased]: https://github.com/heroku/buildpacks-php/compare/v0.2.4...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/heroku/buildpacks-php/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/heroku/buildpacks-php/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/heroku/buildpacks-php/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/heroku/buildpacks-php/compare/v0.2.4...v1.0.0
 [0.2.4]: https://github.com/heroku/buildpacks-php/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/heroku/buildpacks-php/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/heroku/buildpacks-php/compare/v0.2.1...v0.2.2

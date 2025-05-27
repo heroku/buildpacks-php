@@ -3,10 +3,11 @@ use crate::package_manager::composer::{
 };
 use crate::php_project::{PlatformJsonNotice, ProjectLoaderNotice};
 use crate::PhpBuildpackNotice;
+use bullet_stream::global::print;
 use indoc::{formatdoc, indoc};
 
 pub(crate) fn log(notice: PhpBuildpackNotice) {
-    libherokubuildpack::log::log_info(format!("NOTICE: {}", get_message(notice).trim()));
+    print::plain(format!("NOTICE: {}", get_message(notice).trim()));
 }
 
 #[rustfmt::skip] // formatting is much more consistent this way (line lengths!)
@@ -32,7 +33,7 @@ fn get_message(notice: PhpBuildpackNotice) -> String {
             },
             PlatformJsonNotice::Finalizer(n) => match n {
                 PlatformFinalizerNotice::RuntimeRequirementInserted(name, version) => formatdoc! {"
-                    No runtime requirement found in lock file; using version constraint '{version}' for package '{name}'. 
+                    No runtime requirement found in lock file; using version constraint '{version}' for package '{name}'.
                 "},
                 PlatformFinalizerNotice::RuntimeRequirementFromDependencies => indoc! {"
                     No runtime requirement found in lock file; runtime requirements from dependencies will be used for version selection.

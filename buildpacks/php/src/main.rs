@@ -21,6 +21,7 @@ use crate::php_project::{
 use crate::platform::{
     heroku_stack_name_for_target, PlatformRepositoryUrlError, WebserversJsonError,
 };
+use bullet_stream::global::print;
 use indoc::formatdoc;
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
@@ -29,7 +30,7 @@ use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env, Platform};
-use libherokubuildpack::log::{log_error, log_header, log_info};
+use std::time::Instant;
 
 #[cfg(test)]
 use exponential_backoff as _;
@@ -53,11 +54,11 @@ impl Buildpack for PhpBuildpack {
         if loader.detect(&context.app_dir) {
             DetectResultBuilder::pass().build()
         } else {
+            print::plain(loader.detect_fail_message());
             loader_notices
                 .into_iter()
                 .map(PhpBuildpackNotice::ProjectLoader)
                 .for_each(notices::log);
-            log_info("No PHP project files found.");
             DetectResultBuilder::fail().build()
         }
     }
@@ -65,6 +66,9 @@ impl Buildpack for PhpBuildpack {
     // TODO: Switch to libcnb's struct layer API.
     #[allow(deprecated)]
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
+        let started = Instant::now();
+        print::h2("Heroku PHP Buildpack");
+
         let stack_name = heroku_stack_name_for_target(&context.target)
             .expect("Internal error: could not determine Heroku stack name for OS/distro");
 
@@ -80,7 +84,7 @@ impl Buildpack for PhpBuildpack {
             .load(&context.app_dir)
             .map_err(PhpBuildpackError::ProjectLoad)?;
 
-        log_header("Bootstrapping");
+        print::bullet("Bootstrapping");
 
         let BootstrapResult {
             env: mut platform_env,
@@ -92,7 +96,7 @@ impl Buildpack for PhpBuildpack {
             context.handle_layer(layer_name!("platform_cache"), ComposerCacheLayer)?;
         platform_env = platform_cache_layer.env.apply(Scope::Build, &platform_env);
 
-        log_header("Preparing platform packages installation");
+        print::bullet("Preparing platform packages installation");
 
         let all_repos = platform::platform_repository_urls_from_default_and_build_context(&context)
             .map_err(PhpBuildpackError::PlatformRepositoryUrl)?;
@@ -107,7 +111,7 @@ impl Buildpack for PhpBuildpack {
             .map(PhpBuildpackNotice::PlatformJson)
             .for_each(notices::log);
 
-        log_header("Installing platform packages");
+        print::bullet("Installing platform packages");
 
         let platform_layer = context.handle_layer(
             layer_name!("platform"),
@@ -117,7 +121,7 @@ impl Buildpack for PhpBuildpack {
             },
         )?;
 
-        log_header("Installing web servers");
+        print::bullet("Installing web servers");
 
         let webservers_json = platform::webservers_json(
             &stack_name,
@@ -145,12 +149,12 @@ impl Buildpack for PhpBuildpack {
         // ... and composer caching env vars
         command_env = composer_cache_layer.env.apply(Scope::Build, &command_env);
 
-        log_header("Installing dependencies");
+        print::bullet("Installing dependencies");
 
         package_manager::composer::install_dependencies(&context.app_dir, &command_env)
             .map_err(PhpBuildpackError::DependencyInstallation)?;
 
-        log_header("Preparing Composer runtime environment");
+        print::bullet("Preparing Composer runtime environment");
 
         // this just puts the userland bin-dir on $PATH
         context.handle_layer(
@@ -165,6 +169,8 @@ impl Buildpack for PhpBuildpack {
             .arg("heroku-php-apache2")
             .default(true)
             .build();
+
+        print::all_done(&Some(started));
         BuildResultBuilder::new()
             .launch(LaunchBuilder::new().process(default_process).build())
             .build()
@@ -173,16 +179,15 @@ impl Buildpack for PhpBuildpack {
     fn on_error(&self, error: libcnb::Error<Self::Error>) {
         match error {
             libcnb::Error::BuildpackError(e) => e.on_error(),
-            libcnb_error => log_error(
-                "Internal buildpack error",
-                formatdoc! {"
+            libcnb_error => print::error(formatdoc! {"
+                    Internal buildpack error
+
                     An unexpected internal error was reported by the framework used by this buildpack.
-                    
+
                     {iehs}
-                    
+
                     Details: {libcnb_error}
-                ", iehs = errors::INTERNAL_ERROR_HELP_STRING},
-            ),
+                ", iehs = errors::INTERNAL_ERROR_HELP_STRING}),
         }
     }
 }

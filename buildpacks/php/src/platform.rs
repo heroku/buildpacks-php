@@ -1,5 +1,6 @@
 pub(crate) mod generator;
 
+use crate::bootstrap;
 use crate::platform::generator::PlatformGeneratorError;
 use crate::PhpBuildpack;
 use composer::ComposerRootPackage;
@@ -41,7 +42,7 @@ pub(crate) fn heroku_stack_name_for_target(target: &Target) -> Result<String, St
         ..
     } = target;
     match (os.as_str(), distro_name.as_str(), distro_version.as_str()) {
-        ("linux", "ubuntu", v @ ("20.04" | "22.04" | "24.04")) => {
+        ("linux", "ubuntu", v @ ("22.04" | "24.04")) => {
             Ok(format!("heroku-{}", v.strip_suffix(".04").unwrap_or(v)))
         }
         _ => Err(format!("{os}-{distro_name}-{distro_version}")),
@@ -62,7 +63,7 @@ pub(crate) fn platform_base_url_for_target(target: &Target) -> Url {
         let stack_name = heroku_stack_name_for_target(target)
             .expect("Internal error: could not determine Heroku stack name for OS/distro");
         match v {
-            "20.04" | "22.04" => stack_name,
+            "22.04" => stack_name,
             _ => format!("{stack_name}-{arch}"),
         }
     } else {
@@ -70,7 +71,7 @@ pub(crate) fn platform_base_url_for_target(target: &Target) -> Url {
     };
 
     Url::parse(&format!(
-        "https://lang-php.s3.us-east-1.amazonaws.com/dist-{stack_identifier}-cnb/",
+        "https://lang-php.s3.us-east-1.amazonaws.com/dist-{stack_identifier}-cnb-stable/",
     ))
     .expect("Internal error: failed to generate default repository URL")
 }
@@ -84,7 +85,9 @@ pub(crate) fn platform_repository_urls_from_default_and_build_context(
     context: &BuildContext<PhpBuildpack>,
 ) -> Result<Vec<Url>, PlatformRepositoryUrlError> {
     // our default repo
-    let default_platform_repositories = vec![platform_base_url_for_target(&context.target)];
+    let default_platform_repositories = vec![platform_base_url_for_target(&context.target)
+        .join(format!("packages-{}.json", bootstrap::PLATFORM_REPOSITORY_SNAPSHOT).as_str())
+        .expect("Internal error: failed to generate default repository URL")];
 
     // anything user-supplied
     let user_repos = context

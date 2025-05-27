@@ -5,7 +5,10 @@
 //!
 //! These tests are strictly happy-path tests and do not assert any output of the buildpack.
 
-use crate::utils::{builder, default_buildpacks, smoke_test, target_triple};
+use crate::utils::{
+    builder, default_buildpacks, smoke_test, start_container_assert_basic_http_response,
+    target_triple,
+};
 use fs_err as fs;
 use libcnb_test::{BuildConfig, BuildpackReference, TestRunner};
 use serde_json::json;
@@ -19,6 +22,22 @@ fn smoke_test_bundled_hello_world_app() {
         vec![BuildpackReference::CurrentCrate],
         "Hello World",
     );
+}
+
+#[test]
+#[ignore = "integration test"]
+fn smoke_test_php_nginx() {
+    let build_config = BuildConfig::new(builder(), "tests/fixtures/smoke/hello-world")
+        .buildpacks(vec![BuildpackReference::CurrentCrate])
+        .target_triple(target_triple(builder()))
+        .app_dir_preprocessor(|app_dir| {
+            fs::write(app_dir.join("Procfile"), "web: heroku-php-nginx").unwrap();
+        })
+        .to_owned();
+
+    TestRunner::default().build(&build_config, |context| {
+        start_container_assert_basic_http_response(&context, "Hello World");
+    });
 }
 
 #[test]
@@ -69,4 +88,15 @@ fn smoke_test_php_getting_started() {
         default_buildpacks(),
         "Getting Started with PHP on Heroku",
     );
+}
+
+#[test]
+#[ignore = "integration test"]
+fn smoke_test_php_polyfills() {
+    let build_config = BuildConfig::new(builder(), "tests/fixtures/smoke/polyfills")
+        .buildpacks(vec![BuildpackReference::CurrentCrate])
+        .target_triple(target_triple(builder()))
+        .to_owned();
+
+    TestRunner::default().build(&build_config, |_context| {});
 }

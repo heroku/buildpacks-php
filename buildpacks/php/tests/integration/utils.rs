@@ -15,7 +15,7 @@ use std::time::Duration;
 ///a
 /// The smoke integration tests need to ensure the container runs as expected.
 /// This function is catering to that use-case and is not useful in other contexts.
-fn start_container_assert_basic_http_response(
+pub(crate) fn start_container_assert_basic_http_response(
     context: &TestContext,
     expected_http_response_body_contains: &str,
 ) {
