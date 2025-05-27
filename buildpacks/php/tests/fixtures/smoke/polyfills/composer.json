@@ -1,4 +1,17 @@
 {
+	"repositories": [
+		{
+			"type": "package",
+			"package": {
+				"type": "metapackage",
+				"name": "dzuelke/ext-pq-polyfill",
+				"version": "2.0.0",
+				"provide": {
+					"ext-pq": "2.0.0"
+				}
+			}
+		}
+	],
 	"require": {
 		"php": "8.4.*",
 		"ext-soap": "*",
@@ -14,7 +27,9 @@
 		"symfony/polyfill-ctype": "*",
 		"symfony/polyfill-mbstring": "*",
 		"phpseclib/mcrypt_compat": "*",
-		"ext-mcrypt": "*"
+		"ext-mcrypt": "*",
+		"dzuelke/ext-pq-polyfill": "*",
+		"ext-pq": "*"
 	},
 	"require-dev": {
 		"heroku/heroku-buildpack-php": "*"
