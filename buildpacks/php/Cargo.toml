@@ -33,4 +33,5 @@ assert-json-diff = "2"
 exponential-backoff = "2"
 figment = { version = "0.10", features = ["toml"] }
 libcnb-test = "=0.29.0"
+rstest = { git = "https://github.com/la10736/rstest.git", branch = "master" }
 tempfile = "3"
