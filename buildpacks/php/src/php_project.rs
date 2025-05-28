@@ -5,6 +5,7 @@ use crate::package_manager::composer::{
 use crate::platform;
 use crate::platform::generator::{PlatformGeneratorError, PlatformJsonGeneratorInput};
 use ::composer::{ComposerLock, ComposerRootPackage};
+use bullet_stream::style;
 use fs_err as fs;
 use libcnb::Env;
 use std::collections::HashMap;
@@ -56,6 +57,10 @@ impl ProjectLoader {
 
     pub(crate) fn detect(&self, project_dir: &Path) -> bool {
         project_dir.join(&self.composer_json_name).exists()
+    }
+
+    pub(crate) fn detect_fail_message(&self) -> String {
+        format!("No {} found.", style::value(&self.composer_json_name))
     }
 
     pub(crate) fn load(&self, project_dir: &Path) -> Result<Project, ProjectLoadError> {

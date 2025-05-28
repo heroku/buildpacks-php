@@ -1,16 +1,16 @@
 // TODO: Switch to libcnb's struct layer API.
 #![allow(deprecated)]
 
-use crate::utils::{self, CommandError};
 use crate::{PhpBuildpack, PhpBuildpackError};
+use bullet_stream::global::print;
 use composer::ComposerRootPackage;
 use fs_err::File;
+use fun_run::CmdError;
 use libcnb::build::BuildContext;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libcnb::{Buildpack, Env, Target};
-use libherokubuildpack::log::log_info;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::io::BufReader;
@@ -57,7 +57,7 @@ impl Layer for PlatformLayer<'_> {
         let provided_packages_log_file_path = layer_path.join("provided_packages.tsv"); // TODO: truncate?
 
         // TODO: output filtering and error display
-        utils::run_command(
+        print::sub_stream_cmd(
             Command::new("composer")
                 .current_dir(layer_path)
                 .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
@@ -68,8 +68,7 @@ impl Layer for PlatformLayer<'_> {
                     &provided_packages_log_file_path,
                 ),
         )
-        .map_err(PlatformLayerError::InstallCommand)?;
-
+        .map_err(PlatformLayerError::ComposerInstall)?;
         // FIXME: we have to do that now, not later, since the installer gets invoked again
         // ^ to be solved on the installer side, which has to merge the values from later calls...
 
@@ -107,15 +106,10 @@ impl Layer for PlatformLayer<'_> {
             .flexible(true) // variable number of "fields"
             .from_path(&provided_packages_log_file_path)
         {
-            let mut composer_require_base = Command::new("composer");
-            composer_require_base
-                .current_dir(layer_path)
-                // .env("layer_env_file_path", &layer_env_file_path)
-                .envs(self.command_env); // we're invoking 'composer' from the bootstrap layer
             for result in rdr.deserialize() {
                 let (provider_name, provides): (String, Vec<String>) =
                     result.map_err(PlatformLayerError::ProvidedPackagesLogRead)?;
-                log_info(format!(
+                print::sub_bullet(format!(
                     "Attempting native package installs for {provider_name}"
                 ));
 
@@ -125,17 +119,25 @@ impl Layer for PlatformLayer<'_> {
                         .ok_or(PlatformLayerError::ProvidedPackagesLogParse)?;
                     // TODO: output filtering and error display (Classic uses echo -n)
                     // TODO: keep in mind that this could, in turn, pull in dependencies
-                    match utils::run_command(composer_require_base.args([
-                        "require",
-                        &format!("{name}.native:*"),
-                        // "--no-dev",
-                        // "--no-interaction",
-                        //"--no-progress",
-                    ])) {
-                        Ok(()) => {}
+                    match print::sub_stream_cmd(
+                        Command::new("composer")
+                            .current_dir(layer_path)
+                            // .env("layer_env_file_path", &layer_env_file_path)
+                            .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
+                            .args([
+                                "require",
+                                &format!("{name}.native:*"),
+                                // "--no-dev",
+                                // "--no-interaction",
+                                //"--no-progress",
+                            ]),
+                    ) {
+                        Ok(_) => {}
                         Err(_) => {
                             // TODO: Classic uses \r here
-                            log_info(format!("no suitable native version of {name} available"));
+                            print::sub_bullet(format!(
+                                "No suitable native version of {name} available"
+                            ));
                         }
                     }
                 }
@@ -206,7 +208,7 @@ pub(crate) enum PlatformLayerError {
     PlatformJsonWrite(serde_json::Error),
     ProvidedPackagesLogRead(csv::Error),
     ProvidedPackagesLogParse,
-    InstallCommand(CommandError),
+    ComposerInstall(CmdError),
     ReadLayerEnv(std::io::Error),
     ParseLayerEnv(serde_json::Error),
 }

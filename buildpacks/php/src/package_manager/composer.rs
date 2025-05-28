@@ -1,9 +1,11 @@
 use crate::platform::generator;
 use crate::platform::generator::PlatformJsonGeneratorInput;
-use crate::utils::{self, regex, CommandError};
+use crate::utils::regex;
+use bullet_stream::global::print;
 use composer::{
     ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepository, ComposerRootPackage,
 };
+use fun_run::CmdError;
 use libcnb::Env;
 use std::collections::HashMap;
 use std::ops::Not;
@@ -13,14 +15,14 @@ use warned::Warned;
 
 #[derive(Debug)]
 pub(crate) enum DependencyInstallationError {
-    InstallCommand(CommandError),
+    ComposerInstall(CmdError),
 }
 
 pub(crate) fn install_dependencies(
     dir: &PathBuf,
     command_env: &Env,
 ) -> Result<(), DependencyInstallationError> {
-    utils::run_command(
+    print::sub_stream_cmd(
         Command::new("composer")
             .current_dir(dir)
             .envs(command_env)
@@ -40,7 +42,7 @@ pub(crate) fn install_dependencies(
                 //         }),
                 // ),
     )
-    .map_err(DependencyInstallationError::InstallCommand)?;
+    .map_err(DependencyInstallationError::ComposerInstall)?;
 
     // TODO: run `composer compile`? but is that still a good name?
 
@@ -63,7 +65,7 @@ fn is_platform_package(name: impl AsRef<str>) -> bool {
     // same regex used by Composer as well
     regex!(r"^(?i)(?:php(?:-64bit|-ipv6|-zts|-debug)?|hhvm|(?:ext|lib)-[a-z0-9](?:[_.-]?[a-z0-9]+)*|composer(?:-(?:plugin|runtime)-api)?)$")
         .is_match(name)
-        // ext-….native packages are ours, and ours alone - virtual packages to later force installation of native extensions in case of userland "provide"s 
+        // ext-….native packages are ours, and ours alone - virtual packages to later force installation of native extensions in case of userland "provide"s
         && !(name.starts_with("ext-") && name.ends_with(".native"))
         // we ignore those for the moment - they're not in package metadata (yet), and if they were, the versions are "frozen" at build time, but stack images get updates...
         && !name.starts_with("lib-")

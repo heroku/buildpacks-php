@@ -71,7 +71,9 @@ fn make_platform_json_with_fixtures() {
                     case.name.as_ref().unwrap()
                 );
 
-                return;
+                // if we're here, then the case was expected to fail at this step
+                // no point in continuing any further; skip ahead to the next case
+                continue;
             }
         };
 
@@ -128,7 +130,9 @@ fn make_platform_json_with_fixtures() {
                     case.name.as_ref().unwrap()
                 );
 
-                return;
+                // if we're here, then the case was expected to fail at this step
+                // no point in continuing any further; skip ahead to the next case
+                continue;
             }
         };
 
@@ -166,7 +170,9 @@ fn make_platform_json_with_fixtures() {
                     case.name.as_ref().unwrap()
                 );
 
-                return;
+                // if we're here, then the case was expected to fail at this step
+                // no point in continuing any further; skip ahead to the next case
+                continue;
             }
         };
 
