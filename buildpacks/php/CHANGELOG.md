@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix `docker run ... bash` when using the `heroku/php` buildpack's default `web` process type. ([#185](https://github.com/heroku/buildpacks-php/pull/185))
+
 ## [1.0.3] - 2025-05-15
 
 ### Added
