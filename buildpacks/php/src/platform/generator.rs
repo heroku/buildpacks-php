@@ -75,7 +75,7 @@ fn composer_repository_from_repository_url(
     #[allow(clippy::default_trait_access)]
     Ok(ComposerRepository::Composer {
         kind: Default::default(),
-        url,
+        url: composer::ComposerUrlOrPathUrl::Url(url),
         allow_ssl_downgrade: None,
         force_lazy_providers: None,
         options: None,
