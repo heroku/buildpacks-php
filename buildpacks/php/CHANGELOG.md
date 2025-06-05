@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Consistent handling of "non-URL" URLs (SSH-style or path) in `composer.json`/`composer.lock` repositories and package `source`s/`dist`s ([#105](https://github.com/heroku/buildpacks-php/issue/105), [#187](https://github.com/heroku/buildpacks-php/issue/187), [#208](https://github.com/heroku/buildpacks-php/pull/208))
+
 ## [1.0.3] - 2025-05-15
 
 ### Added

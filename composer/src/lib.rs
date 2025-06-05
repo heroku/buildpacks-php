@@ -1,4 +1,5 @@
 use derive_more::{Deref, From};
+use git_url_parse::{GitUrl, Scheme as GitUrlScheme};
 use monostate::MustBe;
 use serde::de::{Error, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -256,16 +257,29 @@ pub struct ComposerPackageArchive {
     pub exclude: Option<Vec<String>>,
 }
 
+// like ComposerRepository, we must declare this as untagged since we're relying on MustBe! for one variant
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ComposerPackageDist {
-    #[serde(rename = "type")]
-    pub kind: String,
-    pub url: Url,
-    pub reference: Option<String>,
-    pub shasum: Option<String>,
-    pub mirrors: Option<Vec<ComposerMirror>>,
+#[serde(untagged)]
+pub enum ComposerPackageDist {
+    #[serde(rename_all = "kebab-case")]
+    Path {
+        #[serde(rename = "type")]
+        kind: MustBe!("path"),
+        url: PathBuf,
+        reference: Option<String>,
+        shasum: Option<String>,
+    },
+    #[serde(rename_all = "kebab-case")]
+    Url {
+        #[serde(rename = "type")]
+        kind: String,
+        url: Url,
+        reference: Option<String>,
+        shasum: Option<String>,
+        mirrors: Option<Vec<ComposerMirror<Url>>>,
+    },
 }
 
 #[serde_as]
@@ -274,17 +288,17 @@ pub struct ComposerPackageDist {
 pub struct ComposerPackageSource {
     #[serde(rename = "type")]
     pub kind: String,
-    pub url: Url,
+    pub url: ComposerUrlOrSshOrPathUrl,
     pub reference: Option<String>,
-    pub mirrors: Option<Vec<ComposerMirror>>,
+    pub mirrors: Option<Vec<ComposerMirror<ComposerUrlOrSshOrPathUrl>>>,
 }
 
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ComposerMirror {
-    pub url: Url,
-    pub preferred: Option<bool>,
+pub struct ComposerMirror<T> {
+    pub url: T,
+    pub preferred: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -309,7 +323,7 @@ pub enum ComposerRepository {
     Composer {
         #[serde(rename = "type")]
         kind: MustBe!("composer"),
-        url: Url,
+        url: ComposerUrlOrPathUrl, // can also be a relative path
         #[serde(rename = "allow_ssl_downgrade")]
         allow_ssl_downgrade: Option<bool>,
         force_lazy_providers: Option<bool>,
@@ -338,11 +352,12 @@ pub enum ComposerRepository {
         #[serde(flatten)]
         filters: Option<ComposerRepositoryFilters>,
     },
+    // any other repo type that has a URL field
     #[serde(rename_all = "kebab-case")]
     Url {
         #[serde(rename = "type")]
         kind: String,
-        url: Url,
+        url: ComposerUrlOrSshOrPathUrl, // can be a relative path, too
         canonical: Option<bool>,
         #[serde(flatten)]
         filters: Option<ComposerRepositoryFilters>,
@@ -401,6 +416,79 @@ impl FromIterator<ComposerPackage> for ComposerRepository {
 pub enum ComposerRepositoryFilters {
     Only(Vec<String>),
     Exclude(Vec<String>),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(from = "String")]
+#[serde(into = "String")]
+pub enum ComposerUrlOrPathUrl {
+    Url(Url),
+    Path(PathBuf),
+}
+
+impl From<ComposerUrlOrPathUrl> for String {
+    fn from(val: ComposerUrlOrPathUrl) -> Self {
+        match val {
+            ComposerUrlOrPathUrl::Url(v) => v.into(),
+            ComposerUrlOrPathUrl::Path(v) => format!("{}", v.display()),
+        }
+    }
+}
+
+impl From<String> for ComposerUrlOrPathUrl {
+    fn from(value: String) -> Self {
+        match Url::parse(&value) {
+            Ok(url) => Self::Url(url),
+            Err(_) => Self::Path(PathBuf::from(&value)),
+        }
+    }
+}
+
+// for some sources (and their mirrors) such as 'git', three kinds of URLs are allowed:
+// 1) URL style (e.g. https://github.com/foo/bar)
+// 2) SSH style (e.g. git@github.com:foo/bar.git)
+// 3) local filesystem path
+// so the URL type has to permit all of these
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(try_from = "String")]
+#[serde(into = "String")]
+pub enum ComposerUrlOrSshOrPathUrl {
+    Url(Url),
+    GitUrl(GitUrl),
+    Path(PathBuf),
+}
+
+impl From<ComposerUrlOrSshOrPathUrl> for String {
+    fn from(val: ComposerUrlOrSshOrPathUrl) -> Self {
+        match val {
+            ComposerUrlOrSshOrPathUrl::Url(v) => v.into(),
+            ComposerUrlOrSshOrPathUrl::GitUrl(v) => v.to_string(),
+            ComposerUrlOrSshOrPathUrl::Path(v) => format!("{}", v.display()),
+        }
+    }
+}
+
+impl TryFrom<String> for ComposerUrlOrSshOrPathUrl {
+    type Error = String;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        // try and parse as a regular Url first
+        // reason is that Url handles e.g. 'svn+ssh://...' correctly
+        // GitUrl really is only for the 'git@github.com:foo/bar.git' cases
+        match Url::parse(&value) {
+            Ok(url) => Ok(Self::Url(url)),
+            Err(_) => match GitUrl::parse(&value) {
+                Ok(url) => {
+                    match url.scheme {
+                        // GitUrl will parse "local" URLs like "./foo", "foo/bar", "../test"
+                        // in that case we want to return a Path variant instead
+                        GitUrlScheme::File => Ok(Self::Path(PathBuf::from(&value))),
+                        _ => Ok(Self::GitUrl(url)),
+                    }
+                }
+                Err(e) => Err(format!("Invalid GitUrl {value}: {e}")),
+            },
+        }
+    }
 }
 
 #[serde_as]

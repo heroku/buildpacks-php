@@ -1,0 +1,31 @@
+{
+    "_comment": [
+        "This is a test fixture covering local paths for package sources and repositories.",
+        "A lock file is not needed for this case."
+    ],
+    "repositories": [
+        {
+            "type": "git",
+            "url": "some/submodule"
+        },
+        {
+            "type": "composer",
+            "url": "../some/folder/packages.json"
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "foo/bar",
+                "version": "1.0.0",
+                "source": {
+                    "url": "./foo-bar-submodule/",
+                    "type": "git",
+                    "reference": "tags/v1.0.0"
+                }
+            }
+        }
+    ],
+    "require": {
+        "my/package": "^1.0.0"
+    }
+}
