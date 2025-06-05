@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix `composer.lock` parsing when ".packages .source .url" value starts with a `git@`. ([#194](https://github.com/heroku/buildpacks-php/pull/194))
+
 ## [1.0.3] - 2025-05-15
 
 ### Added
