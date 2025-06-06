@@ -88,6 +88,52 @@ pub struct ComposerPackage {
 
 #[serde_as]
 #[skip_serializing_none]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(untagged)]
+pub enum ComposerRepositories {
+    Array(Vec<ComposerRepository>),
+    Object(HashMap<String, ComposerRepository>),
+}
+
+#[allow(clippy::iter_without_into_iter)]
+impl ComposerRepositories {
+    #[must_use]
+    pub fn iter(&self) -> ComposerRepositoriesIter {
+        ComposerRepositoriesIter {
+            index: 0,
+            data: self,
+        }
+    }
+}
+impl Default for ComposerRepositories {
+    fn default() -> Self {
+        ComposerRepositories::Array(Vec::new())
+    }
+}
+
+pub struct ComposerRepositoriesIter<'a> {
+    index: usize,
+    data: &'a ComposerRepositories,
+}
+
+impl<'a> Iterator for ComposerRepositoriesIter<'a> {
+    type Item = &'a ComposerRepository;
+    fn next(&mut self) -> Option<Self::Item> {
+        let retval = match self.data {
+            ComposerRepositories::Array(repositories) => repositories.get(self.index),
+            // The Object form is very rare and not recommended, see note at end of https://getcomposer.org/doc/04-schema.md#repositories
+            // Discussion for why this even exists: https://github.com/composer/composer/issues/9918
+            // This is a case of "it just has to work, not be efficient"; delegating to HashMap::values().nth() is fine here
+            ComposerRepositories::Object(repositories) => repositories.values().nth(self.index),
+        };
+        self.index += 1;
+        retval
+    }
+}
+
+#[serde_as]
+#[skip_serializing_none]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerBasePackage {
@@ -116,7 +162,7 @@ pub struct ComposerBasePackage {
     pub provide: Option<HashMap<String, String>>,
     pub readme: Option<PathBuf>,
     pub replace: Option<HashMap<String, String>>,
-    pub repositories: Option<Vec<ComposerRepository>>,
+    pub repositories: Option<ComposerRepositories>,
     pub require: Option<HashMap<String, String>>,
     pub require_dev: Option<HashMap<String, String>>,
     pub scripts_descriptions: Option<HashMap<String, String>>,

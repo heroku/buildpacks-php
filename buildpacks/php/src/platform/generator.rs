@@ -2,7 +2,7 @@ use crate::package_manager;
 use crate::utils::regex;
 use chrono::offset::Utc;
 use composer::{
-    ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepository,
+    ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepositories, ComposerRepository,
     ComposerRepositoryFilters, ComposerRootPackage, ComposerStability,
 };
 use serde_json::json;
@@ -302,7 +302,7 @@ pub(crate) fn generate_platform_json(
         package: ComposerBasePackage {
             provide: Some(HashMap::from([stack_provide])),
             replace: None, // TODO: blackfire
-            repositories: Some(repositories),
+            repositories: Some(ComposerRepositories::Array(repositories)),
             require: (!require.is_empty()).then_some(require),
             require_dev: (!require_dev.is_empty()).then_some(require_dev),
             ..Default::default()
