@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::marker::PhantomData;
 use std::path::PathBuf;
+use std::str::FromStr;
 use url::Url;
 
 #[derive(Clone, Debug, Default, Deref, From, PartialEq, Serialize)]
@@ -422,8 +423,9 @@ pub enum ComposerRepository {
     },
     #[allow(clippy::zero_sized_map_values)]
     #[serde(rename_all = "kebab-case")]
-    Disabled(HashMap<String, MustBe!(false)>),
+    Disabled(ComposerRepositoryDisablement),
 }
+
 impl ComposerRepository {
     pub fn from_path_with_options(
         path: impl Into<PathBuf>,
@@ -453,6 +455,24 @@ impl From<Vec<ComposerPackage>> for ComposerRepository {
 impl FromIterator<ComposerPackage> for ComposerRepository {
     fn from_iter<T: IntoIterator<Item = ComposerPackage>>(iter: T) -> Self {
         ComposerRepository::from(iter.into_iter().collect::<Vec<_>>())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum ComposerRepositoryDisablement {
+    Boolean(MustBe!(false)), // a plain false value
+    #[allow(clippy::zero_sized_map_values)]
+    Object(HashMap<String, MustBe!(false)>), // a (single-field) object like {"packagist.org": false}
+}
+
+impl FromStr for ComposerRepositoryDisablement {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(ComposerRepositoryDisablement::Object(HashMap::from([(
+            s.to_string(),
+            MustBe!(false),
+        )])))
     }
 }
 

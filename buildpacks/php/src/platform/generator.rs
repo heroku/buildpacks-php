@@ -191,8 +191,11 @@ pub(crate) fn generate_platform_json(
 
     // disable packagist.org (we want to userland package installs here), and add the installer plugin
     let mut repositories = vec![
-        serde_json::from_value(json!({"packagist.org": false}))
-            .expect("Internal error: repository construction via serde_json"),
+        ComposerRepository::Disabled(
+            "packagist.org"
+                .parse()
+                .expect("Internal error: ComposerRepositoryDisablement construction"),
+        ),
         // our heroku/installer-plugin
         ComposerRepository::from_path_with_options(
             installer_path,
