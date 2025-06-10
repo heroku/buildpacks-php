@@ -234,6 +234,7 @@ version = "0.0.0"
 dependencies = [
  "derive_more",
  "monostate",
+ "rstest",
  "serde",
  "serde_json",
  "serde_test",
