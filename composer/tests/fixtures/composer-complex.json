@@ -77,8 +77,8 @@
             }
         },
         {
-            "type": "vcs",
-            "url":  "https://github.com/heroku/heroku-buildpack-php.git"
+            "type": "git",
+            "url":  "git@github.com:heroku/heroku-buildpack-php.git"
         },
         {
             "type": "package",
@@ -108,7 +108,13 @@
                 "source": {
                     "url": "https://example.org/smarty/smarty",
                     "type": "git",
-                    "reference": "tags/v3.1.11"
+                    "reference": "tags/v3.1.11",
+                    "mirrors": [
+                        {
+                            "url": "git@github.com:smarty/smarty.git",
+                            "preferred": false
+                        }
+                    ]
                 }
             }
         }
