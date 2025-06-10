@@ -1,0 +1,149 @@
+{
+    "_comment": [
+        "This is a complex test fixture covering most composer.json schema permutations, in particular:",
+        "- inline repository definitions",
+        "- single package and array of packages for 'package' type inline repository definitions",
+        "- aliases in resulting lock file",
+        "- stability flags in resulting lock file",
+        "- platform and platform-dev entries in resulting lock file"
+    ],
+    "name": "my/project",
+    "version": "1.0.0",
+    "type": "project",
+    "prefer-stable": true,
+    "minimum-stability": "RC",
+    "config": {
+        "process-timeout": 900,
+        "allow-plugins": {
+            "my-organization/*": true,
+            "unnecessary/plugin": false
+        },
+        "audit": {
+            "abandoned": "report",
+            "ignore": {
+                "CVE-1234": "The affected component is not in use."
+            }
+        },
+        "optimize-autoloader": false,
+        "use-github-api": false
+    },
+    "autoload": {
+        "psr-0": {
+            "Monolog0\\": "src0/",
+            "Vendor\\Namespace0\\": ["foo0/", "bar0/"]
+        },
+        "psr-4": {
+            "Monolog\\": "src/",
+            "Vendor\\Namespace\\": ["foo/", "bar/"]
+        },
+        "classmap": ["src/", "lib/", "Something.php"],
+        "files": ["src/MyLibrary/functions.php"],
+        "exclude-from-classmap": ["/Tests/", "/test/", "/tests/"]
+    },
+    "autoload-dev": {
+        "psr-0": {
+            "Monolog0\\": "src0/",
+            "Vendor\\Namespace0\\": ["foo0/", "bar0/"]
+        },
+        "psr-4": {
+            "Monolog\\": "src/",
+            "Vendor\\Namespace\\": ["foo/", "bar/"]
+        },
+        "classmap": ["src/", "lib/", "Something.php"],
+        "files": ["src/MyLibrary/functions.php"],
+        "exclude-from-classmap": ["/Tests/", "/test/", "/tests/"]
+    },
+    "include-path": ["lib/"],
+    "repositories": [
+        {
+            "packagist.org": false
+        },
+        {
+            "type": "composer",
+            "url": "https://lang-php.s3.amazonaws.com/dist-heroku-22-stable/",
+            "options": {
+                "ssl": {
+                    "verify_peer": "true"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "./path-package",
+            "options": {
+                "versions": {
+                    "my/package1": "4.2.0-beta1"
+                }
+            }
+        },
+        {
+            "type": "vcs",
+            "url":  "https://github.com/heroku/heroku-buildpack-php.git"
+        },
+        {
+            "type": "package",
+            "package": [
+                {
+                    "name": "my/package2",
+                    "type": "metapackage",
+                    "version": "dev-bugfix"
+                }
+            ]
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "smarty/smarty",
+                "version": "3.1.11",
+                "dist": {
+                    "url": "https://www.smarty.net/files/Smarty-3.1.11.zip",
+                    "type": "zip",
+                    "mirrors": [
+                        {
+                            "url": "https://github.com/smarty-php/smarty/archive/refs/tags/v3.1.11.zip",
+                            "preferred": true
+                        }
+                    ]
+                },
+                "source": {
+                    "url": "https://example.org/smarty/smarty",
+                    "type": "git",
+                    "reference": "tags/v3.1.11"
+                }
+            }
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "my/package1": "4.2.*@beta",
+        "my/package2": "dev-bugfix as 1.0.x-dev",
+        "smarty/smarty": "^3.1.0"
+    },
+    "require-dev": {
+        "heroku/heroku-buildpack-php": "*",
+        "ext-xdebug": "*"
+    },
+    "platform": {
+        "php": "8.1.0"
+    },
+    "platform-dev": {
+        "ext-xdebug": "3.0.0"
+    },
+    "scripts": {
+        "auto-scripts": {
+            "cache:clear": "echo 'cache:clear'",
+            "assets:install %PUBLIC_DIR%": "echo 'assets:install'"
+        },
+        "post-update-cmd": "@auto-scripts",
+        "test": [
+            "MyVendor\\MyClass::warmCache",
+            "phpunit -c app/"
+        ]
+    },
+    "scripts-descriptions": {
+        "test": "Run all tests!"
+    },
+    "scripts-aliases": {
+        "test": ["tests"]
+    }
+}

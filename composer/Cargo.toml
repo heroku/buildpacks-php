@@ -15,4 +15,5 @@ serde_with = "3"
 url = { version = "2", features = ["serde"] }
 
 [dev-dependencies]
+rstest = { git = "https://github.com/la10736/rstest.git", branch = "master" }
 serde_test = "1"
