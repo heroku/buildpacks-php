@@ -273,7 +273,6 @@ pub struct ComposerPackageDist {
 pub struct ComposerPackageSource {
     #[serde(rename = "type")]
     pub kind: String,
-    pub url: Url,
     pub reference: Option<String>,
     pub mirrors: Option<Vec<ComposerMirror>>,
 }
