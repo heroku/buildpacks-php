@@ -1,5 +1,6 @@
 use derive_more::{Deref, From};
 use git_url_parse::{GitUrl, Scheme as GitUrlScheme};
+use indexmap::IndexMap;
 use monostate::MustBe;
 use serde::de::{Error, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -116,7 +117,7 @@ pub struct ComposerBasePackage {
     pub provide: Option<HashMap<String, String>>,
     pub readme: Option<PathBuf>,
     pub replace: Option<HashMap<String, String>>,
-    pub repositories: Option<Vec<ComposerRepository>>,
+    pub repositories: Option<ComposerRepositories>,
     pub require: Option<HashMap<String, String>>,
     pub require_dev: Option<HashMap<String, String>>,
     pub scripts_descriptions: Option<HashMap<String, String>>,
@@ -125,6 +126,34 @@ pub struct ComposerBasePackage {
     pub suggest: Option<HashMap<String, String>>,
     pub target_dir: Option<String>,
     pub time: Option<String>, // TODO: "Package release date, in 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DDTHH:MM:SSZ' format.", but in practice it uses DateTime::__construct(), which can parse a lot of formats
+}
+
+#[serde_as]
+#[skip_serializing_none]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(untagged)]
+pub enum ComposerRepositories {
+    Array(Vec<ComposerRepository>),
+    // Ordered map https://github.com/composer/composer/issues/9918#issuecomment-1852124171
+    Object(IndexMap<String, ComposerRepository>),
+}
+
+impl Default for ComposerRepositories {
+    fn default() -> Self {
+        ComposerRepositories::Array(Vec::default())
+    }
+}
+impl IntoIterator for ComposerRepositories {
+    type Item = ComposerRepository;
+    type IntoIter = std::vec::IntoIter<ComposerRepository>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        match self {
+            ComposerRepositories::Array(vec) => vec.into_iter(),
+            ComposerRepositories::Object(map) => map.into_values().collect::<Vec<_>>().into_iter(),
+        }
+    }
 }
 
 #[skip_serializing_none]
