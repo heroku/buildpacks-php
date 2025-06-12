@@ -33,5 +33,6 @@ assert-json-diff = "2"
 exponential-backoff = "2"
 figment = { version = "0.10", features = ["toml"] }
 libcnb-test = "=0.29.0"
+# we need rstest from master for the #[dir] attribute (https://github.com/la10736/rstest/pull/307, not yet in a release)
 rstest = { git = "https://github.com/la10736/rstest.git", branch = "master" }
 tempfile = "3"
