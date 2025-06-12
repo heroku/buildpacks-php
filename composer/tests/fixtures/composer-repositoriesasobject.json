@@ -3,7 +3,7 @@
         "This is a test fixture covering the repositories key being an object instead of the more common array.",
         "While rare and not recommended (because repository order is significant for package lookups)",
         "it's what Composer generates when using the CLI to modify or disable a repository (e.g. 'packagist.org').",
-        "See https://getcomposer.org/doc/04-schema.md#repositories",
+        "See https://web.archive.org/web/20250610201533/https://getcomposer.org/doc/04-schema.md#repositories",
         "A lock file is not needed for this case."
     ],
     "repositories": {
