@@ -142,6 +142,7 @@ pub enum ComposerRepositories {
 /// Used only in the repositories: {} (object) case where `repositories: {"packagist": false}` is a special case.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
 pub enum ComposerRepositoryOrDisabled {
     Repo(ComposerRepository),
     False(MustBe!(false)),
