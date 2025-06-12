@@ -136,16 +136,32 @@ pub struct ComposerBasePackage {
 pub enum ComposerRepositories {
     Array(Vec<ComposerRepository>),
     // Ordered map https://github.com/composer/composer/issues/9918#issuecomment-1852124171
-    Object(IndexMap<String, ComposerRepositoryOrDisabled>),
+    Object(IndexMap<String, FalseOr<ComposerRepository>>),
 }
 
-/// Used only in the repositories: {} (object) case where `repositories: {"packagist": false}` is a special case.
+/// A generic type that can either be a value of type T or false.
+/// This is useful for representing optional values that can be explicitly disabled with false.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 #[allow(clippy::large_enum_variant)]
-pub enum ComposerRepositoryOrDisabled {
-    Repo(ComposerRepository),
-    False(MustBe!(false)),
+pub enum FalseOr<T> {
+    Value(T),
+    False(bool),
+}
+
+impl<T> From<T> for FalseOr<T> {
+    fn from(value: T) -> Self {
+        Self::Value(value)
+    }
+}
+
+impl<T> Default for FalseOr<T>
+where
+    T: Default,
+{
+    fn default() -> Self {
+        Self::Value(T::default())
+    }
 }
 
 impl Default for ComposerRepositories {
@@ -163,8 +179,8 @@ impl IntoIterator for ComposerRepositories {
             ComposerRepositories::Object(map) => map
                 .into_iter()
                 .map(|(key, value)| match value {
-                    ComposerRepositoryOrDisabled::Repo(repo) => repo,
-                    ComposerRepositoryOrDisabled::False(_) => {
+                    FalseOr::Value(repo) => repo,
+                    FalseOr::False(_) => {
                         let mut m = HashMap::new();
                         m.insert(key, MustBe!(false));
                         ComposerRepository::Disabled(m)
