@@ -234,6 +234,7 @@ version = "0.0.0"
 dependencies = [
  "derive_more",
  "git-url-parse",
+ "indexmap 2.8.0",
  "monostate",
  "rstest",
  "serde",
