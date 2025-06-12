@@ -1,0 +1,8 @@
+{
+    "repositories": [
+        false
+    ],
+    "require": {
+        "php": "^8.0"
+    }
+}

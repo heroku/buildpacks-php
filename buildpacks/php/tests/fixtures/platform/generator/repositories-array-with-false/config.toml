@@ -1,0 +1,3 @@
+name = "repositories-array-with-false"
+description = "Test that repositories array with false values fails to parse"
+expect_extractor_failure = "ComposerJsonParse"

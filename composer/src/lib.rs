@@ -136,7 +136,15 @@ pub struct ComposerBasePackage {
 pub enum ComposerRepositories {
     Array(Vec<ComposerRepository>),
     // Ordered map https://github.com/composer/composer/issues/9918#issuecomment-1852124171
-    Object(IndexMap<String, ComposerRepository>),
+    Object(IndexMap<String, ComposerRepositoryOrDisabled>),
+}
+
+/// Used only in the repositories: {} (object) case where `repositories: {"packagist": false}` is a special case.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum ComposerRepositoryOrDisabled {
+    Repo(ComposerRepository),
+    False(MustBe!(false)),
 }
 
 impl Default for ComposerRepositories {
@@ -151,7 +159,18 @@ impl IntoIterator for ComposerRepositories {
     fn into_iter(self) -> Self::IntoIter {
         match self {
             ComposerRepositories::Array(vec) => vec.into_iter(),
-            ComposerRepositories::Object(map) => map.into_values().collect::<Vec<_>>().into_iter(),
+            ComposerRepositories::Object(map) => map
+                .into_iter()
+                .map(|(key, value)| match value {
+                    ComposerRepositoryOrDisabled::Repo(repo) => repo,
+                    ComposerRepositoryOrDisabled::False(_) => {
+                        let mut m = HashMap::new();
+                        m.insert(key, MustBe!(false));
+                        ComposerRepository::Disabled(m)
+                    }
+                })
+                .collect::<Vec<_>>()
+                .into_iter(),
         }
     }
 }
