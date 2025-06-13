@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use std::fmt;
 use std::marker::PhantomData;
 use std::path::PathBuf;
-use std::str::FromStr;
 use url::Url;
 
 #[derive(Clone, Debug, Default, Deref, From, PartialEq, Serialize)]
@@ -466,13 +465,9 @@ pub enum ComposerRepositoryDisablement {
     Object(HashMap<String, MustBe!(false)>), // a (single-field) object like {"packagist.org": false}
 }
 
-impl FromStr for ComposerRepositoryDisablement {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(ComposerRepositoryDisablement::Object(HashMap::from([(
-            s.to_string(),
-            MustBe!(false),
-        )])))
+impl From<&str> for ComposerRepositoryDisablement {
+    fn from(s: &str) -> Self {
+        ComposerRepositoryDisablement::Object(HashMap::from([(s.to_string(),MustBe!(false))]))
     }
 }
 
