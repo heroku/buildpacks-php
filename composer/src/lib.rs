@@ -281,7 +281,6 @@ pub struct ComposerPackageSource {
 #[skip_serializing_none]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ComposerMirror {
-    pub url: Url,
     pub preferred: Option<bool>,
 }
 
