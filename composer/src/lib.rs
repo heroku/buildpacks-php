@@ -12,6 +12,9 @@ use std::marker::PhantomData;
 use std::path::PathBuf;
 use url::Url;
 
+// Type alias for MustBe!(false) to allow derive to work
+type MustBeFalse = MustBe!(false);
+
 #[derive(Clone, Debug, Default, Deref, From, PartialEq, Serialize)]
 pub struct PhpAssocArray<T>(HashMap<String, T>);
 impl<'de, T: Deserialize<'de> + Default> Deserialize<'de> for PhpAssocArray<T> {
@@ -146,7 +149,7 @@ pub enum ComposerRepositories {
 #[allow(clippy::large_enum_variant)]
 pub enum FalseOr<T> {
     Value(T),
-    False(bool),
+    False(MustBeFalse),
 }
 
 impl<T> From<T> for FalseOr<T> {
