@@ -251,19 +251,20 @@ pub(crate) fn ensure_runtime_requirement(
 ) -> Result<Vec<PlatformFinalizerNotice>, PlatformFinalizerError> {
     let mut notices = Vec::new();
 
-    // from all our metapackages, dev or not, make a lookup table
-    let metapackages = root_package
+    let repositories = root_package
         .package
         .repositories
         .clone()
-        .unwrap_or_default()
-        .into_iter()
+        .unwrap_or_default();
+    // from all our metapackages, dev or not, make a lookup table
+    let metapackages = repositories
+        .iter()
         .filter(|repo| matches!(repo, ComposerRepository::Package { .. }))
         .fold(HashMap::new(), |mut acc, repo| match repo {
             ComposerRepository::Package { package, .. } => {
                 acc.extend(
                     package
-                        .into_iter()
+                        .iter()
                         .map(|package| (package.name.clone(), package)),
                 );
                 acc
