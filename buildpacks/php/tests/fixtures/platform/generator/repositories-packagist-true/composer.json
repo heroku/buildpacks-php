@@ -1,0 +1,8 @@
+{
+    "repositories": {
+        "packagist": true
+    },
+    "require": {
+        "php": "^8.0"
+    }
+}

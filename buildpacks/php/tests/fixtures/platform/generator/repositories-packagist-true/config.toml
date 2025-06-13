@@ -1,0 +1,3 @@
+name = "repositories-array-with-false"
+description = "Test that repositories with packagist:true fail like composer"
+expect_extractor_failure = "ComposerJsonParse"
