@@ -426,6 +426,8 @@ pub struct ComposerLock {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
+    use std::fs;
 
     use serde_test::{assert_de_tokens, assert_de_tokens_error, Token};
 
@@ -447,6 +449,18 @@ mod tests {
                 Token::MapEnd,
             ],
         );
+    }
+
+    #[rstest]
+    fn test_composer_json(#[files("tests/fixtures/*.json")] path: PathBuf) {
+        let composer_json = fs::read(&path).unwrap();
+        serde_json::from_slice::<ComposerRootPackage>(&composer_json).unwrap();
+    }
+
+    #[rstest]
+    fn test_composer_lock(#[files("tests/fixtures/*.lock")] path: PathBuf) {
+        let composer_lock = fs::read(&path).unwrap();
+        serde_json::from_slice::<ComposerLock>(&composer_lock).unwrap();
     }
 
     #[test]
