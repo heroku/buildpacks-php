@@ -1498,7 +1498,7 @@ dependencies = [
 [[package]]
 name = "rstest"
 version = "0.25.0-dev"
-source = "git+https://github.com/la10736/rstest.git?branch=master#737859251754cfddfa82904a941c6e5b9aa67da5"
+source = "git+https://github.com/la10736/rstest.git?branch=master#f68a7431997cfd6056c3534155171fed65fdddd2"
 dependencies = [
  "futures-timer",
  "futures-util",
@@ -1509,7 +1509,7 @@ dependencies = [
 [[package]]
 name = "rstest_macros"
 version = "0.25.0-dev"
-source = "git+https://github.com/la10736/rstest.git?branch=master#737859251754cfddfa82904a941c6e5b9aa67da5"
+source = "git+https://github.com/la10736/rstest.git?branch=master#f68a7431997cfd6056c3534155171fed65fdddd2"
 dependencies = [
  "cfg-if",
  "glob",
