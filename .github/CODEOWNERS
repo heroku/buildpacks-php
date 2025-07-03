@@ -9,3 +9,4 @@ buildpack.toml @dzuelke
 CHANGELOG.md @dzuelke
 Cargo.toml @dzuelke
 Cargo.lock @dzuelke
+/.github/workflows/ @dzuelke
