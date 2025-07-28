@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Platform package installation no longer triggers confusing "No composer.lock file present" output. ([#181](https://github.com/heroku/buildpacks-php/pull/181))
+
 ## [1.0.5] - 2025-07-04
 
 ### Added
