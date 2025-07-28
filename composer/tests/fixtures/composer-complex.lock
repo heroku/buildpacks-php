@@ -1,0 +1,112 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "8b9cbb9127bd5f1785b7dbac0ac69d93",
+    "packages": [
+        {
+            "name": "my/package1",
+            "version": "4.2.0-beta1",
+            "dist": {
+                "type": "path",
+                "url": "./path-package",
+                "reference": "a24f9755510d29b660d26a0f05602f7a997746ee"
+            },
+            "type": "library",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "my/package2",
+            "version": "dev-bugfix",
+            "type": "metapackage"
+        },
+        {
+            "name": "smarty/smarty",
+            "version": "3.1.11",
+            "source": {
+                "type": "git",
+                "url": "https://example.org/smarty/smarty",
+                "reference": "tags/v3.1.11"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://www.smarty.net/files/Smarty-3.1.11.zip",
+                "mirrors": [
+                    {
+                        "url": "https://github.com/smarty-php/smarty/archive/refs/tags/v3.1.11.zip",
+                        "preferred": true
+                    }
+                ]
+            },
+            "type": "library"
+        }
+    ],
+    "packages-dev": [
+        {
+            "name": "heroku/heroku-buildpack-php",
+            "version": "v267",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/heroku/heroku-buildpack-php.git",
+                "reference": "3c8ee49f10ca81805d792b51df3d8710538214f7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/heroku/heroku-buildpack-php/zipball/3c8ee49f10ca81805d792b51df3d8710538214f7",
+                "reference": "3c8ee49f10ca81805d792b51df3d8710538214f7",
+                "shasum": ""
+            },
+            "bin": [
+                "bin/heroku-php-apache2",
+                "bin/heroku-php-nginx"
+            ],
+            "type": "library",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "David Zuelke",
+                    "email": "dz@heroku.com"
+                }
+            ],
+            "description": "Toolkit for starting a PHP application locally, with or without foreman, using the same config for PHP and Apache2/Nginx as on Heroku",
+            "homepage": "https://github.com/heroku/heroku-buildpack-php",
+            "keywords": [
+                "apache",
+                "apache2",
+                "foreman",
+                "heroku",
+                "nginx",
+                "php"
+            ],
+            "time": "2025-05-15T19:12:27+00:00"
+        }
+    ],
+    "aliases": [
+        {
+            "package": "my/package2",
+            "version": "dev-bugfix",
+            "alias": "1.0.x-dev",
+            "alias_normalized": "1.0.9999999.9999999-dev"
+        }
+    ],
+    "minimum-stability": "RC",
+    "stability-flags": {
+        "my/package1": 10,
+        "my/package2": 20
+    },
+    "prefer-stable": true,
+    "prefer-lowest": false,
+    "platform": {
+        "php": "^8.1"
+    },
+    "platform-dev": {
+        "ext-xdebug": "*"
+    },
+    "plugin-api-version": "2.6.0"
+}

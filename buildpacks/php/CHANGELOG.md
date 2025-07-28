@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2025-07-04
+
+### Added
+
+- PHP/8.1.33
+- PHP/8.2.29
+- PHP/8.3.23
+- PHP/8.4.10
+- ext-mongodb/2.1.1
+- ext-mongodb/1.21.1
+- librdkafka/2.11.0
+
+## [1.0.4] - 2025-06-13
+
+### Added
+
+- PHP/8.3.22
+- PHP/8.4.8
+- ext-mongodb/2.1.0
+- ext-grpc/1.73.0
+- librdkafka/2.10.1
+
+## [1.0.3] - 2025-05-15
+
+### Added
+
+- PHP/8.3.21
+- PHP/8.4.7
+- ext-phalcon/5.9.3
+- ext-grpc/1.72.0
+- ext-uuid/1.3.0
+- librdkafka/2.10.0
+- Nginx/1.28.0
+- Composer/2.8.9
+
+### Fixed
+
+- Nginx fails to start ([#186](https://github.com/heroku/buildpacks-php/issues/186))
+
 ## [1.0.2] - 2025-05-13
 
 ### Changed
@@ -85,7 +124,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation
 
-[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.0.2...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.0.5...HEAD
+[1.0.5]: https://github.com/heroku/buildpacks-php/compare/v1.0.4...v1.0.5
+[1.0.4]: https://github.com/heroku/buildpacks-php/compare/v1.0.3...v1.0.4
+[1.0.3]: https://github.com/heroku/buildpacks-php/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/heroku/buildpacks-php/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/heroku/buildpacks-php/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/heroku/buildpacks-php/compare/v0.2.4...v1.0.0

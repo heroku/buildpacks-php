@@ -1,0 +1,8 @@
+{
+    "_comment": [
+        "This is a test fixture resulting in a lock file with empty aliases/platform/platform-dev/stability-flags;",
+        "These are serialized by Composer <2.8 as [] instead of {}, which we handle using PhpAssocArray.",
+        "See https://github.com/composer/composer/commit/ad6198ad2afadd4606f70c11f475695ebf46a055.",
+        "Take care to manually change {} to [] if the lock file ever gets updated."
+    ]
+}
