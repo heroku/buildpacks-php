@@ -15,7 +15,7 @@ fn get_message(notice: PhpBuildpackNotice) -> String {
     match notice {
         PhpBuildpackNotice::ProjectLoader(n) => match n {
             ProjectLoaderNotice::NameFromEnvVar(name, value) => formatdoc! {"
-                Environment variable '{name}={value}' is overriding default file name.
+                Environment variable '{name}={value}' is overriding default `composer.json` file name.
             "},
         },
         PhpBuildpackNotice::PlatformJson(n) => match n {
