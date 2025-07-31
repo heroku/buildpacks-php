@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- PHP/8.3.24
+- PHP/8.4.11
+- ext-grpc/1.74.0
+- ext-apcu/5.1.25
+- Composer/2.8.10
+- Apache/2.4.65
+
 ## [1.0.5] - 2025-07-04
 
 ### Added
