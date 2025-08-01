@@ -1497,19 +1497,18 @@ dependencies = [
 
 [[package]]
 name = "rstest"
-version = "0.25.0-dev"
-source = "git+https://github.com/la10736/rstest.git?branch=master#f68a7431997cfd6056c3534155171fed65fdddd2"
+version = "0.26.1"
+source = "git+https://github.com/la10736/rstest.git?branch=master#eecbddc5d0878ee6c23bbdf5f32d460e474fe640"
 dependencies = [
  "futures-timer",
  "futures-util",
  "rstest_macros",
- "rustc_version",
 ]
 
 [[package]]
 name = "rstest_macros"
-version = "0.25.0-dev"
-source = "git+https://github.com/la10736/rstest.git?branch=master#f68a7431997cfd6056c3534155171fed65fdddd2"
+version = "0.26.1-dev"
+source = "git+https://github.com/la10736/rstest.git?branch=master#eecbddc5d0878ee6c23bbdf5f32d460e474fe640"
 dependencies = [
  "cfg-if",
  "glob",
