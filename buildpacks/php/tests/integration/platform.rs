@@ -25,14 +25,14 @@ fn platform_test_polyfills() {
                   - ext-oauth {version_triple}
                   - ext-redis {version_triple}
                   - ext-soap {bundled}
-                  - Attempting native package installs for dzuelke/ext-pq-polyfill
+                  - Installing extensions provided by dzuelke/ext-pq-polyfill
                     - ext-raphf {version_triple}
                     - ext-pq {version_triple}
-                  - Attempting native package installs for phpseclib/mcrypt_compat
-                    - No suitable native version of heroku-sys/ext-mcrypt available
-                  - Attempting native package installs for symfony/polyfill-ctype
+                  - Installing extensions provided by phpseclib/mcrypt_compat
+                    NOTICE: No suitable native version of heroku-sys/ext-mcrypt available
+                  - Installing extensions provided by symfony/polyfill-ctype
                     - ext-ctype {enabled}
-                  - Attempting native package installs for symfony/polyfill-mbstring
+                  - Installing extensions provided by symfony/polyfill-mbstring
                     - ext-mbstring {bundled}
                 - Installing web servers
                   - nginx {version_triple}

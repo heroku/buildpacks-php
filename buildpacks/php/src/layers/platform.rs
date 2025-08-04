@@ -154,9 +154,7 @@ impl Layer for PlatformLayer<'_> {
             for result in rdr.deserialize() {
                 let (provider_name, provides): (String, Vec<String>) =
                     result.map_err(PlatformLayerError::ProvidedPackagesLogRead)?;
-                print::sub_bullet(format!(
-                    "Attempting native package installs for {provider_name}"
-                ));
+                print::sub_bullet(format!("Installing extensions provided by {provider_name}"));
 
                 for provide in provides {
                     let (name, _version) = provide
@@ -200,7 +198,7 @@ impl Layer for PlatformLayer<'_> {
                     {
                         // the 'composer install' call was not successful, which means there was no "{name}:native" package available
                         print::plain(format!(
-                            "    - No suitable native version of {name} available"
+                            "    NOTICE: No suitable native version of {name} available"
                         ));
                     }
                 }
