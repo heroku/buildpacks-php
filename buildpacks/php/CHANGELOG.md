@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Retry downloads during bootstrapping ([#226](https://github.com/heroku/buildpacks-php/pull/226))
+
 ## [1.0.6] - 2025-07-31
 
 ### Added
