@@ -15,6 +15,5 @@ serde_with = "3"
 url = { version = "2", features = ["serde"] }
 
 [dev-dependencies]
-# we need rstest from master for the #[dir] attribute (https://github.com/la10736/rstest/pull/307, not yet in a release)
-rstest = { git = "https://github.com/la10736/rstest.git", branch = "master" }
+rstest = "0.26"
 serde_test = "1"
