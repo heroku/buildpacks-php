@@ -17,7 +17,7 @@ pub(crate) use regex;
 pub(crate) enum DownloadUnpackError {
     Io(io::Error),
     // Boxed to prevent `large_enum_variant` Clippy errors since `ureq::Error` is massive.
-    Request(Box<ureq::Error>), // TODO: does this still need boxing?
+    Request(Box<ureq::Error>),
 }
 
 #[allow(unused)]
