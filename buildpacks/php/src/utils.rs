@@ -1,6 +1,7 @@
 use flate2::read::GzDecoder;
 use std::io;
 use std::path::{Component, Path, PathBuf};
+use std::time::Duration;
 use tar::Archive;
 
 macro_rules! regex {
@@ -48,7 +49,7 @@ pub(crate) fn download_and_unpack_tgz_with_components_stripped_and_only_entries_
     strip_components: usize,
     extract_only_prefix: impl AsRef<Path>,
 ) -> Result<(), DownloadUnpackError> {
-    Archive::new(GzDecoder::new(download(uri)?))
+    Archive::new(GzDecoder::new(download_with_retry(uri)?))
         .entries()
         .map_err(DownloadUnpackError::Io)? // discard invalid entries
         .filter_map(Result::ok)
@@ -80,4 +81,24 @@ fn download(uri: &str) -> Result<Box<dyn io::Read + Send + Sync + 'static>, Down
         .call()
         .map_err(|err| DownloadUnpackError::Request(Box::new(err)))?
         .into_reader())
+}
+
+fn download_with_retry(
+    uri: &str,
+) -> Result<Box<dyn io::Read + Send + Sync + 'static>, DownloadUnpackError> {
+    let backoff =
+        exponential_backoff::Backoff::new(3, Duration::from_secs(1), Duration::from_secs(10));
+
+    let mut backoff_durations = backoff.into_iter();
+    loop {
+        match download(uri) {
+            result @ Ok(_) => return result,
+            result @ Err(_) => match backoff_durations.next() {
+                None | Some(None) => return result,
+                Some(Some(backoff_duration)) => {
+                    std::thread::sleep(backoff_duration);
+                }
+            },
+        }
+    }
 }

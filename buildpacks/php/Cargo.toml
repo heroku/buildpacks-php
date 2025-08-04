@@ -12,6 +12,7 @@ chrono = { version = "0.4", default-features = false, features = ["now"] }
 composer = { path = "../../composer" }
 const_format = "0.2"
 csv = "1"
+exponential-backoff = "2"
 flate2 = { version = "1", default-features = false, features = ["zlib"] }
 fs-err = "3"
 fun_run = "0.6"
@@ -28,7 +29,6 @@ warned = "0.1"
 
 [dev-dependencies]
 assert-json-diff = "2"
-exponential-backoff = "2"
 figment = { version = "0.10", features = ["toml"] }
 libcnb-test = "0.29"
 rstest = "0.26"
