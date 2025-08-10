@@ -301,7 +301,7 @@ pub(crate) fn generate_platform_json(
         package: ComposerBasePackage {
             provide: Some(HashMap::from([stack_provide])),
             replace: None, // TODO: blackfire
-            repositories: Some(ComposerRepositories::Array(repositories)),
+            repositories: Some(ComposerRepositories::from(repositories)),
             require: (!require.is_empty()).then_some(require),
             require_dev: (!require_dev.is_empty()).then_some(require_dev),
             ..Default::default()

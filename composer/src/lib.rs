@@ -159,49 +159,87 @@ pub struct ComposerPackage {
     pub package: ComposerBasePackage,
 }
 
-#[serde_as]
-#[skip_serializing_none]
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "kebab-case")]
-#[serde(untagged)]
-pub enum ComposerRepositories {
-    Array(Vec<ComposerRepository>),
-    Object(HashMap<String, ComposerRepository>),
+#[derive(Clone, Debug, Default, From, Serialize)]
+pub struct ComposerRepositories(Vec<ComposerRepository>);
+
+impl<'de> Deserialize<'de> for ComposerRepositories {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct ComposerRepositoriesVisitor;
+
+        impl<'de> Visitor<'de> for ComposerRepositoriesVisitor {
+            type Value = ComposerRepositories;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("an array of repository definitions (or e.g. '{\"packagist.org\": false}' to disable a repo), or an object of repository names as keys and repository definitions (or boolean false to disable a repo) as values")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: SeqAccess<'de>,
+            {
+                let mut values: Vec<ComposerRepository> =
+                    Vec::with_capacity(seq.size_hint().unwrap_or(0));
+                let mut index = 0;
+                while let Some(value) = seq.next_element::<Value>()? {
+                    match serde_json::from_value::<ComposerRepository>(value.clone()) {
+                        Ok(r) => values.push(r),
+                        Err(_) => {
+                            match serde_json::from_value::<ComposerRepositoryDisablement>(value) {
+                                Ok(d) => values.push(ComposerRepository::Disabled(d)),
+                                Err(_) => {
+                                    return Err(Error::custom(format!("invalid value at array index {index}, expected repository definition object or disablement using single-key object notation (e.g. `{{\"packagist.org\": false}}`)")))
+                                },
+                            }
+                        }
+                    }
+                    index += 1;
+                }
+                Ok(ComposerRepositories(values))
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: MapAccess<'de>,
+            {
+                let mut values = Vec::with_capacity(map.size_hint().unwrap_or(0));
+                // we fetch entries as serde_json::Value objects so that we can handle the disabled repo (key: $name, value: false) case
+                while let Some((key, value)) = map.next_entry::<String, Value>()? {
+                    match serde_json::from_value::<ComposerRepository>(value.clone()) {
+                        // it de-serialized fine
+                        Ok(r) => values.push(r),
+                        Err(_) => {
+                            // try de-serializing as a boolean false
+                            match serde_json::from_value::<MustBe!(false)>(value) {
+                                // that's it; we make a "Disabled" repo variant using the key as the name
+                                Ok(_) => values.push(ComposerRepository::Disabled(ComposerRepositoryDisablement::new(&key))),
+                                Err(_) => {
+                                    return Err(Error::custom(format!("invalid value at object key '{key}', expected repository definition object or disablement using boolean `false`")))
+                                },
+                            }
+                        }
+                    }
+                }
+                Ok(ComposerRepositories(values))
+            }
+        }
+
+        let visitor = ComposerRepositoriesVisitor;
+
+        deserializer.deserialize_any(visitor)
+    }
 }
 
 #[allow(clippy::iter_without_into_iter)]
 impl ComposerRepositories {
-    #[must_use]
-    pub fn iter(&self) -> ComposerRepositoriesIter {
-        ComposerRepositoriesIter {
-            index: 0,
-            data: self,
-        }
+    pub fn iter(&self) -> std::slice::Iter<'_, ComposerRepository> {
+        self.0.iter()
     }
-}
-impl Default for ComposerRepositories {
-    fn default() -> Self {
-        ComposerRepositories::Array(Vec::new())
-    }
-}
 
-pub struct ComposerRepositoriesIter<'a> {
-    index: usize,
-    data: &'a ComposerRepositories,
-}
-
-impl<'a> Iterator for ComposerRepositoriesIter<'a> {
-    type Item = &'a ComposerRepository;
-    fn next(&mut self) -> Option<Self::Item> {
-        let retval = match self.data {
-            ComposerRepositories::Array(repositories) => repositories.get(self.index),
-            // The Object form is very rare and not recommended, see note at end of https://getcomposer.org/doc/04-schema.md#repositories
-            // Discussion for why this even exists: https://github.com/composer/composer/issues/9918
-            // This is a case of "it just has to work, not be efficient"; delegating to HashMap::values().nth() is fine here
-            ComposerRepositories::Object(repositories) => repositories.values().nth(self.index),
-        };
-        self.index += 1;
-        retval
+    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, ComposerRepository> {
+        self.0.iter_mut()
     }
 }
 
@@ -429,7 +467,7 @@ pub struct ComposerPackageFunding {
 
 // this is not actually untagged, but we need to mix two entry types:
 // 1) internally tagged via "type" for "real" repository types
-// 2) { "name": false } to disable a repo (we use that to disable packagist via { "packagist.org": false }
+// 2) { "name": false } (for repositories array) or bool false (for repositories object) to disable a repo (e.g. { "packagist.org": false }, not uncommon for various reasons)
 // Tagged enums can have #[serde(other)] only for a unit type: https://github.com/serde-rs/serde/issues/912
 // A workaround with tags declared on separate structs (https://stackoverflow.com/a/61219284/162354) doesn't work as explained in https://stackoverflow.com/a/74544853/162354
 // The solution is to rely on monostate's MustBe!
@@ -493,8 +531,10 @@ pub enum ComposerRepository {
         #[serde(flatten)]
         extra: HashMap<String, Value>,
     },
-    #[allow(clippy::zero_sized_map_values)]
-    #[serde(rename_all = "kebab-case")]
+    // we never want this to be (automatically) deserialized
+    // our Deserialize implementation for the ComposerRepositories container takes care of this case
+    // otherwise, having a map or seq entry in the JSON with just a string would deserialize to this variant
+    #[serde(skip_deserializing)]
     Disabled(ComposerRepositoryDisablement),
 }
 
@@ -529,18 +569,34 @@ impl FromIterator<ComposerPackage> for ComposerRepository {
         ComposerRepository::from(iter.into_iter().collect::<Vec<_>>())
     }
 }
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum ComposerRepositoryDisablement {
-    Boolean(MustBe!(false)), // a plain false value
-    #[allow(clippy::zero_sized_map_values)]
-    Object(HashMap<String, MustBe!(false)>), // a (single-field) object like {"packagist.org": false}
+impl From<ComposerRepositoryDisablement> for ComposerRepository {
+    fn from(value: ComposerRepositoryDisablement) -> Self {
+        Self::Disabled(value)
+    }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(transparent)]
+pub struct ComposerRepositoryDisablement(SingleEntryKVMap<MustBe!(false)>);
+impl ComposerRepositoryDisablement {
+    #[must_use]
+    pub fn new(name: &str) -> Self {
+        Self(SingleEntryKVMap::new(name, MustBe!(false)))
+    }
+}
 impl From<&str> for ComposerRepositoryDisablement {
-    fn from(s: &str) -> Self {
-        ComposerRepositoryDisablement::Object(HashMap::from([(s.to_string(),MustBe!(false))]))
+    fn from(value: &str) -> Self {
+        ComposerRepositoryDisablement::new(value)
+    }
+}
+impl AsRef<str> for ComposerRepositoryDisablement {
+    fn as_ref(&self) -> &str {
+        &self.0.key
+    }
+}
+impl fmt::Display for ComposerRepositoryDisablement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", &self.as_ref())
     }
 }
 
@@ -731,6 +787,30 @@ mod tests {
                 Token::MapEnd,
             ],
             "invalid length 2, expected an object with exactly one key-value pair",
+        );
+    }
+
+    #[test]
+    fn test_repository_disablement_errors() {
+        assert_de_tokens_error::<ComposerRepositories>(
+            &[
+                Token::Map { len: Some(1) },
+                Token::String("packagist.org"),
+                Token::Bool(true),
+                Token::MapEnd
+            ],
+            "invalid value at object key 'packagist.org', expected repository definition object or disablement using boolean `false`",
+        );
+        assert_de_tokens_error::<ComposerRepositories>(
+            &[
+                Token::Seq { len: Some(1) },
+                Token::Map { len: Some(1) },
+                Token::String("packagist.org"),
+                Token::Bool(true),
+                Token::MapEnd,
+                Token::SeqEnd
+            ],
+            "invalid value at array index 0, expected repository definition object or disablement using single-key object notation (e.g. `{\"packagist.org\": false}`)",
         );
     }
 
