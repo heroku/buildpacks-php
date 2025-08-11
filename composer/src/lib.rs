@@ -2,6 +2,7 @@ use derive_more::{Deref, From};
 use git_url_parse::{GitUrl, Scheme as GitUrlScheme};
 use monostate::MustBe;
 use serde::de::{Error, MapAccess, SeqAccess, Visitor};
+use serde::ser::{SerializeMap, Serializer};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use serde_with::{formats::PreferOne, serde_as, skip_serializing_none, OneOrMany, TryFromInto};
@@ -60,6 +61,78 @@ impl<'de, T: Deserialize<'de> + Default> Deserialize<'de> for PhpAssocArray<T> {
         };
 
         deserializer.deserialize_any(visitor)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct SingleEntryKVMap<T> {
+    key: String,
+    value: T,
+}
+
+impl<'de, T> Deserialize<'de> for SingleEntryKVMap<T>
+where
+    T: Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct SingleEntryKVMapVisitor<T>(PhantomData<T>);
+        impl<'de, T> Visitor<'de> for SingleEntryKVMapVisitor<T>
+        where
+            T: Deserialize<'de>,
+        {
+            type Value = SingleEntryKVMap<T>;
+
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+                f.write_str("an object with exactly one key-value pair")
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: MapAccess<'de>,
+            {
+                match map.next_entry()? {
+                    Some((key, value)) => {
+                        // we have one, but do we have more?
+                        let next: Option<(String, T)> = map.next_entry()?;
+                        match next {
+                            Some((_, _)) => Err(Error::invalid_length(2, &self)),
+                            None => Ok(SingleEntryKVMap { key, value }),
+                        }
+                    }
+                    None => Err(Error::invalid_length(0, &self)),
+                }
+            }
+        }
+
+        let visitor = SingleEntryKVMapVisitor(PhantomData);
+
+        deserializer.deserialize_map(visitor)
+    }
+}
+
+impl<T> Serialize for SingleEntryKVMap<T>
+where
+    T: Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(1))?;
+        map.serialize_entry(&self.key, &self.value)?;
+        map.end()
+    }
+}
+
+impl<T> SingleEntryKVMap<T> {
+    fn new(key: &str, value: T) -> SingleEntryKVMap<T> {
+        Self {
+            key: key.into(),
+            value,
+        }
     }
 }
 
@@ -579,7 +652,7 @@ mod tests {
     use rstest::rstest;
     use std::fs;
 
-    use serde_test::{assert_de_tokens, assert_de_tokens_error, Token};
+    use serde_test::{assert_de_tokens, assert_de_tokens_error, assert_tokens, Token};
 
     #[derive(Debug, Deref, Deserialize, PartialEq, Serialize)]
     #[serde(transparent)]
@@ -622,6 +695,42 @@ mod tests {
         assert_de_tokens_error::<ArrayIfEmpty>(
             &[Token::Seq { len: Some(1) }, Token::U8(42), Token::SeqEnd],
             "sequence must be empty",
+        );
+    }
+
+    #[derive(Debug, Deref, Deserialize, PartialEq, Serialize)]
+    #[serde(transparent)]
+    struct SingleEntryObject(SingleEntryKVMap<String>);
+
+    #[test]
+    fn test_single_entry_kv_map() {
+        assert_tokens(
+            &SingleEntryObject(SingleEntryKVMap::new("foo", "bar".to_string())),
+            &[
+                Token::Map { len: Some(1) },
+                Token::String("foo"),
+                Token::String("bar"),
+                Token::MapEnd,
+            ],
+        );
+    }
+
+    #[test]
+    fn test_single_entry_kv_map_errors() {
+        assert_de_tokens_error::<SingleEntryObject>(
+            &[Token::Map { len: Some(0) }, Token::MapEnd],
+            "invalid length 0, expected an object with exactly one key-value pair",
+        );
+        assert_de_tokens_error::<SingleEntryObject>(
+            &[
+                Token::Map { len: Some(2) },
+                Token::String("one"),
+                Token::String("Mississippi"),
+                Token::String("two"),
+                Token::String("Mississippi"),
+                Token::MapEnd,
+            ],
+            "invalid length 2, expected an object with exactly one key-value pair",
         );
     }
 
