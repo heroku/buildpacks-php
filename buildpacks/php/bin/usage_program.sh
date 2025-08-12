@@ -143,16 +143,35 @@ if [[ -n "$process_type" ]]; then
 		exit 1
 	fi
 	
-	cat >&2 <<-EOF
-		
-		! /// Usage for entrypoint: \`${process_type}' ///
-		!
-		! === Launching this process type ===
-		!
-		! To launch this process type, specify it as the \`--entrypoint':
-		!   $ docker run --rm --entrypoint ${process_type} <this-image>
-		
-	EOF
+	# crudely (it's a PoC) find the buildpack ID for this process type
+	buildpack_id=$(
+		sed -n '/^\[\[processes\]\]$/,$p' /layers/config/metadata.toml | # from first "[[processes]]" entry
+		sed -n -E '/^\s*type\s*=\s*\"'"$process_type"'\"/,/\[\[/p' | # type field equals our process type, get until next "[["
+		sed -n -E 's/^\s*buildpack-id\s*=\s*\"([^\"]+)\"/\1/p' | # get the buildpack-id field value
+		tr "/" "_" # translate "/" to "_"
+	)
+	
+	helpfile="/layers/${buildpack_id}/usage_help/${process_type}.txt"
+	
+	if [[ -f "$helpfile" ]]; then
+		# output with prefix
+		cat "$helpfile" >&2
+	else
+		# the printf "0*d" command outputs a zero "*" times, and we give the length of $process_type as the count
+		cat >&2 <<-EOF
+			
+			Usage: \`${process_type}'
+			=========$(printf "%0*d" ${#process_type} | tr "0" "=")
+			
+			Launching this Process Type
+			===========================
+			
+			To launch this process type, specify it as the \`--entrypoint':
+			
+			    $ docker run --rm --entrypoint ${process_type} <image-name>
+			
+		EOF
+	fi
 	
 	exit 0
 fi
