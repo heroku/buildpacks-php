@@ -3,6 +3,7 @@ pub(crate) mod notices;
 use crate::layers::bootstrap::BootstrapLayerError;
 use crate::layers::composer_env::ComposerEnvLayerError;
 use crate::layers::platform::PlatformLayerError;
+use crate::layers::usage_program::UsageProgramLayerError;
 use crate::package_manager::composer::{
     ComposerLockVersionError, DependencyInstallationError, PlatformExtractorError,
     PlatformFinalizerError,
@@ -100,6 +101,12 @@ impl PhpBuildpackError {
             PhpBuildpackError::PlatformLayer(e) => on_platform_layer_error(e),
             PhpBuildpackError::DependencyInstallation(e) => on_dependency_installation_error(e),
             PhpBuildpackError::ComposerEnvLayer(e) => on_composer_env_layer_error(e),
+            PhpBuildpackError::UsageProgramLayer(e) => match e {
+                UsageProgramLayerError::FileWrite(e) => (
+                    "Internal error while writing Usage Help program".to_string(),
+                    e.to_string(),
+                ),
+            },
         };
         print::error(formatdoc! {"
             {heading}

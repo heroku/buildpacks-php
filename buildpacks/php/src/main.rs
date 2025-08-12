@@ -14,6 +14,7 @@ use crate::layers::bootstrap::BootstrapLayerError;
 use crate::layers::composer_cache::ComposerCacheLayer;
 use crate::layers::composer_env::{ComposerEnvLayer, ComposerEnvLayerError};
 use crate::layers::platform::{PlatformLayer, PlatformLayerError};
+use crate::layers::usage_program::{UsageProgramLayer, UsageProgramLayerError};
 use crate::package_manager::composer::DependencyInstallationError;
 use crate::php_project::{
     PlatformJsonError, PlatformJsonNotice, ProjectLoadError, ProjectLoaderNotice,
@@ -30,6 +31,7 @@ use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env, Platform};
+use std::path::PathBuf;
 use std::time::Instant;
 
 #[cfg(test)]
@@ -165,13 +167,33 @@ impl Buildpack for PhpBuildpack {
             },
         )?;
 
-        let default_process = ProcessBuilder::new(process_type!("web"), vec!["heroku-php-apache2"])
-            .default(true)
-            .build();
+        let usage_program_name = "usage"; // the name of the binary and the process type
+
+        // the usage program layer contains the program that outputs usage info for the image
+        // it also allows direct execution of commands
+        // TODO: move this (and the default process type registration) to a dedicated buildpack
+        context.handle_layer(
+            layer_name!("usage_program"),
+            UsageProgramLayer {
+                program_name: &PathBuf::from(&usage_program_name),
+            },
+        )?;
+
+        let web_process =
+            ProcessBuilder::new(process_type!("web"), vec!["heroku-php-apache2"]).build();
+        let usage_program_process =
+            ProcessBuilder::new(process_type!("usage"), vec![usage_program_name])
+                .default(true)
+                .build();
 
         print::all_done(&Some(started));
         BuildResultBuilder::new()
-            .launch(LaunchBuilder::new().process(default_process).build())
+            .launch(
+                LaunchBuilder::new()
+                    .process(web_process)
+                    .process(usage_program_process)
+                    .build(),
+            )
             .build()
     }
 
@@ -201,6 +223,7 @@ enum PhpBuildpackError {
     PlatformLayer(PlatformLayerError),
     DependencyInstallation(DependencyInstallationError),
     ComposerEnvLayer(ComposerEnvLayerError),
+    UsageProgramLayer(UsageProgramLayerError),
 }
 
 #[derive(Debug)]
