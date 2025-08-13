@@ -37,7 +37,7 @@ impl<'de, T: Deserialize<'de> + Default> Deserialize<'de> for PhpAssocArray<T> {
                 A: SeqAccess<'de>,
             {
                 match seq.next_element::<T>() {
-                    Ok(Some(_)) | Err(_) => Err(A::Error::custom("sequence must be empty")), // if a T is in there or something else is in there
+                    Ok(Some(_)) | Err(_) => Err(Error::custom("sequence must be empty")), // if a T is in there or something else is in there
                     Ok(None) => Ok(PhpAssocArray::default()),
                 }
             }
