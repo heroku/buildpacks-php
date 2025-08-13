@@ -601,18 +601,6 @@ mod tests {
         );
     }
 
-    #[rstest]
-    fn test_composer_json(#[files("tests/fixtures/*.json")] path: PathBuf) {
-        let composer_json = fs::read(&path).unwrap();
-        serde_json::from_slice::<ComposerRootPackage>(&composer_json).unwrap();
-    }
-
-    #[rstest]
-    fn test_composer_lock(#[files("tests/fixtures/*.lock")] path: PathBuf) {
-        let composer_lock = fs::read(&path).unwrap();
-        serde_json::from_slice::<ComposerLock>(&composer_lock).unwrap();
-    }
-
     #[test]
     fn test_php_assoc_array_empty() {
         assert_de_tokens(
@@ -635,5 +623,17 @@ mod tests {
             &[Token::Seq { len: Some(1) }, Token::U8(42), Token::SeqEnd],
             "sequence must be empty",
         );
+    }
+
+    #[rstest]
+    fn test_composer_json(#[files("tests/fixtures/*.json")] path: PathBuf) {
+        let composer_json = fs::read(&path).unwrap();
+        serde_json::from_slice::<ComposerRootPackage>(&composer_json).unwrap();
+    }
+
+    #[rstest]
+    fn test_composer_lock(#[files("tests/fixtures/*.lock")] path: PathBuf) {
+        let composer_lock = fs::read(&path).unwrap();
+        serde_json::from_slice::<ComposerLock>(&composer_lock).unwrap();
     }
 }
