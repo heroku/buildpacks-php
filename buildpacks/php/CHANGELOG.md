@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Retry downloads during bootstrapping ([#226](https://github.com/heroku/buildpacks-php/pull/226))
+- Consistent handling of "non-URL" URLs (SSH-style or path) in `composer.json`/`composer.lock` repositories and package `source`s/`dist`s ([#105](https://github.com/heroku/buildpacks-php/issue/105), [#187](https://github.com/heroku/buildpacks-php/issue/187), [#208](https://github.com/heroku/buildpacks-php/pull/208))
 
 ## [1.0.6] - 2025-07-31
 

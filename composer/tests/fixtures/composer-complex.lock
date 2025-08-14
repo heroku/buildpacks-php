@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8b9cbb9127bd5f1785b7dbac0ac69d93",
+    "content-hash": "43d3f17dc7e7a126a80335d430076b75",
     "packages": [
         {
             "name": "my/package1",
@@ -30,7 +30,13 @@
             "source": {
                 "type": "git",
                 "url": "https://example.org/smarty/smarty",
-                "reference": "tags/v3.1.11"
+                "reference": "tags/v3.1.11",
+                "mirrors": [
+                    {
+                        "url": "git@github.com:smarty/smarty.git",
+                        "preferred": false
+                    }
+                ]
             },
             "dist": {
                 "type": "zip",
@@ -51,14 +57,8 @@
             "version": "v267",
             "source": {
                 "type": "git",
-                "url": "https://github.com/heroku/heroku-buildpack-php.git",
+                "url": "git@github.com:heroku/heroku-buildpack-php.git",
                 "reference": "3c8ee49f10ca81805d792b51df3d8710538214f7"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/heroku/heroku-buildpack-php/zipball/3c8ee49f10ca81805d792b51df3d8710538214f7",
-                "reference": "3c8ee49f10ca81805d792b51df3d8710538214f7",
-                "shasum": ""
             },
             "bin": [
                 "bin/heroku-php-apache2",
