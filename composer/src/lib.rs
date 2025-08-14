@@ -182,20 +182,16 @@ impl<'de> Deserialize<'de> for ComposerRepositories {
             {
                 let mut values: Vec<ComposerRepository> =
                     Vec::with_capacity(seq.size_hint().unwrap_or(0));
-                let mut index = 0;
                 while let Some(value) = seq.next_element::<Value>()? {
-                    match serde_json::from_value::<ComposerRepository>(value.clone()) {
-                        Ok(r) => values.push(r),
-                        Err(_) => {
-                            match serde_json::from_value::<ComposerRepositoryDisablement>(value) {
-                                Ok(d) => values.push(ComposerRepository::Disabled(d)),
-                                Err(_) => {
-                                    return Err(Error::custom(format!("invalid value at array index {index}, expected repository definition object or disablement using single-key object notation (e.g. `{{\"packagist.org\": false}}`)")))
-                                },
-                            }
-                        }
-                    }
-                    index += 1;
+                    let repo = serde_json::from_value::<ComposerRepository>(value.clone())
+                        .or_else(|_| {
+                            serde_json::from_value::<ComposerRepositoryDisablement>(value)
+                                .map(ComposerRepository::Disabled)
+                        })
+                        .map_err(|_| {
+                            Error::custom(format!("invalid value at array index {index}, expected repository definition object or disablement using single-key object notation (e.g. `{{\"packagist.org\": false}}`)", index = values.len()))
+                        })?;
+                    values.push(repo);
                 }
                 Ok(ComposerRepositories(values))
             }
@@ -207,20 +203,17 @@ impl<'de> Deserialize<'de> for ComposerRepositories {
                 let mut values = Vec::with_capacity(map.size_hint().unwrap_or(0));
                 // we fetch entries as serde_json::Value objects so that we can handle the disabled repo (key: $name, value: false) case
                 while let Some((key, value)) = map.next_entry::<String, Value>()? {
-                    match serde_json::from_value::<ComposerRepository>(value.clone()) {
-                        // it de-serialized fine
-                        Ok(r) => values.push(r),
-                        Err(_) => {
+                    let repo = serde_json::from_value::<ComposerRepository>(value.clone())
+                        .or_else(|_| {
                             // try de-serializing as a boolean false
-                            match serde_json::from_value::<MustBe!(false)>(value) {
+                            serde_json::from_value::<MustBe!(false)>(value)
                                 // that's it; we make a "Disabled" repo variant using the key as the name
-                                Ok(_) => values.push(ComposerRepository::Disabled(ComposerRepositoryDisablement::new(&key))),
-                                Err(_) => {
-                                    return Err(Error::custom(format!("invalid value at object key '{key}', expected repository definition object or disablement using boolean `false`")))
-                                },
-                            }
-                        }
-                    }
+                                .map(|_| ComposerRepository::Disabled(ComposerRepositoryDisablement::new(&key)))
+                        })
+                        .map_err(|_| {
+                            Error::custom(format!("invalid value at object key '{key}', expected repository definition object or disablement using boolean `false`"))
+                        })?;
+                    values.push(repo);
                 }
                 Ok(ComposerRepositories(values))
             }
