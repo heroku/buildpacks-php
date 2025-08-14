@@ -2,7 +2,7 @@ api = "0.10"
 
 [buildpack]
 id = "heroku/php"
-version = "1.0.6"
+version = "1.0.7"
 name = "Heroku PHP"
 homepage = "https://github.com/heroku/buildpacks-php"
 description = "Heroku's buildpack for PHP applications."
