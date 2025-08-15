@@ -10,7 +10,7 @@ use crate::utils::{
     target_triple,
 };
 use fs_err as fs;
-use libcnb_test::{BuildConfig, BuildpackReference, TestRunner};
+use libcnb_test::{assert_contains, BuildConfig, BuildpackReference, TestRunner};
 use serde_json::json;
 
 #[test]
@@ -98,5 +98,18 @@ fn smoke_test_php_polyfills() {
         .target_triple(target_triple(builder()))
         .to_owned();
 
-    TestRunner::default().build(&build_config, |_context| {});
+    TestRunner::default().build(&build_config, |context| {
+        assert_contains!(
+            context.pack_stdout,
+            r#"composer require "heroku-sys/ext-mcrypt.native:*""#
+        );
+        assert_contains!(
+            context.pack_stdout,
+            r#"composer require "heroku-sys/ext-ctype.native:*""#
+        );
+        assert_contains!(
+            context.pack_stdout,
+            r#"composer require "heroku-sys/ext-mbstring.native:*""#
+        );
+    });
 }
