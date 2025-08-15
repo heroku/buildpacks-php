@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.7] - 2025-08-14
+
+### Changed
+
+- Retry downloads during bootstrapping ([#226](https://github.com/heroku/buildpacks-php/pull/226))
+- Consistent handling of "non-URL" URLs (SSH-style or path) in `composer.json`/`composer.lock` repositories and package `source`s/`dist`s ([#105](https://github.com/heroku/buildpacks-php/issue/105), [#187](https://github.com/heroku/buildpacks-php/issue/187), [#208](https://github.com/heroku/buildpacks-php/pull/208))
+- Support object-style notation of repositories in composer.json ([#209](https://github.com/heroku/buildpacks-php/pull/209))
+
+## [1.0.6] - 2025-07-31
+
+### Added
+
+- PHP/8.3.24
+- PHP/8.4.11
+- ext-grpc/1.74.0
+- ext-apcu/5.1.25
+- Composer/2.8.10
+- Apache/2.4.65
+
 ## [1.0.5] - 2025-07-04
 
 ### Added
@@ -124,7 +143,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation
 
-[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.0.5...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.0.7...HEAD
+[1.0.7]: https://github.com/heroku/buildpacks-php/compare/v1.0.6...v1.0.7
+[1.0.6]: https://github.com/heroku/buildpacks-php/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/heroku/buildpacks-php/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/heroku/buildpacks-php/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/heroku/buildpacks-php/compare/v1.0.2...v1.0.3

@@ -2,7 +2,7 @@ use crate::package_manager;
 use crate::utils::regex;
 use chrono::offset::Utc;
 use composer::{
-    ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepository,
+    ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepositories, ComposerRepository,
     ComposerRepositoryFilters, ComposerRootPackage, ComposerStability,
 };
 use serde_json::json;
@@ -75,7 +75,7 @@ fn composer_repository_from_repository_url(
     #[allow(clippy::default_trait_access)]
     Ok(ComposerRepository::Composer {
         kind: Default::default(),
-        url,
+        url: composer::ComposerUrlOrPathUrl::Url(url),
         allow_ssl_downgrade: None,
         force_lazy_providers: None,
         options: None,
@@ -191,8 +191,7 @@ pub(crate) fn generate_platform_json(
 
     // disable packagist.org (we want to userland package installs here), and add the installer plugin
     let mut repositories = vec![
-        serde_json::from_value(json!({"packagist.org": false}))
-            .expect("Internal error: repository construction via serde_json"),
+        ComposerRepository::Disabled("packagist.org".into()),
         // our heroku/installer-plugin
         ComposerRepository::from_path_with_options(
             installer_path,
@@ -302,7 +301,7 @@ pub(crate) fn generate_platform_json(
         package: ComposerBasePackage {
             provide: Some(HashMap::from([stack_provide])),
             replace: None, // TODO: blackfire
-            repositories: Some(repositories),
+            repositories: Some(ComposerRepositories::from(repositories)),
             require: (!require.is_empty()).then_some(require),
             require_dev: (!require_dev.is_empty()).then_some(require_dev),
             ..Default::default()
