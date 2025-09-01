@@ -1310,6 +1310,7 @@ dependencies = [
  "shell-words",
  "tar",
  "tempfile",
+ "text-to-ascii-art",
  "ureq",
  "url",
  "warned",
@@ -1916,6 +1917,12 @@ dependencies = [
  "rustix",
  "windows-sys 0.59.0",
 ]
+
+[[package]]
+name = "text-to-ascii-art"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a0c8033260679bf366827afb9e13c308599a4b89aaabc7c6924495f88a248d3"
 
 [[package]]
 name = "thiserror"

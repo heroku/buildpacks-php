@@ -14,6 +14,8 @@ use crate::layers::bootstrap::BootstrapLayerError;
 use crate::layers::composer_cache::ComposerCacheLayer;
 use crate::layers::composer_env::{ComposerEnvLayer, ComposerEnvLayerError};
 use crate::layers::platform::{PlatformLayer, PlatformLayerError};
+use crate::layers::usage_help::{UsageHelpLayer, UsageHelpLayerError};
+use crate::layers::usage_program::{UsageProgramLayer, UsageProgramLayerError};
 use crate::package_manager::composer::DependencyInstallationError;
 use crate::php_project::{
     PlatformJsonError, PlatformJsonNotice, ProjectLoadError, ProjectLoaderNotice,
@@ -22,7 +24,7 @@ use crate::platform::{
     heroku_stack_name_for_target, PlatformRepositoryUrlError, WebserversJsonError,
 };
 use bullet_stream::global::print;
-use indoc::formatdoc;
+use indoc::{formatdoc, indoc};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
 use libcnb::data::{layer_name, process_type};
@@ -30,6 +32,8 @@ use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env, Platform};
+use std::collections::HashMap;
+use std::path::PathBuf;
 use std::time::Instant;
 
 #[cfg(test)]
@@ -65,6 +69,7 @@ impl Buildpack for PhpBuildpack {
 
     // TODO: Switch to libcnb's struct layer API.
     #[allow(deprecated)]
+    #[allow(clippy::too_many_lines)]
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         let started = Instant::now();
         print::h2("Heroku PHP Buildpack");
@@ -165,13 +170,69 @@ impl Buildpack for PhpBuildpack {
             },
         )?;
 
-        let default_process = ProcessBuilder::new(process_type!("web"), vec!["heroku-php-apache2"])
-            .default(true)
-            .build();
+        let usage_program_name = "usage"; // the name of the binary and the process type
+
+        // the usage program layer contains the program that outputs usage info for the image
+        // it also allows direct execution of commands
+        // TODO: move this (and the default process type registration) to a dedicated buildpack
+        context.handle_layer(
+            layer_name!("usage_program"),
+            UsageProgramLayer {
+                program_name: &PathBuf::from(&usage_program_name),
+            },
+        )?;
+
+        // the usage help layer contains text files with more detailed usage info for each process type
+        // TODO: figure out a good place to put this (probably a helper that also makes the Process?)
+        context.handle_layer(
+            layer_name!("usage_help"),
+            UsageHelpLayer {
+                help_texts: &HashMap::from([(
+                    "web",
+                    indoc! {"
+                        This process type starts PHP-FPM and the Apache HTTPD web server and serves
+                        the application on the port specified in environment variable `PORT'.
+
+                        Launching this Process Type
+                        ===========================
+
+                        This process type requires a forwarded port to serve traffic on, and the
+                        environment variable `PORT' specifying the in-container port number:
+
+                            $ docker run --rm --entrypoint web -p 8080:8080 -e PORT=8080 <this-image>
+
+                        The command above maps port 8080 on the host to port 8080 in the container.
+
+                        Additional Usage Information
+                        ============================
+
+                        The launched program, `heroku-php-apache2', supports various options and
+                        arguments for customizing PHP-FPM or HTTPD, or e.g. specifying a document root.
+
+                        Complete usage information is available by passing argument `--help' to
+                        the `web' entrypoint:
+
+                            $ docker run --rm --entrypoint web <this-image> --help
+                    "},
+                )]),
+            },
+        )?;
+
+        let web_process =
+            ProcessBuilder::new(process_type!("web"), vec!["heroku-php-apache2"]).build();
+        let usage_program_process =
+            ProcessBuilder::new(process_type!("usage"), vec![usage_program_name])
+                .default(true)
+                .build();
 
         print::all_done(&Some(started));
         BuildResultBuilder::new()
-            .launch(LaunchBuilder::new().process(default_process).build())
+            .launch(
+                LaunchBuilder::new()
+                    .process(web_process)
+                    .process(usage_program_process)
+                    .build(),
+            )
             .build()
     }
 
@@ -201,6 +262,8 @@ enum PhpBuildpackError {
     PlatformLayer(PlatformLayerError),
     DependencyInstallation(DependencyInstallationError),
     ComposerEnvLayer(ComposerEnvLayerError),
+    UsageHelpLayer(UsageHelpLayerError),
+    UsageProgramLayer(UsageProgramLayerError),
 }
 
 #[derive(Debug)]
