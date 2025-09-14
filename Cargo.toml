@@ -3,8 +3,8 @@ resolver = "2"
 members = ["buildpacks/php", "composer"]
 
 [workspace.package]
-edition = "2021"
-rust-version = "1.85"
+edition = "2024"
+rust-version = "1.89"
 
 [workspace.lints.rust]
 unreachable_pub = "warn"

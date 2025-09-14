@@ -36,10 +36,12 @@ impl Default for ComposerLockTestCaseConfig {
             expect_extractor_failure: None,
             expect_finalizer_failure: None,
             install_dev: false,
-            repositories: vec![Url::parse(&format!(
-                "https://lang-php.s3.us-east-1.amazonaws.com/dist-{stack}-cnb/packages.json",
-            ))
-            .unwrap()],
+            repositories: vec![
+                Url::parse(&format!(
+                    "https://lang-php.s3.us-east-1.amazonaws.com/dist-{stack}-cnb/packages.json",
+                ))
+                .unwrap(),
+            ],
         }
     }
 }

@@ -5,7 +5,7 @@ use serde::de::{Error, MapAccess, SeqAccess, Visitor};
 use serde::ser::{SerializeMap, Serializer};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
-use serde_with::{formats::PreferOne, serde_as, skip_serializing_none, OneOrMany, TryFromInto};
+use serde_with::{OneOrMany, TryFromInto, formats::PreferOne, serde_as, skip_serializing_none};
 use std::collections::HashMap;
 use std::fmt;
 use std::marker::PhantomData;
@@ -701,7 +701,7 @@ mod tests {
     use rstest::rstest;
     use std::fs;
 
-    use serde_test::{assert_de_tokens, assert_de_tokens_error, assert_tokens, Token};
+    use serde_test::{Token, assert_de_tokens, assert_de_tokens_error, assert_tokens};
 
     #[derive(Debug, Deref, Deserialize, PartialEq, Serialize)]
     #[serde(transparent)]
@@ -790,7 +790,7 @@ mod tests {
                 Token::Map { len: Some(1) },
                 Token::String("packagist.org"),
                 Token::Bool(true),
-                Token::MapEnd
+                Token::MapEnd,
             ],
             "invalid value at object key 'packagist.org', expected repository definition object or disablement using boolean `false`",
         );
@@ -801,7 +801,7 @@ mod tests {
                 Token::String("packagist.org"),
                 Token::Bool(true),
                 Token::MapEnd,
-                Token::SeqEnd
+                Token::SeqEnd,
             ],
             "invalid value at array index 0, expected repository definition object or disablement using single-key object notation (e.g. `{\"packagist.org\": false}`)",
         );

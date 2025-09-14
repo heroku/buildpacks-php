@@ -2,12 +2,12 @@
 #![allow(deprecated)]
 
 use crate::PhpBuildpack;
+use libcnb::Buildpack;
 use libcnb::build::BuildContext;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::generic::GenericMetadata;
 use libcnb::layer::{ExistingLayerStrategy, Layer, LayerData, LayerResult, LayerResultBuilder};
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
-use libcnb::Buildpack;
 use std::path::Path;
 
 pub(crate) struct ComposerCacheLayer;

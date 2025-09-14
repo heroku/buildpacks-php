@@ -53,7 +53,7 @@ impl Layer for PlatformLayer<'_> {
 
         // the computed env vars for this layer are written to this JSON file by the installer
         let layer_env_file_path = layer_path.join("layer_env.json"); // TODO: truncate?
-                                                                     // a log of native packages not installed because of userland provides is written to this file
+        // a log of native packages not installed because of userland provides is written to this file
         let provided_packages_log_file_path = layer_path.join("provided_packages.tsv"); // TODO: truncate?
 
         // TODO: output filtering and error display

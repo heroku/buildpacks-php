@@ -1,5 +1,5 @@
 use libcnb_test::{
-    assert_contains, BuildConfig, BuildpackReference, ContainerConfig, TestContext, TestRunner,
+    BuildConfig, BuildpackReference, ContainerConfig, TestContext, TestRunner, assert_contains,
 };
 use std::env;
 use std::path::Path;

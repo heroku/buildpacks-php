@@ -1,8 +1,8 @@
+use crate::PhpBuildpackNotice;
 use crate::package_manager::composer::{
     ComposerLockVersionNotice, PlatformExtractorNotice, PlatformFinalizerNotice,
 };
 use crate::php_project::{PlatformJsonNotice, ProjectLoaderNotice};
-use crate::PhpBuildpackNotice;
 use bullet_stream::global::print;
 use indoc::{formatdoc, indoc};
 
