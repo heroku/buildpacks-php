@@ -1,8 +1,8 @@
 pub(crate) mod generator;
 
+use crate::PhpBuildpack;
 use crate::bootstrap;
 use crate::platform::generator::PlatformGeneratorError;
-use crate::PhpBuildpack;
 use composer::ComposerRootPackage;
 use libcnb::build::BuildContext;
 use libcnb::{Platform, Target};
@@ -85,9 +85,11 @@ pub(crate) fn platform_repository_urls_from_default_and_build_context(
     context: &BuildContext<PhpBuildpack>,
 ) -> Result<Vec<Url>, PlatformRepositoryUrlError> {
     // our default repo
-    let default_platform_repositories = vec![platform_base_url_for_target(&context.target)
-        .join(format!("packages-{}.json", bootstrap::PLATFORM_REPOSITORY_SNAPSHOT).as_str())
-        .expect("Internal error: failed to generate default repository URL")];
+    let default_platform_repositories = vec![
+        platform_base_url_for_target(&context.target)
+            .join(format!("packages-{}.json", bootstrap::PLATFORM_REPOSITORY_SNAPSHOT).as_str())
+            .expect("Internal error: failed to generate default repository URL"),
+    ];
 
     // anything user-supplied
     let user_repos = context

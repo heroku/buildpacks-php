@@ -1,10 +1,10 @@
+use crate::PhpBuildpack;
 use crate::layers::bootstrap::BootstrapLayer;
 use crate::platform;
-use crate::PhpBuildpack;
+use libcnb::Env;
 use libcnb::build::BuildContext;
 use libcnb::data::layer_name;
 use libcnb::layer_env::Scope;
-use libcnb::Env;
 use std::path::PathBuf;
 
 #[rustfmt::skip]

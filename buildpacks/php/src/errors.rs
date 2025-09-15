@@ -1,5 +1,6 @@
 pub(crate) mod notices;
 
+use crate::PhpBuildpackError;
 use crate::layers::bootstrap::BootstrapLayerError;
 use crate::layers::composer_env::ComposerEnvLayerError;
 use crate::layers::platform::PlatformLayerError;
@@ -13,7 +14,6 @@ use crate::platform::generator::{
 };
 use crate::platform::{PlatformRepositoryUrlError, WebserversJsonError};
 use crate::utils::DownloadUnpackError;
-use crate::PhpBuildpackError;
 use bullet_stream::global::print;
 use const_format::formatcp;
 use fun_run::CmdError;

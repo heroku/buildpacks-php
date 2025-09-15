@@ -19,7 +19,7 @@ use crate::php_project::{
     PlatformJsonError, PlatformJsonNotice, ProjectLoadError, ProjectLoaderNotice,
 };
 use crate::platform::{
-    heroku_stack_name_for_target, PlatformRepositoryUrlError, WebserversJsonError,
+    PlatformRepositoryUrlError, WebserversJsonError, heroku_stack_name_for_target,
 };
 use bullet_stream::global::print;
 use indoc::formatdoc;
@@ -29,7 +29,7 @@ use libcnb::data::{layer_name, process_type};
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
-use libcnb::{buildpack_main, Buildpack, Env, Platform};
+use libcnb::{Buildpack, Env, Platform, buildpack_main};
 use std::time::Instant;
 
 #[cfg(test)]

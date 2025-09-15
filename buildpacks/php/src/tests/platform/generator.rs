@@ -1,9 +1,9 @@
 use crate::package_manager::composer;
 use crate::platform::generator;
 use crate::tests::platform::ComposerLockTestCaseConfig;
-use assert_json_diff::{assert_json_matches_no_panic, CompareMode, Config};
-use figment::providers::{Format, Serialized, Toml};
+use assert_json_diff::{CompareMode, Config, assert_json_matches_no_panic};
 use figment::Figment;
+use figment::providers::{Format, Serialized, Toml};
 use fs_err as fs;
 use rstest::*;
 use serde_json::{Map, Value};
@@ -224,9 +224,9 @@ fn make_platform_json(
                     // for heroku-sys/heroku, we want to check that the generated value starts with the expected value
                     // (since the version strings are like XX.YYYY.MM.DD, with XX being the stack version number)
                     obj.entry("heroku-sys/heroku").and_modify(|exp| {
-                        let gen = generated_value.get("heroku-sys/heroku").unwrap();
-                        if gen.as_str().unwrap().starts_with(exp.as_str().unwrap()) {
-                            *exp = gen.clone();
+                        let value = generated_value.get("heroku-sys/heroku").unwrap();
+                        if value.as_str().unwrap().starts_with(exp.as_str().unwrap()) {
+                            *exp = value.clone();
                         }
                     });
                 }
