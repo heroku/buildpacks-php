@@ -1,5 +1,5 @@
 use derive_more::{Deref, From};
-use git_url_parse::{GitUrl, Scheme as GitUrlScheme};
+use git_url_parse::GitUrl;
 use monostate::MustBe;
 use serde::de::{Error, MapAccess, SeqAccess, Visitor};
 use serde::ser::{SerializeMap, Serializer};
@@ -627,17 +627,16 @@ impl From<String> for ComposerUrlOrPathUrl {
     }
 }
 
-// for some sources (and their mirrors) such as 'git', three kinds of URLs are allowed:
+// For some sources (and their mirrors) such as 'git', three kinds of URLs are allowed:
 // 1) URL style (e.g. https://github.com/foo/bar)
 // 2) SSH style (e.g. git@github.com:foo/bar.git)
 // 3) local filesystem path
-// so the URL type has to permit all of these
+// Style 2 is normalized into style 1 during parsing
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "String")]
 #[serde(into = "String")]
 pub enum ComposerUrlOrSshOrPathUrl {
     Url(Url),
-    GitUrl(GitUrl),
     Path(PathBuf),
 }
 
@@ -645,7 +644,6 @@ impl From<ComposerUrlOrSshOrPathUrl> for String {
     fn from(val: ComposerUrlOrSshOrPathUrl) -> Self {
         match val {
             ComposerUrlOrSshOrPathUrl::Url(v) => v.into(),
-            ComposerUrlOrSshOrPathUrl::GitUrl(v) => v.to_string(),
             ComposerUrlOrSshOrPathUrl::Path(v) => format!("{}", v.display()),
         }
     }
@@ -657,20 +655,22 @@ impl TryFrom<String> for ComposerUrlOrSshOrPathUrl {
         // try and parse as a regular Url first
         // reason is that Url handles e.g. 'svn+ssh://...' correctly
         // GitUrl really is only for the 'git@github.com:foo/bar.git' cases
-        match Url::parse(&value) {
-            Ok(url) => Ok(Self::Url(url)),
-            Err(_) => match GitUrl::parse(&value) {
-                Ok(url) => {
-                    match url.scheme {
-                        // GitUrl will parse "local" URLs like "./foo", "foo/bar", "../test"
-                        // in that case we want to return a Path variant instead
-                        GitUrlScheme::File => Ok(Self::Path(PathBuf::from(&value))),
-                        _ => Ok(Self::GitUrl(url)),
+        // (and even then, we convert back to a regular Url)
+        Url::parse(&value)
+            .map(Self::Url)
+            .or_else(|_| {
+                GitUrl::parse(&value).and_then(|git_url| {
+                    match &git_url.scheme() {
+                        // it's a file, but url::Url did not parse it as such, since it was relative
+                        // git-url-parse, however, accepts those
+                        // in that case, we return a PathBuf instead of a Url
+                        Some("file") => Ok(Self::Path(PathBuf::from(&value))),
+                        // it's an SSH style URL, "normalize" it to url::Url
+                        _ => Ok(Self::Url(git_url.try_into()?)),
                     }
-                }
-                Err(e) => Err(format!("Invalid GitUrl {value}: {e}")),
-            },
-        }
+                })
+            })
+            .map_err(|e| format!("Invalid GitUrl {value}: {e}"))
     }
 }
 
