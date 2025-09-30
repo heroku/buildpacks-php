@@ -438,9 +438,9 @@ pub enum ComposerPackageDist {
 pub struct ComposerPackageSource {
     #[serde(rename = "type")]
     pub kind: String,
-    pub url: ComposerUrlOrSshOrPathUrl,
+    pub url: ComposerUrlOrScpLikeOrPathUrl,
     pub reference: Option<String>,
-    pub mirrors: Option<Vec<ComposerMirror<ComposerUrlOrSshOrPathUrl>>>,
+    pub mirrors: Option<Vec<ComposerMirror<ComposerUrlOrScpLikeOrPathUrl>>>,
 }
 
 #[serde_as]
@@ -507,7 +507,7 @@ pub enum ComposerRepository {
     Url {
         #[serde(rename = "type")]
         kind: String,
-        url: ComposerUrlOrSshOrPathUrl, // can be a relative path, too
+        url: ComposerUrlOrScpLikeOrPathUrl, // can be an SCP style SSH "URL" or relative path, too
         canonical: Option<bool>,
         #[serde(flatten)]
         filters: Option<ComposerRepositoryFilters>,
@@ -620,57 +620,56 @@ impl From<ComposerUrlOrPathUrl> for String {
 
 impl From<String> for ComposerUrlOrPathUrl {
     fn from(value: String) -> Self {
-        match Url::parse(&value) {
-            Ok(url) => Self::Url(url),
-            Err(_) => Self::Path(PathBuf::from(&value)),
-        }
+        Url::parse(&value).map_or_else(|_| Self::Path(PathBuf::from(&value)), Self::Url)
     }
 }
 
 // For some sources (and their mirrors) such as 'git', three kinds of URLs are allowed:
 // 1) URL style (e.g. https://github.com/foo/bar)
-// 2) SSH style (e.g. git@github.com:foo/bar.git)
+// 2) SCP style SSH (e.g. git@github.com:foo/bar.git)
 // 3) local filesystem path
-// Style 2 is normalized into style 1 during parsing
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(try_from = "String")]
+#[serde(from = "String")]
 #[serde(into = "String")]
-pub enum ComposerUrlOrSshOrPathUrl {
+pub enum ComposerUrlOrScpLikeOrPathUrl {
     Url(Url),
+    ScpLike(GitUrl),
     Path(PathBuf),
 }
 
-impl From<ComposerUrlOrSshOrPathUrl> for String {
-    fn from(val: ComposerUrlOrSshOrPathUrl) -> Self {
+impl From<ComposerUrlOrScpLikeOrPathUrl> for String {
+    fn from(val: ComposerUrlOrScpLikeOrPathUrl) -> Self {
         match val {
-            ComposerUrlOrSshOrPathUrl::Url(v) => v.into(),
-            ComposerUrlOrSshOrPathUrl::Path(v) => format!("{}", v.display()),
+            ComposerUrlOrScpLikeOrPathUrl::Url(v) => v.into(),
+            ComposerUrlOrScpLikeOrPathUrl::ScpLike(v) => format!("{v}"),
+            ComposerUrlOrScpLikeOrPathUrl::Path(v) => format!("{}", v.display()),
         }
     }
 }
 
-impl TryFrom<String> for ComposerUrlOrSshOrPathUrl {
-    type Error = String;
-    fn try_from(value: String) -> Result<Self, Self::Error> {
+impl From<String> for ComposerUrlOrScpLikeOrPathUrl {
+    fn from(value: String) -> Self {
         // try and parse as a regular Url first
         // reason is that Url handles e.g. 'svn+ssh://...' correctly
-        // GitUrl really is only for the 'git@github.com:foo/bar.git' cases
-        // (and even then, we convert back to a regular Url)
-        Url::parse(&value)
-            .map(Self::Url)
-            .or_else(|_| {
-                GitUrl::parse(&value).and_then(|git_url| {
-                    match &git_url.scheme() {
-                        // it's a file, but url::Url did not parse it as such, since it was relative
-                        // git-url-parse, however, accepts those
-                        // in that case, we return a PathBuf instead of a Url
-                        Some("file") => Ok(Self::Path(PathBuf::from(&value))),
-                        // it's an SSH style URL, "normalize" it to url::Url
-                        _ => Ok(Self::Url(git_url.try_into()?)),
-                    }
-                })
-            })
-            .map_err(|e| format!("Invalid GitUrl {value}: {e}"))
+        // GitUrl really is only for the 'git@github.com:foo/bar.git' SCP style cases
+        Url::parse(&value).map_or_else(
+            |_| {
+                GitUrl::parse(&value).map_or_else(
+                    |_| Self::Path(PathBuf::from(&value)),
+                    |git_url| {
+                        match &git_url.scheme() {
+                            // it's a path with no leading file:// scheme
+                            // git-url-parse accepts those
+                            // in that case, we return a PathBuf instead of a Url
+                            Some("file") => Self::Path(PathBuf::from(git_url.path())),
+                            //  it's an SSH style URL, "normalize" it to url::Url
+                            _ => Self::ScpLike(git_url),
+                        }
+                    },
+                )
+            },
+            Self::Url,
+        )
     }
 }
 
@@ -805,6 +804,46 @@ mod tests {
             ],
             "invalid value at array index 0, expected repository definition object or disablement using single-key object notation (e.g. `{\"packagist.org\": false}`)",
         );
+    }
+
+    #[test]
+    fn test_composer_url_or_scplike_or_path_url() {
+        for case in ["file:///foo/bar", "https://github.com/foo/bar.git"] {
+            let parsed = ComposerUrlOrScpLikeOrPathUrl::from(case.to_string());
+            assert!(matches!(parsed, ComposerUrlOrScpLikeOrPathUrl::Url(_)));
+            assert_eq!(String::from(parsed), case.to_string());
+        }
+        for case in ["git@github.com:foo/bar.git", "git@server.com:~/foo/bar.git"] {
+            let parsed = ComposerUrlOrScpLikeOrPathUrl::from(case.to_string());
+            assert!(matches!(parsed, ComposerUrlOrScpLikeOrPathUrl::ScpLike(_)));
+            assert_eq!(String::from(parsed), case.to_string());
+        }
+        for case in ["/foo/bar", "../foo/bar", "foo/bar", "./foo@bar:baz"] {
+            let parsed = ComposerUrlOrScpLikeOrPathUrl::from(case.to_string());
+            assert!(matches!(parsed, ComposerUrlOrScpLikeOrPathUrl::Path(_)));
+            assert_eq!(String::from(parsed), case.to_string());
+        }
+    }
+
+    #[test]
+    fn test_composer_url_or_path_url() {
+        for case in ["file:///foo/bar", "https://github.com/foo/bar.git"] {
+            let parsed = ComposerUrlOrPathUrl::from(case.to_string());
+            assert!(matches!(parsed, ComposerUrlOrPathUrl::Url(_)));
+            assert_eq!(String::from(parsed), case.to_string());
+        }
+        for case in [
+            "/foo/bar",
+            "../foo/bar",
+            "foo/bar",
+            "./foo@bar:baz",
+            "git@github.com:foo/bar.git",
+            "git@server.com:~/foo/bar.git",
+        ] {
+            let parsed = ComposerUrlOrPathUrl::from(case.to_string());
+            assert!(matches!(parsed, ComposerUrlOrPathUrl::Path(_)));
+            assert_eq!(String::from(parsed), case.to_string());
+        }
     }
 
     #[rstest]
