@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Drop use of Classic buildpack repository (for Composer installer plugin and web server boot scripts and configs) during platform packages installation
+
 ## [1.0.10] - 2025-10-24
 
 ### Added

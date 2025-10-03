@@ -12,7 +12,7 @@
         "heroku-sys\/heroku": "20."
     },
     "require": {
-        "heroku/installer-plugin": "*",
+        "heroku/installer-plugin": "^1.8.0",
         "heroku-sys\/composer": "*",
         "heroku-sys\/composer-plugin-api": "^2",
         "heroku-sys\/php": "9.0.0@RC"
@@ -23,13 +23,6 @@
     "repositories": [
         {
             "packagist.org": false
-        },
-        {
-            "type": "path",
-            "url": "..\/..\/support\/installer",
-            "options": {
-                "symlink": false
-            }
         },
         {
             "type": "composer",

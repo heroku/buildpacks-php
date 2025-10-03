@@ -7,7 +7,6 @@ use composer::{
 };
 use serde_json::json;
 use std::collections::HashMap;
-use std::path::Path;
 use std::string::ToString;
 use url::Url;
 
@@ -173,7 +172,6 @@ fn stack_provide_from_stack_name(stack: &str) -> Result<(String, String), Platfo
 pub(crate) fn generate_platform_json(
     input: &PlatformJsonGeneratorInput,
     stack: &str,
-    installer_path: &Path,
     platform_repositories: &[Url],
 ) -> Result<ComposerRootPackage, PlatformGeneratorError> {
     if platform_repositories.is_empty() {
@@ -185,19 +183,13 @@ pub(crate) fn generate_platform_json(
     // some fundamental stuff we want installed
     let mut require = HashMap::from([
         // our installer plugin - individual platform packages are also supposed to require it, but hey
-        ("heroku/installer-plugin".to_string(), "*".to_string()),
+        // since we rely on specific behavior of the installer plugin, we require a suitable version range here
+        ("heroku/installer-plugin".to_string(), "^1.8.0".to_string()),
     ]);
     let mut require_dev: HashMap<String, String> = HashMap::new();
 
-    // disable packagist.org (we want to userland package installs here), and add the installer plugin
-    let mut repositories = vec![
-        ComposerRepository::Disabled("packagist.org".into()),
-        // our heroku/installer-plugin
-        ComposerRepository::from_path_with_options(
-            installer_path,
-            json!({"symlink": false}).as_object().cloned(),
-        ),
-    ];
+    // disable packagist.org (we want no userland package installs here)
+    let mut repositories = vec![ComposerRepository::Disabled("packagist.org".into())];
     // additional repositories come next; this could be e.g. path or package repos for packages in .additional_require
     repositories.append(
         input

@@ -8,7 +8,6 @@ mod platform;
 mod tests;
 mod utils;
 
-use crate::bootstrap::BootstrapResult;
 use crate::errors::notices;
 use crate::layers::bootstrap::BootstrapLayerError;
 use crate::layers::composer_cache::ComposerCacheLayer;
@@ -86,11 +85,7 @@ impl Buildpack for PhpBuildpack {
 
         print::bullet("Bootstrapping");
 
-        let BootstrapResult {
-            env: mut platform_env,
-            platform_installer_path,
-            classic_buildpack_path,
-        } = bootstrap::bootstrap(&context)?;
+        let mut platform_env = bootstrap::bootstrap(&context)?;
 
         let platform_cache_layer =
             context.handle_layer(layer_name!("platform_cache"), ComposerCacheLayer)?;
@@ -103,7 +98,7 @@ impl Buildpack for PhpBuildpack {
 
         let mut platform_json_notices = Vec::<PlatformJsonNotice>::new();
         let platform_json = project
-            .platform_json(&stack_name, &platform_installer_path, &all_repos, false)
+            .platform_json(&stack_name, &all_repos, false)
             .map_err(PhpBuildpackError::PlatformJson)?
             .unwrap(&mut platform_json_notices); // Warned::unwrap() does not panic :)
         platform_json_notices
@@ -123,13 +118,8 @@ impl Buildpack for PhpBuildpack {
 
         print::bullet("Installing web servers");
 
-        let webservers_json = platform::webservers_json(
-            &stack_name,
-            &platform_installer_path,
-            &classic_buildpack_path,
-            &all_repos,
-        )
-        .map_err(PhpBuildpackError::WebserversJson)?;
+        let webservers_json = platform::webservers_json(&stack_name, &all_repos)
+            .map_err(PhpBuildpackError::WebserversJson)?;
 
         context.handle_layer(
             layer_name!("webservers"),
