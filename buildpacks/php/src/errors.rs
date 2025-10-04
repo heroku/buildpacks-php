@@ -200,8 +200,8 @@ fn on_bootstrap_layer_error(e: BootstrapLayerError) -> (String, String) {
 
 fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
     match e {
-        PlatformLayerError::PlatformJsonCreate(e) => (
-            "Failed to create platform dependencies file".to_string(),
+        PlatformLayerError::PlatformJsonCreate(e) | PlatformLayerError::ReadLayerEnv(e) => (
+            "An I/O error occurred during platform packages installation".to_string(),
             formatdoc! {"
                 Details: {e}
 
@@ -263,14 +263,6 @@ fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
                     refer to: https://devcenter.heroku.com/articles/php-support
                 "},
             },
-        ),
-        PlatformLayerError::ReadLayerEnv(e) => (
-            "Failed to read platform installer layer env output".to_string(),
-            formatdoc! {"
-                Details: {e}
-
-                {INTERNAL_ERROR_HELP_STRING}
-            "},
         ),
         PlatformLayerError::ParseLayerEnv(e) => (
             "Failed to read platform installer layer env output".to_string(),
