@@ -217,7 +217,7 @@ fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
             "},
         ),
         PlatformLayerError::ProvidedPackagesLogRead(e) => (
-            "Failed to read platform installer log".to_string(),
+            "Failed to read platform installer packages log".to_string(),
             formatdoc! {"
                 Details: {e}
 
@@ -225,7 +225,7 @@ fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
             "},
         ),
         PlatformLayerError::ProvidedPackagesLogParse => (
-            "Failed to parse platform installer log".to_string(),
+            "Failed to parse platform installer packages log".to_string(),
             INTERNAL_ERROR_HELP_STRING.to_string(),
         ),
         PlatformLayerError::ComposerInstall(cmd_error) => (
