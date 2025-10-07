@@ -28,7 +28,6 @@ pub(crate) fn install_dependencies(
             .envs(command_env)
             .args([
                 "install",
-                "-vv",
                 "--no-dev",
                 "--no-progress",
                 "--no-interaction",
