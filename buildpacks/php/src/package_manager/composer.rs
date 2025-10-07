@@ -1,12 +1,12 @@
 use crate::platform::generator;
 use crate::platform::generator::PlatformJsonGeneratorInput;
-use crate::utils::regex;
-use bullet_stream::global::print;
+use crate::utils::{add_prefix_to_non_empty, regex};
 use composer::{
     ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepository, ComposerRootPackage,
 };
-use fun_run::CmdError;
 use libcnb::Env;
+use libherokubuildpack::command::CommandExt;
+use libherokubuildpack::write;
 use std::collections::HashMap;
 use std::ops::Not;
 use std::path::PathBuf;
@@ -15,37 +15,39 @@ use warned::Warned;
 
 #[derive(Debug)]
 pub(crate) enum DependencyInstallationError {
-    ComposerInstall(CmdError),
+    ComposerInvocation(std::io::Error),
+    ComposerInstall(std::process::ExitStatus),
 }
 
 pub(crate) fn install_dependencies(
     dir: &PathBuf,
     command_env: &Env,
 ) -> Result<(), DependencyInstallationError> {
-    print::sub_stream_cmd(
-        Command::new("composer")
-            .current_dir(dir)
-            .envs(command_env)
-            .args([
-                "install",
-                "--no-dev",
-                "--no-progress",
-                "--no-interaction",
-                "--optimize-autoloader",
-                "--prefer-dist",
-            ]), // .envs(
-                //     &[&platform_layer.env, &composer_env_layer.env]
-                //         .iter()
-                //         .fold(libcnb::Env::from_current(), |final_env, layer_env| {
-                //             layer_env.apply(Scope::Build, &final_env)
-                //         }),
-                // ),
-    )
-    .map_err(DependencyInstallationError::ComposerInstall)?;
+    let exit_status = Command::new("composer")
+        .current_dir(dir)
+        .envs(command_env)
+        .args([
+            "install",
+            "--no-dev",
+            "--no-progress",
+            "--no-interaction",
+            "--optimize-autoloader",
+            "--prefer-dist",
+        ])
+        .spawn_and_write_streams(
+            write::line_mapped(std::io::stdout(), add_prefix_to_non_empty("  ")),
+            write::line_mapped(std::io::stderr(), add_prefix_to_non_empty("  ")),
+        )
+        .and_then(|mut child| child.wait())
+        .map_err(DependencyInstallationError::ComposerInvocation)?;
+
+    if exit_status.success() {
+        Ok(())
+    } else {
+        Err(DependencyInstallationError::ComposerInstall(exit_status))
+    }
 
     // TODO: run `composer compile`? but is that still a good name?
-
-    Ok(())
 }
 
 #[derive(Debug, Eq, PartialEq)]
