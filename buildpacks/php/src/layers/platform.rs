@@ -42,7 +42,6 @@ impl Layer for PlatformLayer<'_> {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
     fn create(
         &mut self,
         context: &BuildContext<Self::Buildpack>,
@@ -140,37 +139,15 @@ impl Layer for PlatformLayer<'_> {
                     let (name, _version) = provide
                         .split_once(':')
                         .ok_or(PlatformLayerError::ProvidedPackagesLogParse)?;
-                    let outputs = install_log
-                        .try_clone()
-                        .map_err(PlatformLayerError::InstallLogCreate)?;
-                    let errors = outputs
-                        .try_clone()
-                        .map_err(PlatformLayerError::InstallLogCreate)?;
-                    let mut require_cmd = Command::new("composer");
-                    require_cmd
-                        .current_dir(layer_path)
-                        // .env("layer_env_file_path", &layer_env_file_path)
-                        .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
-                        .args([
-                            "require",
-                            &format!("{name}.native:*"),
-                            "--no-interaction",
-                            "--no-progress",
-                        ])
-                        .env("NO_COLOR", "1")
-                        .env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO", "10")
-                        .env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT", "4")
-                        .stdout(outputs)
-                        .stderr(errors);
-                    require_cmd
-                        .fd_mappings(vec![FdMapping {
-                            parent_fd: std::io::stdout()
-                                .as_fd()
-                                .try_clone_to_owned()
-                                .map_err(PlatformLayerError::OutputFdSetup)?,
-                            child_fd: 10,
-                        }])
-                        .map_err(PlatformLayerError::OutputFdMapping)?;
+
+                    let mut require_cmd = build_composer_command(
+                        layer_path,
+                        self.command_env,
+                        ["require", &format!("{name}.native:*")],
+                        &install_log,
+                    )?;
+                    require_cmd.env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT", "4");
+
                     if !require_cmd
                         .status()
                         .map_err(PlatformLayerError::ComposerInvocation)?
