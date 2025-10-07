@@ -1519,7 +1519,6 @@ dependencies = [
  "figment",
  "flate2",
  "fs-err",
- "fun_run",
  "indoc",
  "libcnb",
  "libcnb-test",
