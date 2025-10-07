@@ -65,37 +65,17 @@ impl Layer for PlatformLayer<'_> {
             .open(layer_path.join("install.log"))
             .map_err(PlatformLayerError::InstallLogCreate)?
             .into_file();
-        let outputs = install_log
-            .try_clone()
-            .map_err(PlatformLayerError::InstallLogCreate)?;
-        let errors = outputs
-            .try_clone()
-            .map_err(PlatformLayerError::InstallLogCreate)?;
 
-        let mut install_cmd = Command::new("composer");
+        let mut install_cmd =
+            build_composer_command(layer_path, self.command_env, ["install"], &install_log)?;
         install_cmd
-            .current_dir(layer_path)
-            .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
-            .args(["install", "--no-dev", "--no-interaction", "--no-progress"])
             .env("layer_env_file_path", &layer_env_file_path)
             .env(
                 "providedextensionslog_file_path",
                 &provided_packages_log_file_path,
             )
-            .env("NO_COLOR", "1")
-            .env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO", "10")
             .env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT", "2")
-            .stdout(outputs)
-            .stderr(errors);
-        install_cmd
-            .fd_mappings(vec![FdMapping {
-                parent_fd: std::io::stdout()
-                    .as_fd()
-                    .try_clone_to_owned()
-                    .map_err(PlatformLayerError::OutputFdSetup)?,
-                child_fd: 10,
-            }])
-            .map_err(PlatformLayerError::OutputFdMapping)?;
+            .arg("--no-dev");
 
         let status = install_cmd
             .status()
@@ -261,6 +241,49 @@ where
             &"one of: append, default, delimiter, override, prepend",
         )),
     }
+}
+
+fn build_composer_command<I, S>(
+    layer_path: &Path,
+    command_env: &Env,
+    args: I,
+    install_log: &std::fs::File,
+) -> Result<Command, PlatformLayerError>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<std::ffi::OsStr>,
+{
+    let child_fd_no = 10;
+    let mut install_cmd = Command::new("composer");
+    install_cmd
+        .current_dir(layer_path)
+        .envs(command_env) // we're invoking 'composer' from the bootstrap layer
+        .args(args)
+        .args(["--no-interaction", "--no-progress"])
+        .env("NO_COLOR", "1")
+        .env(
+            "PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO",
+            child_fd_no.to_string(),
+        )
+        .stdout(
+            install_log
+                .try_clone()
+                .map_err(PlatformLayerError::InstallLogCreate)?,
+        )
+        .stderr(
+            install_log
+                .try_clone()
+                .map_err(PlatformLayerError::InstallLogCreate)?,
+        )
+        .fd_mappings(vec![FdMapping {
+            parent_fd: std::io::stdout()
+                .as_fd()
+                .try_clone_to_owned()
+                .map_err(PlatformLayerError::OutputFdSetup)?,
+            child_fd: child_fd_no,
+        }])
+        .map_err(PlatformLayerError::OutputFdMapping)?;
+    Ok(install_cmd)
 }
 
 #[derive(Debug)]
