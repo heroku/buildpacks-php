@@ -203,7 +203,6 @@ fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
     match e {
         PlatformLayerError::PlatformJsonCreate(e)
         | PlatformLayerError::InstallLogCreate(e)
-        | PlatformLayerError::OutputFdSetup(e)
         | PlatformLayerError::ComposerInvocation(e)
         | PlatformLayerError::InstallLogRead(e)
         | PlatformLayerError::ReadLayerEnv(e) => (
@@ -217,14 +216,6 @@ fn on_platform_layer_error(e: PlatformLayerError) -> (String, String) {
         PlatformLayerError::PlatformJsonWrite(e) => (
             "Failed to write platform dependencies file".to_string(),
             formatdoc! {"
-                Details: {e}
-
-                {INTERNAL_ERROR_HELP_STRING}
-            "},
-        ),
-        PlatformLayerError::OutputFdMapping(e) => (
-            "Failed to initialize file descriptors for progress display".to_string(),
-            formatdoc! {"\
                 Details: {e}
 
                 {INTERNAL_ERROR_HELP_STRING}

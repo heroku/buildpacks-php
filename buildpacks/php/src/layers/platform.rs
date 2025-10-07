@@ -3,7 +3,7 @@
 
 use crate::{PhpBuildpack, PhpBuildpackError};
 use bullet_stream::global::print;
-use command_fds::{CommandFdExt, FdMapping, FdMappingCollision};
+use command_fds::CommandFdExt;
 use composer::ComposerRootPackage;
 use fs_err::File;
 use libcnb::build::BuildContext;
@@ -14,7 +14,7 @@ use libcnb::{Buildpack, Env, Target};
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::io::{BufReader, Read, Seek};
-use std::os::fd::AsFd;
+use std::os::fd::{AsFd, AsRawFd};
 use std::path::Path;
 use std::process::Command;
 
@@ -66,7 +66,8 @@ impl Layer for PlatformLayer<'_> {
             .into_file();
 
         let mut install_cmd =
-            build_composer_command(layer_path, self.command_env, ["install"], &install_log)?;
+            build_composer_command(layer_path, self.command_env, ["install"], &install_log)
+                .map_err(PlatformLayerError::ComposerInvocation)?;
         install_cmd
             .env("layer_env_file_path", &layer_env_file_path)
             .env(
@@ -145,7 +146,8 @@ impl Layer for PlatformLayer<'_> {
                         self.command_env,
                         ["require", &format!("{name}.native:*")],
                         &install_log,
-                    )?;
+                    )
+                    .map_err(PlatformLayerError::ComposerInvocation)?;
                     require_cmd.env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT", "4");
 
                     if !require_cmd
@@ -225,12 +227,16 @@ fn build_composer_command<I, S>(
     command_env: &Env,
     args: I,
     install_log: &std::fs::File,
-) -> Result<Command, PlatformLayerError>
+) -> std::io::Result<Command>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<std::ffi::OsStr>,
 {
-    let child_fd_no = 10;
+    // Get a new file descriptor that points to our stdout.
+    // We pass it to the child process using `CommandFdExt::preserved_fds()`,
+    // and its number using env var `PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO`.
+    // The installer plugin will then write human-readable output to that FD.
+    let out_fd = std::io::stdout().as_fd().try_clone_to_owned()?;
     let mut install_cmd = Command::new("composer");
     install_cmd
         .current_dir(layer_path)
@@ -240,26 +246,12 @@ where
         .env("NO_COLOR", "1")
         .env(
             "PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO",
-            child_fd_no.to_string(),
+            out_fd.as_raw_fd().to_string(),
         )
-        .stdout(
-            install_log
-                .try_clone()
-                .map_err(PlatformLayerError::InstallLogCreate)?,
-        )
-        .stderr(
-            install_log
-                .try_clone()
-                .map_err(PlatformLayerError::InstallLogCreate)?,
-        )
-        .fd_mappings(vec![FdMapping {
-            parent_fd: std::io::stdout()
-                .as_fd()
-                .try_clone_to_owned()
-                .map_err(PlatformLayerError::OutputFdSetup)?,
-            child_fd: child_fd_no,
-        }])
-        .map_err(PlatformLayerError::OutputFdMapping)?;
+        .preserved_fds(vec![out_fd])
+        // composer command stdout and stderr are both captured to the given install log file
+        .stdout(install_log.try_clone()?)
+        .stderr(install_log.try_clone()?);
     Ok(install_cmd)
 }
 
@@ -268,8 +260,6 @@ pub(crate) enum PlatformLayerError {
     PlatformJsonCreate(std::io::Error),
     PlatformJsonWrite(serde_json::Error),
     InstallLogCreate(std::io::Error),
-    OutputFdSetup(std::io::Error),
-    OutputFdMapping(FdMappingCollision),
     ComposerInvocation(std::io::Error),
     InstallLogRead(std::io::Error),
     ComposerInstall(std::process::ExitStatus, String),
