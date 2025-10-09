@@ -58,7 +58,11 @@ impl Layer for PlatformLayer<'_> {
         // a log of native packages not installed because of userland provides is written to this file
         let provided_packages_log_file_path = layer_path.join("provided_packages.tsv"); // TODO: truncate?
 
-        let mut install_log = File::create_new(layer_path.join("install.log"))
+        let mut install_log = File::options()
+            .create(true)
+            .append(true) // guarantee multiple writers always append without race conditions
+            .read(true)
+            .open(layer_path.join("install.log"))
             .map_err(PlatformLayerError::InstallLogCreate)?
             .into_file();
         let outputs = install_log
