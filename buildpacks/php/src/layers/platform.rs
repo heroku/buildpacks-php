@@ -76,12 +76,7 @@ impl Layer for PlatformLayer<'_> {
         install_cmd
             .current_dir(layer_path)
             .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
-            .args([
-                "install",
-                "--no-dev",
-                "--no-interaction",
-                //"--no-progress",
-            ])
+            .args(["install", "--no-dev", "--no-interaction", "--no-progress"])
             .env("layer_env_file_path", &layer_env_file_path)
             .env(
                 "providedextensionslog_file_path",
@@ -182,7 +177,7 @@ impl Layer for PlatformLayer<'_> {
                             "require",
                             &format!("{name}.native:*"),
                             "--no-interaction",
-                            //"--no-progress",
+                            "--no-progress",
                         ])
                         .env("NO_COLOR", "1")
                         .env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO", "10")
