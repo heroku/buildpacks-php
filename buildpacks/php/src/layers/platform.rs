@@ -168,8 +168,8 @@ impl Layer for PlatformLayer<'_> {
                     let errors = outputs
                         .try_clone()
                         .map_err(PlatformLayerError::InstallLogCreate)?;
-                    let mut install_cmd = Command::new("composer");
-                    install_cmd
+                    let mut require_cmd = Command::new("composer");
+                    require_cmd
                         .current_dir(layer_path)
                         // .env("layer_env_file_path", &layer_env_file_path)
                         .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
@@ -184,7 +184,7 @@ impl Layer for PlatformLayer<'_> {
                         .env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT", "4")
                         .stdout(outputs)
                         .stderr(errors);
-                    install_cmd
+                    require_cmd
                         .fd_mappings(vec![FdMapping {
                             parent_fd: std::io::stdout()
                                 .as_fd()
@@ -193,7 +193,7 @@ impl Layer for PlatformLayer<'_> {
                             child_fd: 10,
                         }])
                         .map_err(PlatformLayerError::OutputFdMapping)?;
-                    if !install_cmd
+                    if !require_cmd
                         .status()
                         .map_err(PlatformLayerError::ComposerInvocation)?
                         .success()
