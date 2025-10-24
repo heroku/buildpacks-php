@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- PHP/8.3.27
+- PHP/8.4.14
+- ext-mongodb/1.21.2
+- ext-mongodb/2.1.4
+- ext-memcached/3.4.0
+- ext-grpc/1.76.0
+- librdkafka/2.12.1
+
 ## [1.0.9] - 2025-09-30
 
 ### Added

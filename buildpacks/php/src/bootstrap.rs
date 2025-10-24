@@ -8,8 +8,8 @@ use libcnb::layer_env::Scope;
 use std::path::PathBuf;
 
 #[rustfmt::skip]
-pub(crate) const PLATFORM_REPOSITORY_SNAPSHOT: &str = "e2887a146b73d3d1bfab9d29c75e6fede79b87a33fde1b62a4e9cdfd3fa56347";
-const PHP_VERSION: &str = "8.3.26";
+pub(crate) const PLATFORM_REPOSITORY_SNAPSHOT: &str = "ae7b745650f0ace0f254454cd093b01cf9ecf47d301f6b6c414a72a44af0b24e";
+const PHP_VERSION: &str = "8.3.27";
 const COMPOSER_VERSION: &str = "2.8.12";
 const CLASSIC_BUILDPACK_VERSION: &str = "heads/cnb-installer";
 const CLASSIC_BUILDPACK_INSTALLER_SUBDIR: &str = "support/installer";
