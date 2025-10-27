@@ -102,3 +102,17 @@ fn download_with_retry(
         }
     }
 }
+
+pub(crate) fn add_prefix_to_non_empty<P: Into<Vec<u8>>>(prefix: P) -> impl Fn(Vec<u8>) -> Vec<u8> {
+    let prefix = prefix.into();
+
+    move |mut input| {
+        if input.is_empty() {
+            vec![]
+        } else {
+            let mut result = prefix.clone();
+            result.append(&mut input);
+            result
+        }
+    }
+}

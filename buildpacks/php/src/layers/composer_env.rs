@@ -2,8 +2,6 @@
 #![allow(deprecated)]
 
 use crate::{PhpBuildpack, PhpBuildpackError};
-use bullet_stream::global::print;
-use fun_run::CmdError;
 use libcnb::build::BuildContext;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::generic::GenericMetadata;
@@ -35,17 +33,22 @@ impl Layer for ComposerEnvLayer<'_> {
         _context: &BuildContext<Self::Buildpack>,
         _layer_path: &Path,
     ) -> Result<LayerResult<Self::Metadata>, <Self::Buildpack as Buildpack>::Error> {
-        let output = print::sub_time_cmd(
-            Command::new("composer")
-                .args(["config", "--no-plugins", "bin-dir"])
-                .current_dir(self.dir)
-                .envs(self.command_env)
-                .env("PHP_INI_SCAN_DIR", "")
-                .env("COMPOSER_AUTH", ""),
-        )
-        .map_err(ComposerEnvLayerError::ConfigBinDirCmd)?;
+        let output = Command::new("composer")
+            .args(["config", "--no-plugins", "bin-dir"])
+            .current_dir(self.dir)
+            .envs(self.command_env)
+            .env("PHP_INI_SCAN_DIR", "")
+            .env("COMPOSER_AUTH", "")
+            .output()
+            .map_err(ComposerEnvLayerError::ComposerInvocation)?;
 
-        let composer_bin_dir: PathBuf = (*output.stdout_lossy().trim()).into();
+        if !output.status.success() {
+            return Err(PhpBuildpackError::ComposerEnvLayer(
+                ComposerEnvLayerError::ComposerConfig(output),
+            ));
+        }
+
+        let bin_dir = String::from_utf8_lossy(&output.stdout);
         LayerResultBuilder::new(GenericMetadata::default())
             .env(
                 LayerEnv::new()
@@ -53,7 +56,7 @@ impl Layer for ComposerEnvLayer<'_> {
                         Scope::All,
                         ModificationBehavior::Append,
                         "PATH",
-                        self.dir.join(composer_bin_dir),
+                        self.dir.join(bin_dir.trim()),
                     )
                     .chainable_insert(Scope::All, ModificationBehavior::Delimiter, "PATH", ":"),
             )
@@ -63,7 +66,8 @@ impl Layer for ComposerEnvLayer<'_> {
 
 #[derive(Debug)]
 pub(crate) enum ComposerEnvLayerError {
-    ConfigBinDirCmd(CmdError),
+    ComposerInvocation(std::io::Error),
+    ComposerConfig(std::process::Output),
 }
 
 impl From<ComposerEnvLayerError> for PhpBuildpackError {

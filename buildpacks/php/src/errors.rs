@@ -16,7 +16,6 @@ use crate::platform::{PlatformRepositoryUrlError, WebserversJsonError};
 use crate::utils::DownloadUnpackError;
 use bullet_stream::global::print;
 use const_format::formatcp;
-use fun_run::CmdError;
 use indoc::{formatdoc, indoc};
 use serde_json::error::Category;
 use std::io;
@@ -358,57 +357,61 @@ fn on_platform_generator_error(e: PlatformGeneratorError) -> (String, String) {
 }
 
 fn on_dependency_installation_error(e: DependencyInstallationError) -> (String, String) {
-    (
-        "Failed to install dependencies".to_string(),
-        match e {
-            DependencyInstallationError::ComposerInstall(e) => match e {
-                CmdError::SystemError(_, _) => formatdoc! {"
-                    An unexpected error occurred during dependencies installation:
+    match e {
+        DependencyInstallationError::ComposerInvocation(e) => (
+            "An I/O error occurred during dependency installation".to_string(),
+            formatdoc! {"
+                Details: {e}
 
-                    {e}
-                "},
-                _ => formatdoc! {"
-                    Dependency installation failed!
+                {INTERNAL_ERROR_HELP_STRING}
+            "},
+        ),
+        DependencyInstallationError::ComposerInstall(exit_status) => (
+            "Dependency installation failed!".to_string(),
+            formatdoc! {"
+                The 'composer install' process failed with status {exit_code}. The cause
+                may be the download or installation of packages, or a pre- or
+                post-install hook (e.g. a 'post-install-cmd' item in 'scripts')
+                in your 'composer.json'.
 
-                    The 'composer install' process failed with an error. The cause
-                    may be the download or installation of packages, or a pre- or
-                    post-install hook (e.g. a 'post-install-cmd' item in 'scripts')
-                    in your 'composer.json'.
+                Typical error cases are out-of-date or missing parts of code,
+                timeouts when making external connections, or memory limits.
 
-                    Typical error cases are out-of-date or missing parts of code,
-                    timeouts when making external connections, or memory limits.
+                Check the above error output closely to determine the cause of
+                the problem, ensure the code you're pushing is functioning
+                properly, and that all local changes are committed correctly.
 
-                    Details:
-
-                    {e}
-
-                    Check the above error output closely to determine the cause of
-                    the problem, ensure the code you're pushing is functioning
-                    properly, and that all local changes are committed correctly.
-
-                    For more information on builds for PHP on Heroku, refer to
-                    https://devcenter.heroku.com/articles/php-support
-                "}
-                .to_string(),
+                For more information on builds for PHP on Heroku, refer to
+                https://devcenter.heroku.com/articles/php-support
+                ", exit_code = exit_status.code().unwrap_or(-1)
             },
-        },
-    )
+        ),
+    }
 }
 
 fn on_composer_env_layer_error(e: ComposerEnvLayerError) -> (String, String) {
     match e {
-        ComposerEnvLayerError::ConfigBinDirCmd(cmd_error) => (
-            "Could not determine Composer 'bin-dir' config value".to_string(),
+        ComposerEnvLayerError::ComposerInvocation(e) => (
+            "An I/O error occurred".to_string(),
             formatdoc! {"
-                Without this value, the buildpack cannot place the binaries installed by composer on the PATH,
-                which is needed to run the application. The buildpack cannot continue.
-
-                Error details:
-
-                {cmd_error}
+                Details: {e}
 
                 {INTERNAL_ERROR_HELP_STRING}
             "},
+        ),
+        ComposerEnvLayerError::ComposerConfig(output) => (
+            "Could not determine Composer config value".to_string(),
+            formatdoc! {"
+                A call to 'composer config' failed with exit status {exit_status}.
+
+                This may indicate a mis-configuration in composer.json.
+                Please check the following error output from Composer to diagnose and address the problem:
+
+                {stderr}
+                ",
+                exit_status = output.status.code().unwrap_or(-1),
+                stderr = String::from_utf8_lossy(&output.stderr),
+            },
         ),
     }
 }
