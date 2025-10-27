@@ -1,0 +1,6 @@
+{
+	"require": {
+		"php": "8.*",
+		"ext-doesnotexist": "*"
+	}
+}

@@ -89,14 +89,3 @@ fn smoke_test_php_getting_started() {
         "Getting Started with PHP on Heroku",
     );
 }
-
-#[test]
-#[ignore = "integration test"]
-fn smoke_test_php_polyfills() {
-    let build_config = BuildConfig::new(builder(), "tests/fixtures/smoke/polyfills")
-        .buildpacks(vec![BuildpackReference::CurrentCrate])
-        .target_triple(target_triple(builder()))
-        .to_owned();
-
-    TestRunner::default().build(&build_config, |_context| {});
-}

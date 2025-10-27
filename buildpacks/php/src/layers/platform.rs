@@ -3,9 +3,9 @@
 
 use crate::{PhpBuildpack, PhpBuildpackError};
 use bullet_stream::global::print;
+use command_fds::CommandFdExt;
 use composer::ComposerRootPackage;
 use fs_err::File;
-use fun_run::CmdError;
 use libcnb::build::BuildContext;
 use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
@@ -13,7 +13,8 @@ use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libcnb::{Buildpack, Env, Target};
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
-use std::io::BufReader;
+use std::io::{BufReader, Read, Seek};
+use std::os::fd::{AsFd, AsRawFd};
 use std::path::Path;
 use std::process::Command;
 
@@ -56,24 +57,43 @@ impl Layer for PlatformLayer<'_> {
         // a log of native packages not installed because of userland provides is written to this file
         let provided_packages_log_file_path = layer_path.join("provided_packages.tsv"); // TODO: truncate?
 
-        // TODO: output filtering and error display
-        print::sub_stream_cmd(
-            Command::new("composer")
-                .current_dir(layer_path)
-                .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
-                .args([
-                    "install",
-                    "--no-dev",
-                    "--no-interaction",
-                    //"--no-progress",
-                ])
-                .env("layer_env_file_path", &layer_env_file_path)
-                .env(
-                    "providedextensionslog_file_path",
-                    &provided_packages_log_file_path,
-                ),
-        )
-        .map_err(PlatformLayerError::ComposerInstall)?;
+        let mut install_log = File::options()
+            .create(true)
+            .append(true) // guarantee multiple writers always append without race conditions
+            .read(true)
+            .open(layer_path.join("install.log"))
+            .map_err(PlatformLayerError::InstallLogCreate)?
+            .into_file();
+
+        let mut install_cmd =
+            build_composer_command(layer_path, self.command_env, ["install"], &install_log)
+                .map_err(PlatformLayerError::ComposerInvocation)?;
+        install_cmd
+            .env("layer_env_file_path", &layer_env_file_path)
+            .env(
+                "providedextensionslog_file_path",
+                &provided_packages_log_file_path,
+            )
+            .env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT", "2")
+            .arg("--no-dev");
+
+        let status = install_cmd
+            .status()
+            .map_err(PlatformLayerError::ComposerInvocation)?;
+
+        if !status.success() {
+            let mut output = String::new();
+            install_log
+                .rewind()
+                .map_err(PlatformLayerError::InstallLogRead)?;
+            install_log
+                .read_to_string(&mut output)
+                .map_err(PlatformLayerError::InstallLogRead)?;
+            return Err(PhpBuildpackError::PlatformLayer(
+                PlatformLayerError::ComposerInstall(status, output),
+            ));
+        }
+
         // FIXME: we have to do that now, not later, since the installer gets invoked again
         // ^ to be solved on the installer side, which has to merge the values from later calls...
 
@@ -114,36 +134,31 @@ impl Layer for PlatformLayer<'_> {
             for result in rdr.deserialize() {
                 let (provider_name, provides): (String, Vec<String>) =
                     result.map_err(PlatformLayerError::ProvidedPackagesLogRead)?;
-                print::sub_bullet(format!(
-                    "Attempting native package installs for {provider_name}"
-                ));
+                print::sub_bullet(format!("Installing extensions provided by {provider_name}"));
 
                 for provide in provides {
                     let (name, _version) = provide
                         .split_once(':')
                         .ok_or(PlatformLayerError::ProvidedPackagesLogParse)?;
-                    // TODO: output filtering and error display (Classic uses echo -n)
-                    // TODO: keep in mind that this could, in turn, pull in dependencies
-                    match print::sub_stream_cmd(
-                        Command::new("composer")
-                            .current_dir(layer_path)
-                            // .env("layer_env_file_path", &layer_env_file_path)
-                            .envs(self.command_env) // we're invoking 'composer' from the bootstrap layer
-                            .args([
-                                "require",
-                                &format!("{name}.native:*"),
-                                // "--no-dev",
-                                // "--no-interaction",
-                                //"--no-progress",
-                            ]),
-                    ) {
-                        Ok(_) => {}
-                        Err(_) => {
-                            // TODO: Classic uses \r here
-                            print::sub_bullet(format!(
-                                "No suitable native version of {name} available"
-                            ));
-                        }
+
+                    let mut require_cmd = build_composer_command(
+                        layer_path,
+                        self.command_env,
+                        ["require", &format!("{name}.native:*")],
+                        &install_log,
+                    )
+                    .map_err(PlatformLayerError::ComposerInvocation)?;
+                    require_cmd.env("PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT", "4");
+
+                    if !require_cmd
+                        .status()
+                        .map_err(PlatformLayerError::ComposerInvocation)?
+                        .success()
+                    {
+                        // the 'composer install' call was not successful, which means there was no "{name}:native" package available
+                        print::plain(format!(
+                            "    NOTICE: No suitable native version of {name} available"
+                        ));
                     }
                 }
             }
@@ -207,13 +222,49 @@ where
     }
 }
 
+fn build_composer_command<I, S>(
+    layer_path: &Path,
+    command_env: &Env,
+    args: I,
+    install_log: &std::fs::File,
+) -> std::io::Result<Command>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<std::ffi::OsStr>,
+{
+    // Get a new file descriptor that points to our stdout.
+    // We pass it to the child process using `CommandFdExt::preserved_fds()`,
+    // and its number using env var `PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO`.
+    // The installer plugin will then write human-readable output to that FD.
+    let out_fd = std::io::stdout().as_fd().try_clone_to_owned()?;
+    let mut install_cmd = Command::new("composer");
+    install_cmd
+        .current_dir(layer_path)
+        .envs(command_env) // we're invoking 'composer' from the bootstrap layer
+        .args(args)
+        .args(["--no-interaction", "--no-progress"])
+        .env("NO_COLOR", "1")
+        .env(
+            "PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO",
+            out_fd.as_raw_fd().to_string(),
+        )
+        .preserved_fds(vec![out_fd])
+        // composer command stdout and stderr are both captured to the given install log file
+        .stdout(install_log.try_clone()?)
+        .stderr(install_log.try_clone()?);
+    Ok(install_cmd)
+}
+
 #[derive(Debug)]
 pub(crate) enum PlatformLayerError {
     PlatformJsonCreate(std::io::Error),
     PlatformJsonWrite(serde_json::Error),
+    InstallLogCreate(std::io::Error),
+    ComposerInvocation(std::io::Error),
+    InstallLogRead(std::io::Error),
+    ComposerInstall(std::process::ExitStatus, String),
     ProvidedPackagesLogRead(csv::Error),
     ProvidedPackagesLogParse,
-    ComposerInstall(CmdError),
     ReadLayerEnv(std::io::Error),
     ParseLayerEnv(serde_json::Error),
 }

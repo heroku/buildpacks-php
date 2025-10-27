@@ -9,6 +9,7 @@ workspace = true
 [dependencies]
 bullet_stream = ">=0.8, <1"
 chrono = { version = "0.4", default-features = false, features = ["now"] }
+command-fds = "0.3"
 composer = { path = "../../composer" }
 const_format = "0.2"
 csv = "1"

@@ -8,5 +8,6 @@
 // Required due to: https://github.com/rust-lang/rust/issues/95513
 #![allow(unused_crate_dependencies)]
 
+mod platform;
 mod smoke;
 mod utils;
