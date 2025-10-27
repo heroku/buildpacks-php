@@ -17,7 +17,6 @@ fn make_platform_json(
     #[dirs]
     path: PathBuf,
 ) {
-    let installer_path = &PathBuf::from("../../support/installer");
     let case: ComposerLockTestCaseConfig = Figment::from(Serialized::defaults(
         ComposerLockTestCaseConfig::from(&path),
     ))
@@ -93,12 +92,8 @@ fn make_platform_json(
 
     // SECOND: generate "platform.json" from the extracted config and packages list
 
-    let generated_json_package = generator::generate_platform_json(
-        &generator_input,
-        &case.stack,
-        installer_path,
-        &case.repositories,
-    );
+    let generated_json_package =
+        generator::generate_platform_json(&generator_input, &case.stack, &case.repositories);
 
     // first check: was this even supposed to succeed or fail?
     assert_eq!(

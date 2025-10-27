@@ -11,20 +11,12 @@ use std::path::PathBuf;
 pub(crate) const PLATFORM_REPOSITORY_SNAPSHOT: &str = "ae7b745650f0ace0f254454cd093b01cf9ecf47d301f6b6c414a72a44af0b24e";
 const PHP_VERSION: &str = "8.3.27";
 const COMPOSER_VERSION: &str = "2.8.12";
-const CLASSIC_BUILDPACK_VERSION: &str = "heads/cnb-installer";
-const CLASSIC_BUILDPACK_INSTALLER_SUBDIR: &str = "support/installer";
-
-pub(crate) struct BootstrapResult {
-    pub(crate) env: Env,
-    pub(crate) platform_installer_path: PathBuf,
-    pub(crate) classic_buildpack_path: PathBuf,
-}
 
 // TODO: Switch to libcnb's struct layer API.
 #[allow(deprecated)]
 pub(crate) fn bootstrap(
     context: &BuildContext<PhpBuildpack>,
-) -> libcnb::Result<BootstrapResult, <PhpBuildpack as libcnb::Buildpack>::Error> {
+) -> libcnb::Result<Env, <PhpBuildpack as libcnb::Buildpack>::Error> {
     let mut env = Env::from_current();
 
     let php_layer_data = context.handle_layer(
@@ -54,22 +46,5 @@ pub(crate) fn bootstrap(
     env = composer_layer_data.env.apply(Scope::Build, &env);
     env.insert("COMPOSER_HOME", composer_layer_data.path);
 
-    let classic_buildpack_layer_data = context.handle_layer(
-        layer_name!("bootstrap_installer"),
-        BootstrapLayer {
-            url: format!(
-                "https://github.com/heroku/heroku-buildpack-php/archive/refs/{CLASSIC_BUILDPACK_VERSION}.tar.gz",
-            ),
-            strip_path_components: 1,
-            directory: PathBuf::new(),
-        },
-    )?;
-
-    Ok(BootstrapResult {
-        env,
-        platform_installer_path: classic_buildpack_layer_data
-            .path
-            .join(CLASSIC_BUILDPACK_INSTALLER_SUBDIR),
-        classic_buildpack_path: classic_buildpack_layer_data.path,
-    })
+    Ok(env)
 }

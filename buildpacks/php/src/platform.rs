@@ -6,9 +6,7 @@ use crate::platform::generator::PlatformGeneratorError;
 use composer::ComposerRootPackage;
 use libcnb::build::BuildContext;
 use libcnb::{Platform, Target};
-use serde_json::json;
 use std::collections::HashMap;
-use std::path::Path;
 use std::str::FromStr;
 use url::Url;
 
@@ -148,37 +146,21 @@ pub(crate) enum WebserversJsonError {
 
 pub(crate) fn webservers_json(
     stack: &str,
-    installer_path: &Path,
-    classic_buildpack_path: &Path,
     platform_repositories: &[Url],
 ) -> Result<ComposerRootPackage, WebserversJsonError> {
     let webservers_generator_input = generator::PlatformJsonGeneratorInput {
         additional_require: Some(HashMap::from([
             ("heroku-sys/apache".to_string(), "*".to_string()),
             ("heroku-sys/nginx".to_string(), "*".to_string()),
-            // for now, we need the web server boot scripts and configs from the classic buildpack
-            (
-                "heroku/heroku-buildpack-php".to_string(),
-                "dev-bundled".to_string(),
-            ),
+            // this package contains heroku-php-apache2 and heroku-php-nginx, plus runtime configs
+            ("heroku-sys/boot-scripts".to_string(), "^1.0.0".to_string()),
         ])),
-        // path repo for the above heroku/heroku-buildpack-php package
-        additional_repositories: Some(vec![composer::ComposerRepository::from_path_with_options(
-            classic_buildpack_path,
-            json!({
-                "symlink": false,
-                "versions": {"heroku/heroku-buildpack-php": "dev-bundled"}
-            })
-            .as_object()
-            .cloned(),
-        )]),
         ..Default::default()
     };
 
     let mut webservers_json = generator::generate_platform_json(
         &webservers_generator_input,
         stack,
-        installer_path,
         platform_repositories,
     )
     .map_err(WebserversJsonError::PlatformGenerator)?;

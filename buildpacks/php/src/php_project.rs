@@ -154,7 +154,6 @@ impl Project {
     pub(crate) fn platform_json(
         &self,
         stack: &str,
-        installer_path: &Path,
         platform_repositories: &[Url],
         dev: bool,
     ) -> Result<Warned<ComposerRootPackage, PlatformJsonNotice>, PlatformJsonError> {
@@ -175,7 +174,6 @@ impl Project {
         let mut ret = platform::generator::generate_platform_json(
             &generator_input,
             stack,
-            installer_path,
             platform_repositories,
         )
         .map_err(PlatformJsonError::Generator)?;
