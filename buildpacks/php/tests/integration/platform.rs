@@ -1,6 +1,8 @@
 use crate::utils::{builder, target_triple};
-use indoc::formatdoc;
-use libcnb_test::{BuildConfig, BuildpackReference, TestRunner, assert_contains_match};
+use indoc::{formatdoc, indoc};
+use libcnb_test::{
+    BuildConfig, BuildpackReference, TestRunner, assert_contains, assert_contains_match,
+};
 
 #[test]
 #[ignore = "integration test"]
@@ -57,29 +59,34 @@ fn platform_test_failure() {
         .to_owned();
 
     TestRunner::default().build(&build_config, |context| {
-        assert_contains_match!(
+        assert_contains!(
             context.pack_stdout,
-            formatdoc! {r"
+            indoc! {r"
                 ! Failed to install platform dependencies
                 !
-                ! Your platform requirements \(for runtimes and extensions\) could
-                ! not be resolved to an installable set of dependencies\.
+                ! Your platform requirements (for runtimes and extensions) could
+                ! not be resolved to an installable set of dependencies.
                 !
-                ! This usually means that you \(or packages you are using\) depend
+                ! This usually means that you (or packages you are using) depend
                 ! on a combination of PHP versions and/or extensions that are
-                ! currently not available on Heroku\.
+                ! currently not available on Heroku.
                 !
                 ! The following is the full output from the installation attempt:
                 !
-                ((?s)^!.*$)+
+                ! > Loading repositories with available runtimes and extensions
+                ! > Your requirements could not be resolved to an installable set of packages.
+                ! > 
+                ! >   Problem 1
+                ! >     - Root composer.json requires ext-doesnotexist, it could not be found in any version, there may be a typo in the package name.
+                ! > 
                 !
                 ! Please verify that all requirements for runtime versions in
-                ! 'composer\.lock' are compatible with the list below, and ensure
-                ! all required extensions are available for the desired runtimes\.
+                ! 'composer.lock' are compatible with the list below, and ensure
+                ! all required extensions are available for the desired runtimes.
                 !
                 ! When choosing a PHP runtimes and extensions, please also ensure
                 ! they are available on your app's stack, and, if necessary, choose
-                ! a different stack after consulting the article below\.
+                ! a different stack after consulting the article below.
                 !
                 ! For a list of supported runtimes & extensions on Heroku, please
                 ! refer to: https://devcenter.heroku.com/articles/php-support
