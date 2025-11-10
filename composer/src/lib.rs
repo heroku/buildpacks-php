@@ -212,6 +212,24 @@ impl<'de> Deserialize<'de> for ComposerRepositories {
                         })
                         .map_err(|_| {
                             Error::custom(format!("invalid value at object key '{key}', expected repository definition object or disablement using boolean `false`"))
+                        })
+                        .and_then(|mut repository| {
+                            match repository {
+                                ComposerRepository::Composer { ref mut name, .. }
+                                | ComposerRepository::Path { ref mut name, .. }
+                                | ComposerRepository::Package { ref mut name, .. }
+                                | ComposerRepository::Url { ref mut name, .. }
+                                | ComposerRepository::Other { ref mut name, .. }
+                                => {
+                                    if name.is_some() {
+                                        Err(Error::custom(format!("invalid value at object key '{key}', repository definition must not have a 'name' field")))
+                                    } else {
+                                        name.replace(key);
+                                        Ok(repository)
+                                    }
+                                },
+                                ComposerRepository::Disabled(_) => Ok(repository)
+                            }
                         })?;
                     values.push(repo);
                 }
@@ -471,6 +489,7 @@ pub struct ComposerPackageFunding {
 pub enum ComposerRepository {
     #[serde(rename_all = "kebab-case")]
     Composer {
+        name: Option<String>,
         #[serde(rename = "type")]
         kind: MustBe!("composer"),
         url: ComposerUrlOrPathUrl, // can also be a relative path
@@ -484,6 +503,7 @@ pub enum ComposerRepository {
     },
     #[serde(rename_all = "kebab-case")]
     Path {
+        name: Option<String>,
         #[serde(rename = "type")]
         kind: MustBe!("path"),
         url: PathBuf,
@@ -494,6 +514,7 @@ pub enum ComposerRepository {
     },
     #[serde(rename_all = "kebab-case")]
     Package {
+        name: Option<String>,
         #[serde(rename = "type")]
         kind: MustBe!("package"),
         #[serde_as(as = "OneOrMany<_, PreferOne>")]
@@ -505,6 +526,7 @@ pub enum ComposerRepository {
     // any other repo type that has a URL field
     #[serde(rename_all = "kebab-case")]
     Url {
+        name: Option<String>,
         #[serde(rename = "type")]
         kind: String,
         url: ComposerUrlOrScpLikeOrPathUrl, // can be an SCP style SSH "URL" or relative path, too
@@ -516,6 +538,7 @@ pub enum ComposerRepository {
     },
     #[serde(rename_all = "kebab-case")]
     Other {
+        name: Option<String>,
         #[serde(rename = "type")]
         kind: String,
         canonical: Option<bool>,
@@ -537,6 +560,7 @@ impl ComposerRepository {
         options: Option<Map<String, Value>>,
     ) -> Self {
         Self::Path {
+            name: None,
             #[allow(clippy::default_trait_access)]
             kind: Default::default(),
             url: path.into(),
@@ -549,6 +573,7 @@ impl ComposerRepository {
 impl From<Vec<ComposerPackage>> for ComposerRepository {
     fn from(value: Vec<ComposerPackage>) -> Self {
         Self::Package {
+            name: None,
             #[allow(clippy::default_trait_access)]
             kind: Default::default(),
             package: value,
@@ -847,7 +872,19 @@ mod tests {
     }
 
     #[rstest]
-    fn test_composer_json(#[files("tests/fixtures/*.json")] path: PathBuf) {
+    fn test_composer_json(
+        #[files("tests/fixtures/*.json")]
+        #[exclude(r"\.xfail\.json$")]
+        path: PathBuf,
+    ) {
+        let composer_json = fs::read(&path).unwrap();
+        serde_json::from_slice::<ComposerRootPackage>(&composer_json).unwrap();
+    }
+
+    #[allow(clippy::should_panic_without_expect)]
+    #[should_panic]
+    #[rstest]
+    fn test_broken_composer_json(#[files("tests/fixtures/*.xfail.json")] path: PathBuf) {
         let composer_json = fs::read(&path).unwrap();
         serde_json::from_slice::<ComposerRootPackage>(&composer_json).unwrap();
     }

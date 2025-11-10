@@ -1,0 +1,26 @@
+{
+    "_comment": [
+        "This is a test fixture explicitly covering the name attribute in repositories introduced in Composer 2.9 ",
+        "See https://getcomposer.org/doc/04-schema.md#repositories",
+        "A lock file is not needed for this case."
+    ],
+    "repositories": [
+        {
+            "packagist.org": false
+        },
+        {
+            "name": "inline",
+            "type": "package",
+            "package": [
+                {
+                    "name": "my/package",
+                    "type": "metapackage",
+                    "version": "1.0.0"
+                }
+            ]
+        }
+    ],
+    "require": {
+        "my/package": "^1.0.0"
+    }
+}
