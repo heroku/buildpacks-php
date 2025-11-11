@@ -259,6 +259,8 @@ impl ComposerRepositories {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerBasePackage {
+    #[serde(rename = "_comment")]
+    pub comment: Option<Value>,
     #[serde(rename = "type")]
     pub kind: Option<String>,
     pub abandoned: Option<ComposerPackageAbandoned>,
@@ -877,8 +879,36 @@ mod tests {
         #[exclude(r"\.xfail\.json$")]
         path: PathBuf,
     ) {
-        let composer_json = fs::read(&path).unwrap();
-        serde_json::from_slice::<ComposerRootPackage>(&composer_json).unwrap();
+        let composer_json = std::io::BufReader::new(fs::File::open(&path).unwrap());
+        let package: ComposerRootPackage = serde_json::from_reader(composer_json).unwrap();
+        // The test cases may have special testing related instructions in the _comment field
+        if let Some(Value::Array(ref comments)) = package.package.comment {
+            comments
+                .iter()
+                .filter_map(|comment| match comment {
+                    Value::Object(comment) => Some(comment),
+                    _ => None,
+                })
+                .flat_map(std::iter::IntoIterator::into_iter)
+                .for_each(|comment| match comment {
+                    (op, Value::String(details)) if op == "compare-deserialized" => {
+                        // We are supposed to compare the deserialized form to that of another file
+                        // This is useful for testing e.g. normalizations, such as for the repositories notations
+                        let mut their_path = path.clone();
+                        their_path.set_file_name(details);
+                        let mut ours = package.clone();
+                        let mut theirs: ComposerRootPackage = serde_json::from_reader(
+                            std::io::BufReader::new(fs::File::open(their_path).unwrap()),
+                        )
+                        .unwrap();
+                        // The _comment fields obviously differ, so we discard them before comparing
+                        ours.package.comment = None;
+                        theirs.package.comment = None;
+                        assert_json_diff::assert_json_eq!(ours, theirs);
+                    }
+                    _ => panic!("unexpected magic testing comment instruction"),
+                });
+        }
     }
 
     #[allow(clippy::should_panic_without_expect)]

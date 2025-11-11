@@ -5,7 +5,8 @@
         "it's what Composer <2.9 generated when using the CLI to modify or disable a repository (e.g. 'packagist.org').",
         "See https://getcomposer.org/doc/04-schema.md#repositories",
         "When specifying repositories in this form, an existing repository is disabled using a simple false value.",
-        "A lock file is not needed for this case."
+        "A lock file is not needed for this case.",
+        {"compare-deserialized":  "composer-repositorieswithnames.json"}
     ],
     "repositories": {
         "packagist.org": false,
