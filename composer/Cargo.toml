@@ -16,5 +16,6 @@ serde_with = "3"
 url = { version = "2", features = ["serde"] }
 
 [dev-dependencies]
+assert-json-diff = "2"
 rstest = "0.26"
 serde_test = "1"
