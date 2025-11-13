@@ -11,9 +11,10 @@ use libcnb::data::layer_content_metadata::LayerTypes;
 use libcnb::layer::{Layer, LayerResult, LayerResultBuilder};
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libcnb::{Buildpack, Env, Target};
+use regex::Regex;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize};
-use std::io::{BufReader, Read, Seek};
+use std::io::{BufRead, BufReader, Read, Seek};
 use std::os::fd::{AsFd, AsRawFd};
 use std::path::Path;
 use std::process::Command;
@@ -82,15 +83,12 @@ impl Layer for PlatformLayer<'_> {
             .map_err(PlatformLayerError::ComposerInvocation)?;
 
         if !status.success() {
-            let mut output = String::new();
-            install_log
-                .rewind()
+            // Filter the "raw" error output from Composer a little
+            let filtered_output = filter_error_output(&mut install_log)
                 .map_err(PlatformLayerError::InstallLogRead)?;
-            install_log
-                .read_to_string(&mut output)
-                .map_err(PlatformLayerError::InstallLogRead)?;
+
             return Err(PhpBuildpackError::PlatformLayer(
-                PlatformLayerError::ComposerInstall(status, output),
+                PlatformLayerError::ComposerInstall(status, filtered_output),
             ));
         }
 
@@ -219,6 +217,114 @@ where
             Unexpected::Str(&s),
             &"one of: append, default, delimiter, override, prepend",
         )),
+    }
+}
+
+enum FilterAction {
+    Discard,
+    Retain(String),
+    Terminate,
+}
+
+impl FromIterator<FilterAction> for Vec<String> {
+    fn from_iter<T: IntoIterator<Item = FilterAction>>(iter: T) -> Self {
+        let mut result = vec![];
+        for item in &mut iter.into_iter() {
+            match item {
+                FilterAction::Discard => (),
+                FilterAction::Retain(line) => result.push(line),
+                FilterAction::Terminate => break,
+            }
+        }
+        result
+    }
+}
+
+/// Filter error output using a collection of filter functions.
+///
+/// This function applies a series of filter functions to each line of the error output.
+/// Each function can return one of three `FilterAction` variants for each line:
+/// - `FilterAction::Discard` drops the line
+/// - `FilterAction::Retain(String)` retains the given string (can be used to modify the line)
+/// - `FilterAction::Terminate` ends further processing
+///
+/// Functions are applied in sequence, so multiple modifications can be made via `Retain`;
+/// it's also possible for `Terminate` to end processing even if e.g. a `Discard` was already emitted.
+///
+/// Returns a `String` of the final processed output.
+fn filter_error_output<R: Read + Seek>(reader: &mut R) -> std::io::Result<String> {
+    // Rewind the reader to the beginning
+    reader.rewind()?;
+
+    // Create a buffered reader to read line by line
+    let buf_reader = BufReader::new(reader);
+
+    // Create a vector of filter functions
+    // Each function takes a line string and returns a FilterAction
+    let filters = [
+        // Discard certain lines that would be confusing for users
+        |line: &str| {
+            let matches = ["No composer.lock file present", "Updating dependencies"]
+                .iter()
+                .any(|s| line.contains(s));
+            if matches {
+                FilterAction::Discard
+            } else {
+                FilterAction::Retain(line.to_string())
+            }
+        },
+        // Remove all occurrences of the heroku-sys/ prefix (from package names such as ext-foobar)
+        |line: &str| FilterAction::Retain(line.replace("heroku-sys/", "")),
+        // Re-write specific lines
+        |line: &str| {
+            FilterAction::Retain(
+                Regex::new(r"^Loading composer repositories with package information")
+                    .expect("Internal regex error")
+                    .replace(
+                        line,
+                        "Loading repositories with available runtimes and extensions",
+                    )
+                    .to_string(),
+            )
+        },
+        // Drop any remaining lines once a particular string is found
+        |line: &str| {
+            if line.contains("Potential causes:") {
+                FilterAction::Terminate
+            } else {
+                FilterAction::Retain(line.to_string())
+            }
+        },
+        // "quote" every line
+        |line: &str| FilterAction::Retain(format!("> {line}")),
+    ];
+
+    // Process each line through the filter chain
+    let filtered_lines = buf_reader
+        .lines()
+        .map_while(Result::ok) // just drop lines with invalid UTF-8
+        .map(|line| fold_filter_states(&filters, line))
+        .collect::<Vec<String>>();
+    Ok(filtered_lines.join("\n"))
+}
+
+fn fold_filter_states(filters: &[fn(&str) -> FilterAction], line: String) -> FilterAction {
+    let mut out = line;
+    let mut discard = false;
+    for filter in filters {
+        match filter(&out) {
+            // Keep applying other filters so that they may decide to terminate
+            FilterAction::Discard => discard = true,
+            // If we've already decided to discard, do not apply changes to the line anymore
+            FilterAction::Retain(new_line) if !discard => out = new_line,
+            FilterAction::Terminate => return FilterAction::Terminate,
+            FilterAction::Retain(_) => (),
+        }
+    }
+    if discard {
+        FilterAction::Discard
+    } else {
+        FilterAction::Retain(out)
     }
 }
 

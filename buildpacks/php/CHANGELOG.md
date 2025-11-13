@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Filter output from Composer on platform installation failure for better readability (for parity with the Classic buildpack)
+
 ## [1.1.0] - 2025-10-27
 
 ### Changed
