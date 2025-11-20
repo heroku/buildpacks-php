@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- PHP/8.3.28
+- PHP/8.4.15
+- ext-ev/1.2.2
+- ext-redis/6.3.0
+- Composer/2.9.2
+
 ### Changed
 
 - Filter output from Composer on platform installation failure for better readability (for parity with the Classic buildpack)
