@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 #[rustfmt::skip]
 pub(crate) const PLATFORM_REPOSITORY_SNAPSHOT: &str = "4868bb4662e895b7774a83880c81fcf8cfcdee7e932684f6b55ae08b252eb449";
-const PHP_VERSION: &str = "8.3.28";
+const PHP_VERSION: &str = "8.4.15";
 const COMPOSER_VERSION: &str = "2.9.2";
 
 // TODO: Switch to libcnb's struct layer API.
