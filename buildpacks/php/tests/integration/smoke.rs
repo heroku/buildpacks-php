@@ -86,6 +86,7 @@ fn smoke_test_php_getting_started() {
         builder(),
         "tests/fixtures/smoke/heroku-php-getting-started",
         default_buildpacks(),
-        "Getting Started with PHP on Heroku",
+        None,
+        Some("Getting Started with PHP on Heroku"),
     );
 }

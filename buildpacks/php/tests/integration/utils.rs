@@ -1,5 +1,6 @@
 use libcnb_test::{
-    BuildConfig, BuildpackReference, ContainerConfig, TestContext, TestRunner, assert_contains,
+    BuildConfig, BuildpackReference, ContainerConfig, TestContext, TestRunner,
+    assert_contains_match,
 };
 use std::env;
 use std::path::Path;
@@ -9,7 +10,7 @@ use std::time::Duration;
 ///
 /// It will start the container from a `TestContext`, sets the `PORT` environment variable and tries
 /// to get a successful (HTTP 200) response from the container for a `GET` request to `/`. It will
-/// then assert that the given string is contained in the request body.
+/// then assert that the given string is `assert_contains_match!`ed in the request body.
 ///
 /// This helper will retry failed requests with an exponential backoff to avoid flappy tests.
 ///a
@@ -17,7 +18,7 @@ use std::time::Duration;
 /// This function is catering to that use-case and is not useful in other contexts.
 pub(crate) fn start_container_assert_basic_http_response(
     context: &TestContext,
-    expected_http_response_body_contains: &str,
+    expected_http_response_body_contains_match: &str,
 ) {
     context.start_container(
         ContainerConfig::default()
@@ -31,7 +32,7 @@ pub(crate) fn start_container_assert_basic_http_response(
                 .into_string()
                 .expect(UREQ_RESPONSE_AS_STRING_EXPECT_MESSAGE);
 
-            assert_contains!(&response_body, expected_http_response_body_contains);
+            assert_contains_match!(&response_body, expected_http_response_body_contains_match);
         },
     );
 }
@@ -61,13 +62,16 @@ where
 /// Helper for smoke-testing.
 ///
 /// Builds the app with the given buildpacks, asserts that the build finished successfully, and
+/// optionally checks that the build output `assert_contains_match!`es a given regex. It then
 /// builds the app again to ensure that any caching logic does not break subsequent builds.
-/// After the build, an HTTP request is made, asserting that the given string is in the response.
+/// After the build, an HTTP `GET` request is made to `/`, and, the HTTP response body is then
+/// optionally `assert_contains_match!`ed against a given regex.
 pub(crate) fn smoke_test<P, B>(
     builder_name: impl AsRef<str>,
     app_dir: P,
     buildpacks: B,
-    expected_http_response_body_contains: &str,
+    expected_build_output_contains_match: Option<&str>,
+    expected_http_response_body_contains_match: Option<&str>,
 ) where
     P: AsRef<Path>,
     B: Into<Vec<BuildpackReference>>,
@@ -78,13 +82,18 @@ pub(crate) fn smoke_test<P, B>(
         .to_owned();
 
     TestRunner::default().build(&build_config, |context| {
-        start_container_assert_basic_http_response(&context, expected_http_response_body_contains);
+        if let Some(regex) = expected_build_output_contains_match {
+            assert_contains_match!(context.pack_stdout, regex);
+        }
+
+        if let Some(regex) = expected_http_response_body_contains_match {
+            start_container_assert_basic_http_response(&context, regex);
+        }
 
         context.rebuild(&build_config, |context| {
-            start_container_assert_basic_http_response(
-                &context,
-                expected_http_response_body_contains,
-            );
+            if let Some(regex) = expected_http_response_body_contains_match {
+                start_container_assert_basic_http_response(&context, regex);
+            }
         });
     });
 }
