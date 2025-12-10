@@ -7,7 +7,6 @@
 		"ext-redis": "*",
 		"ext-sqlite3": "*",
 		"ext-ldap": "*",
-		"ext-imap": "*",
 		"ext-pq": "*",
 		"monolog/monolog": "^3.0",
 		"bramus/monolog-colored-line-formatter": "^3.1.1",
