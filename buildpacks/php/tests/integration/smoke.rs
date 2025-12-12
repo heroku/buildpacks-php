@@ -10,6 +10,7 @@ use crate::utils::{
     target_triple,
 };
 use fs_err as fs;
+use indoc::indoc;
 use libcnb_test::{BuildConfig, BuildpackReference, TestRunner};
 use serde_json::json;
 
@@ -20,7 +21,11 @@ fn smoke_test_bundled_hello_world_app() {
         builder(),
         "tests/fixtures/smoke/hello-world",
         vec![BuildpackReference::CurrentCrate],
-        "Hello World",
+        Some(indoc! {r"
+        - Installing platform packages
+          - php \(8.5.\d+\)
+        "}),
+        Some("Hello World"),
     );
 }
 
@@ -86,6 +91,7 @@ fn smoke_test_php_getting_started() {
         builder(),
         "tests/fixtures/smoke/heroku-php-getting-started",
         default_buildpacks(),
-        "Getting Started with PHP on Heroku",
+        None,
+        Some("Getting Started with PHP on Heroku"),
     );
 }

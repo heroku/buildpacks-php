@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- ext-oauth/2.0.10
+- ext-imagick/3.8.1
+- PHP/8.5.0
+
+### Changed
+
+- Use PHP 8.4 for bootstrapping
+
 ## [1.2.0] - 2025-11-22
 
 ### Added
