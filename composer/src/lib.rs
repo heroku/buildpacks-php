@@ -1,19 +1,19 @@
 use derive_more::{Deref, From};
 use git_url_parse::GitUrl;
+use indexmap::IndexMap;
 use monostate::MustBe;
 use serde::de::{Error, MapAccess, SeqAccess, Visitor};
 use serde::ser::{SerializeMap, Serializer};
 use serde::{Deserialize, Deserializer, Serialize};
-use serde_json::{Map, Value};
+use serde_json::Value;
 use serde_with::{OneOrMany, TryFromInto, formats::PreferOne, serde_as, skip_serializing_none};
-use std::collections::HashMap;
 use std::fmt;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 use url::Url;
 
 #[derive(Clone, Debug, Default, Deref, From, PartialEq, Serialize)]
-pub struct PhpAssocArray<T>(HashMap<String, T>);
+pub struct PhpAssocArray<T>(IndexMap<String, T>);
 impl<'de, T: Deserialize<'de> + Default> Deserialize<'de> for PhpAssocArray<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -47,7 +47,7 @@ impl<'de, T: Deserialize<'de> + Default> Deserialize<'de> for PhpAssocArray<T> {
             where
                 A: MapAccess<'de>,
             {
-                let mut values = HashMap::<String, T>::new();
+                let mut values = IndexMap::<String, T>::new();
                 while let Some((key, value)) = map.next_entry::<String, T>()? {
                     values.insert(key, value);
                 }
@@ -142,7 +142,7 @@ impl<T> SingleEntryKVMap<T> {
 pub struct ComposerRootPackage {
     pub name: Option<String>,
     pub version: Option<String>,
-    pub config: Option<Map<String, Value>>,
+    pub config: Option<IndexMap<String, Value>>,
     pub minimum_stability: Option<ComposerStability>,
     pub prefer_stable: Option<bool>,
     #[serde(flatten)]
@@ -270,7 +270,7 @@ pub struct ComposerBasePackage {
     pub autoload_dev: Option<ComposerPackageAutoload>,
     #[serde_as(as = "Option<OneOrMany<_, PreferOne>>")]
     pub bin: Option<Vec<String>>,
-    pub conflict: Option<HashMap<String, String>>,
+    pub conflict: Option<IndexMap<String, String>>,
     pub description: Option<String>,
     pub dist: Option<ComposerPackageDist>,
     pub extra: Option<Value>,
@@ -283,16 +283,16 @@ pub struct ComposerBasePackage {
     pub minimum_stability: Option<ComposerStability>,
     pub non_feature_branches: Option<Vec<String>>,
     pub prefer_stable: Option<bool>,
-    pub provide: Option<HashMap<String, String>>,
+    pub provide: Option<IndexMap<String, String>>,
     pub readme: Option<PathBuf>,
-    pub replace: Option<HashMap<String, String>>,
+    pub replace: Option<IndexMap<String, String>>,
     pub repositories: Option<ComposerRepositories>,
-    pub require: Option<HashMap<String, String>>,
-    pub require_dev: Option<HashMap<String, String>>,
-    pub scripts_descriptions: Option<HashMap<String, String>>,
+    pub require: Option<IndexMap<String, String>>,
+    pub require_dev: Option<IndexMap<String, String>>,
+    pub scripts_descriptions: Option<IndexMap<String, String>>,
     pub source: Option<ComposerPackageSource>,
-    pub support: Option<HashMap<String, String>>,
-    pub suggest: Option<HashMap<String, String>>,
+    pub support: Option<IndexMap<String, String>>,
+    pub suggest: Option<IndexMap<String, String>>,
     pub target_dir: Option<String>,
     pub time: Option<String>, // TODO: "Package release date, in 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DDTHH:MM:SSZ' format.", but in practice it uses DateTime::__construct(), which can parse a lot of formats
 }
@@ -311,7 +311,7 @@ pub struct ComposerConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum ComposerConfigAllowPlugins {
     Boolean(bool),
-    List(HashMap<String, bool>),
+    List(IndexMap<String, bool>),
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -360,7 +360,7 @@ impl From<PhpAssocArray<ComposerStability>> for PhpAssocArray<u8> {
         value
             .iter()
             .map(|(k, v)| (k.clone(), v.clone() as u8))
-            .collect::<HashMap<String, u8>>()
+            .collect::<IndexMap<String, u8>>()
             .into()
     }
 }
@@ -374,7 +374,7 @@ impl TryFrom<PhpAssocArray<u8>> for PhpAssocArray<ComposerStability> {
                 Ok(value) => Ok((k.clone(), value)),
                 Err(e) => Err(e),
             })
-            .collect::<Result<HashMap<String, ComposerStability>, _>>();
+            .collect::<Result<IndexMap<String, ComposerStability>, _>>();
         match ret {
             Ok(v) => Ok(v.into()),
             Err(e) => Err(e),
@@ -410,10 +410,10 @@ pub struct ComposerPackageAuthor {
 #[serde(rename_all = "kebab-case")]
 pub struct ComposerPackageAutoload {
     // map values for the next two can be string or list of strings
-    #[serde_as(as = "Option<HashMap<_, OneOrMany<_, PreferOne>>>")]
-    pub psr_0: Option<HashMap<String, Vec<String>>>,
-    #[serde_as(as = "Option<HashMap<_, OneOrMany<_, PreferOne>>>")]
-    pub psr_4: Option<HashMap<String, Vec<String>>>,
+    #[serde_as(as = "Option<IndexMap<_, OneOrMany<_, PreferOne>>>")]
+    pub psr_0: Option<IndexMap<String, Vec<String>>>,
+    #[serde_as(as = "Option<IndexMap<_, OneOrMany<_, PreferOne>>>")]
+    pub psr_4: Option<IndexMap<String, Vec<String>>>,
     pub classmap: Option<Vec<String>>,
     pub files: Option<Vec<String>>,
     pub exclude_from_classmap: Option<Vec<String>>,
@@ -498,7 +498,7 @@ pub enum ComposerRepository {
         #[serde(rename = "allow_ssl_downgrade")]
         allow_ssl_downgrade: Option<bool>,
         force_lazy_providers: Option<bool>,
-        options: Option<Map<String, Value>>,
+        options: Option<IndexMap<String, Value>>,
         canonical: Option<bool>,
         #[serde(flatten)]
         filters: Option<ComposerRepositoryFilters>,
@@ -509,7 +509,7 @@ pub enum ComposerRepository {
         #[serde(rename = "type")]
         kind: MustBe!("path"),
         url: PathBuf,
-        options: Option<Map<String, Value>>,
+        options: Option<IndexMap<String, Value>>,
         canonical: Option<bool>,
         #[serde(flatten)]
         filters: Option<ComposerRepositoryFilters>,
@@ -536,7 +536,7 @@ pub enum ComposerRepository {
         #[serde(flatten)]
         filters: Option<ComposerRepositoryFilters>,
         #[serde(flatten)]
-        extra: HashMap<String, Value>,
+        extra: IndexMap<String, Value>,
     },
     #[serde(rename_all = "kebab-case")]
     Other {
@@ -547,7 +547,7 @@ pub enum ComposerRepository {
         #[serde(flatten)]
         filters: Option<ComposerRepositoryFilters>,
         #[serde(flatten)]
-        extra: HashMap<String, Value>,
+        extra: IndexMap<String, Value>,
     },
     // we never want this to be (automatically) deserialized
     // our Deserialize implementation for the ComposerRepositories container takes care of this case
@@ -559,7 +559,7 @@ pub enum ComposerRepository {
 impl ComposerRepository {
     pub fn from_path_with_options(
         path: impl Into<PathBuf>,
-        options: Option<Map<String, Value>>,
+        options: Option<IndexMap<String, Value>>,
     ) -> Self {
         Self::Path {
             name: None,
@@ -709,8 +709,8 @@ pub struct ComposerLock {
     pub packages_dev: Vec<ComposerPackage>, // could be null before 1.1.0: https://github.com/composer/composer/pull/5224
     pub platform: PhpAssocArray<String>,
     pub platform_dev: PhpAssocArray<String>,
-    pub platform_overrides: Option<HashMap<String, String>>, // since 1.0: https://github.com/composer/composer/commit/a57c51e8d78156612e49dec1c54d3184f260f144
-    // pub aliases: HashMap<String, ComposerPackage>, // since 1.0: https://github.com/composer/composer/pull/350 - TODO: do we need to handle these?
+    pub platform_overrides: Option<IndexMap<String, String>>, // since 1.0: https://github.com/composer/composer/commit/a57c51e8d78156612e49dec1c54d3184f260f144
+    // pub aliases: IndexMap<String, ComposerPackage>, // since 1.0: https://github.com/composer/composer/pull/350 - TODO: do we need to handle these?
     pub minimum_stability: ComposerStability, // since 1.0: https://github.com/composer/composer/pull/592
     #[serde_as(as = "TryFromInto<PhpAssocArray<u8>>")]
     pub stability_flags: PhpAssocArray<ComposerStability>, // since 1.0: https://github.com/composer/composer/pull/592
@@ -736,7 +736,7 @@ mod tests {
     #[test]
     fn test_php_assoc_array_populated() {
         assert_de_tokens(
-            &ArrayIfEmpty(PhpAssocArray(HashMap::from([(
+            &ArrayIfEmpty(PhpAssocArray(IndexMap::from([(
                 "foo".to_string(),
                 "bar".to_string(),
             )]))),

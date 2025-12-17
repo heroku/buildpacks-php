@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Ensure deterministic ordering for generated platform `composer.json` requirements ([#277](https://github.com/heroku/buildpacks-php/pull/277))
+
 ## [1.3.2] - 2026-01-15
 
 ### Added

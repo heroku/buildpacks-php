@@ -13,9 +13,9 @@
     },
     "require": {
         "heroku/installer-plugin": "^1.8.6",
+        "heroku-sys\/ext-json": "*",
         "heroku-sys\/composer": "*",
         "heroku-sys\/composer-plugin-api": "^2",
-        "heroku-sys\/ext-json": "*",
         "heroku-sys\/php": "*"
     },
     "repositories": [

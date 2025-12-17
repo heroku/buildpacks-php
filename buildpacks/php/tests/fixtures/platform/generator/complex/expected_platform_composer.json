@@ -13,10 +13,6 @@
     },
     "require": {
         "heroku/installer-plugin": "^1.8.6",
-        "heroku-sys\/composer": "*",
-        "heroku-sys\/composer-plugin-api": "^2",
-        "symfony\/polyfill-php80": "v1.23.1",
-        "symfony\/process": "v5.1.0-RC1",
         "heroku-sys\/ext-gmp": "*",
         "heroku-sys\/ext-intl": "*",
         "heroku-sys\/ext-mbstring": "*",
@@ -24,11 +20,15 @@
         "heroku-sys\/ext-sqlite3": "*",
         "heroku-sys\/ext-ldap": "*",
         "heroku-sys\/ext-imap": "*",
-        "heroku-sys\/ext-blackfire": "*"
+        "heroku-sys\/ext-blackfire": "*",
+        "symfony\/polyfill-php80": "v1.23.1",
+        "symfony\/process": "v5.1.0-RC1",
+        "heroku-sys\/composer": "*",
+        "heroku-sys\/composer-plugin-api": "^2"
     },
     "require-dev": {
-        "kahlan\/kahlan": "5.1.3",
-        "heroku-sys\/ext-pcov": "*"
+        "heroku-sys\/ext-pcov": "*",
+        "kahlan\/kahlan": "5.1.3"
     },
     "repositories": [
         {

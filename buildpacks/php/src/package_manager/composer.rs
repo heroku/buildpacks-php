@@ -4,10 +4,10 @@ use crate::utils::{add_prefix_to_non_empty, regex};
 use composer::{
     ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepository, ComposerRootPackage,
 };
+use indexmap::IndexMap;
 use libcnb::Env;
 use libherokubuildpack::command::CommandExt;
 use libherokubuildpack::write;
-use std::collections::HashMap;
 use std::ops::Not;
 use std::path::PathBuf;
 use std::process::Command;
@@ -76,19 +76,19 @@ fn is_platform_package(name: impl AsRef<str>) -> bool {
 }
 
 /// Checks whether the given list of package links (typically from "require") contains a requirement for a language runtime.
-fn has_runtime_link(links: &HashMap<String, String>) -> bool {
+fn has_runtime_link(links: &IndexMap<String, String>) -> bool {
     links.contains_key("heroku-sys/php")
 }
 
 /// Extracts links to platform packages (see [`is_platform_package`]) and prefix them using [`ensure_heroku_sys_prefix`].
 fn extract_platform_links_with_heroku_sys<T: Clone>(
-    links: &HashMap<String, T>,
-) -> Option<HashMap<String, T>> {
+    links: &IndexMap<String, T>,
+) -> Option<IndexMap<String, T>> {
     let ret = links
         .iter()
         .filter(|(k, _)| is_platform_package(k))
         .map(|(k, v)| (generator::ensure_heroku_sys_prefix(k), v.clone()))
-        .collect::<HashMap<_, _>>();
+        .collect::<IndexMap<_, _>>();
 
     ret.is_empty().not().then_some(ret)
 }
@@ -171,9 +171,9 @@ pub(crate) enum ComposerLockVersionError {
 /// The returned [`Warned`] struct contains a hash map of the generated requirements, and a list of [`PlatformExtractorNotice`s](PlatformExtractorNotice) encountered during processing.
 fn requires_for_composer_itself(
     lock: &ComposerLock,
-) -> Result<Warned<HashMap<String, String>, ComposerLockVersionNotice>, ComposerLockVersionError> {
+) -> Result<Warned<IndexMap<String, String>, ComposerLockVersionNotice>, ComposerLockVersionError> {
     let mut notices = Vec::new();
-    let mut requires = HashMap::new();
+    let mut requires = IndexMap::new();
     // we want the latest Composer...
     requires.insert(
         generator::ensure_heroku_sys_prefix("composer"),
@@ -261,7 +261,7 @@ pub(crate) fn ensure_runtime_requirement(
     let metapackages = repositories
         .iter()
         .filter(|repo| matches!(repo, ComposerRepository::Package { .. }))
-        .fold(HashMap::new(), |mut acc, repo| match repo {
+        .fold(IndexMap::new(), |mut acc, repo| match repo {
             ComposerRepository::Package { package, .. } => {
                 acc.extend(
                     package
@@ -315,7 +315,7 @@ pub(crate) fn ensure_runtime_requirement(
             root_package
                 .package
                 .require
-                .get_or_insert(HashMap::new()) // could be None
+                .get_or_insert(IndexMap::new()) // could be None
                 .insert(generator::ensure_heroku_sys_prefix(name), version);
         }
     }

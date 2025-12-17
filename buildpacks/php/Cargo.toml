@@ -16,6 +16,7 @@ csv = "1"
 exponential-backoff = "2"
 flate2 = { version = "1", default-features = false, features = ["zlib"] }
 fs-err = "3"
+indexmap = { version = "2", features = ["serde"] }
 indoc = "2"
 libcnb = { version = "0.30", features = ["trace"] }
 libherokubuildpack = "0.30"

@@ -4,9 +4,9 @@ use crate::PhpBuildpack;
 use crate::bootstrap;
 use crate::platform::generator::PlatformGeneratorError;
 use composer::ComposerRootPackage;
+use indexmap::IndexMap;
 use libcnb::build::BuildContext;
 use libcnb::{Platform, Target};
-use std::collections::HashMap;
 use std::str::FromStr;
 use url::Url;
 
@@ -149,7 +149,7 @@ pub(crate) fn webservers_json(
     platform_repositories: &[Url],
 ) -> Result<ComposerRootPackage, WebserversJsonError> {
     let webservers_generator_input = generator::PlatformJsonGeneratorInput {
-        additional_require: Some(HashMap::from([
+        additional_require: Some(IndexMap::from([
             ("heroku-sys/apache".to_string(), "*".to_string()),
             ("heroku-sys/nginx".to_string(), "*".to_string()),
             // this package contains heroku-php-apache2 and heroku-php-nginx, plus runtime configs
