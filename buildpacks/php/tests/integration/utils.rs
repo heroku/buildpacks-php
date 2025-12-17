@@ -1,6 +1,6 @@
 use libcnb_test::{
     BuildConfig, BuildpackReference, ContainerConfig, TestContext, TestRunner,
-    assert_contains_match,
+    assert_contains_match, assert_not_contains,
 };
 use std::env;
 use std::path::Path;
@@ -59,6 +59,11 @@ where
     }
 }
 
+pub(crate) fn install_log_checks(context: &TestContext) {
+    let command_output = context.run_shell_command("cat /layers/heroku_php/platform/install.log");
+    assert_not_contains!(command_output.stdout, "Deprecation Notice: ");
+}
+
 /// Helper for smoke-testing.
 ///
 /// Builds the app with the given buildpacks, asserts that the build finished successfully, and
@@ -85,6 +90,8 @@ pub(crate) fn smoke_test<P, B>(
         if let Some(regex) = expected_build_output_contains_match {
             assert_contains_match!(context.pack_stdout, regex);
         }
+
+        install_log_checks(&context);
 
         if let Some(regex) = expected_http_response_body_contains_match {
             start_container_assert_basic_http_response(&context, regex);
