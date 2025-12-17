@@ -185,7 +185,7 @@ pub(crate) fn generate_platform_json(
     let mut require = HashMap::from([
         // our installer plugin - individual platform packages are also supposed to require it, but hey
         // since we rely on specific behavior of the installer plugin, we require a suitable version range here
-        ("heroku/installer-plugin".to_string(), "^1.8.0".to_string()),
+        ("heroku/installer-plugin".to_string(), "^1.8.6".to_string()),
     ]);
     let mut require_dev: HashMap<String, String> = HashMap::new();
 

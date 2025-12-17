@@ -8,7 +8,7 @@ use libcnb::layer_env::Scope;
 use std::path::PathBuf;
 
 #[rustfmt::skip]
-pub(crate) const PLATFORM_REPOSITORY_SNAPSHOT: &str = "4868bb4662e895b7774a83880c81fcf8cfcdee7e932684f6b55ae08b252eb449";
+pub(crate) const PLATFORM_REPOSITORY_SNAPSHOT: &str = "c812e393bfb79ace4ab20021affae8feb4520a34e7cfc5e9dd7c9c2bc325bd8b";
 const PHP_VERSION: &str = "8.4.15";
 const COMPOSER_VERSION: &str = "2.9.2";
 
