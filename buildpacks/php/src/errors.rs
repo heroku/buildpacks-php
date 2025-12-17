@@ -92,6 +92,11 @@ impl PhpBuildpackError {
                     "Failed to parse platform repository URL".to_string(),
                     e.to_string(),
                 ),
+                PlatformRepositoryUrlError::Empty => (
+                    "Empty URL segment encountered".to_string(),
+                    // FIXME: we do not really have a message here?
+                    "-".to_string(),
+                ),
             },
             PhpBuildpackError::PlatformJson(e) => on_platform_json_error(e),
             PhpBuildpackError::WebserversJson(e) => match e {

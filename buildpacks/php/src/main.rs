@@ -85,16 +85,17 @@ impl Buildpack for PhpBuildpack {
 
         print::bullet("Bootstrapping");
 
-        let mut platform_env = bootstrap::bootstrap(&context)?;
+        let (bootstrap_repo, all_repos) = platform::platform_repository_urls_from_default_and_build_context(&context)
+            .map_err(PhpBuildpackError::PlatformRepositoryUrl)?;
+
+        dbg!("bootstrap:", &bootstrap_repo, "repos:", &all_repos);
+        let mut platform_env = bootstrap::bootstrap(bootstrap_repo, &context)?;
 
         let platform_cache_layer =
             context.handle_layer(layer_name!("platform_cache"), ComposerCacheLayer)?;
         platform_env = platform_cache_layer.env.apply(Scope::Build, &platform_env);
 
         print::bullet("Preparing platform packages installation");
-
-        let all_repos = platform::platform_repository_urls_from_default_and_build_context(&context)
-            .map_err(PhpBuildpackError::PlatformRepositoryUrl)?;
 
         let mut platform_json_notices = Vec::<PlatformJsonNotice>::new();
         let platform_json = project

@@ -6,6 +6,7 @@ use libcnb::build::BuildContext;
 use libcnb::data::layer_name;
 use libcnb::layer_env::Scope;
 use std::path::PathBuf;
+use url::Url;
 
 #[rustfmt::skip]
 pub(crate) const PLATFORM_REPOSITORY_SNAPSHOT: &str = "3fe1bb278d6fb97a3e7ade40e90affc73b460aa13e4f296759d0eaf857e8b23e";
@@ -15,6 +16,7 @@ const COMPOSER_VERSION: &str = "2.9.5";
 // TODO: Switch to libcnb's struct layer API.
 #[allow(deprecated)]
 pub(crate) fn bootstrap(
+    bootstrap_repo_url: Url,
     context: &BuildContext<PhpBuildpack>,
 ) -> libcnb::Result<Env, <PhpBuildpack as libcnb::Buildpack>::Error> {
     let mut env = Env::from_current();
@@ -22,7 +24,7 @@ pub(crate) fn bootstrap(
     let php_layer_data = context.handle_layer(
         layer_name!("bootstrap_php"),
         BootstrapLayer {
-            url: platform::platform_base_url_for_target(&context.target)
+            url: bootstrap_repo_url
                 .join(&format!("php-min-{PHP_VERSION}.tar.gz"))
                 .expect("Internal error: failed to generate bootstrap download URL for PHP")
                 .to_string(),
@@ -35,7 +37,7 @@ pub(crate) fn bootstrap(
     let composer_layer_data = context.handle_layer(
         layer_name!("bootstrap_composer"),
         BootstrapLayer {
-            url: platform::platform_base_url_for_target(&context.target)
+            url: bootstrap_repo_url
                 .join(&format!("composer-{COMPOSER_VERSION}.tar.gz"))
                 .expect("Internal error: failed to generate bootstrap download URL for Composer")
                 .to_string(),
