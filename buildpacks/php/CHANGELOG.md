@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- PHP/8.1.33
+- PHP/8.2.30
+- PHP/8.3.29
+- PHP/8.4.16
+- PHP/8.5.1
+- ext-apcu/5.1.28
+
+### Changed
+
+- Apache/2.4.66
+
 ### Fixed
 
 - Composer platform installer plugin produces (invisible) PHP 8.4 deprecation notice
