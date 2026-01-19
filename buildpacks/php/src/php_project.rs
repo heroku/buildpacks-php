@@ -7,8 +7,8 @@ use crate::platform::generator::{PlatformGeneratorError, PlatformJsonGeneratorIn
 use ::composer::{ComposerLock, ComposerRootPackage};
 use bullet_stream::style;
 use fs_err as fs;
+use indexmap::IndexMap;
 use libcnb::Env;
-use std::collections::HashMap;
 use std::io;
 use std::path::Path;
 use url::Url;
@@ -162,7 +162,7 @@ impl Project {
             Some(l) => crate::package_manager::composer::extract_from_lock(l)
                 .map_err(PlatformJsonError::Extractor)?,
             None => Warned::from(PlatformJsonGeneratorInput {
-                additional_require: Some(HashMap::from([(
+                additional_require: Some(IndexMap::from([(
                     "heroku-sys/composer".to_string(),
                     "*".to_string(),
                 )])),

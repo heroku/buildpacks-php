@@ -13,13 +13,13 @@
     },
     "require": {
         "heroku/installer-plugin": "^1.8.6",
-        "heroku-sys\/composer": "*",
-        "heroku-sys\/composer-plugin-api": "^1",
         "moontoast\/math": "1.2.1",
         "paragonie\/constant_time_encoding": "v2.4.0",
         "paragonie\/random_compat": "v9.99.100",
         "phpseclib\/bcmath_compat": "2.0.0",
-        "phpseclib\/phpseclib": "3.0.10"
+        "phpseclib\/phpseclib": "3.0.10",
+        "heroku-sys\/composer": "*",
+        "heroku-sys\/composer-plugin-api": "^1"
     },
     "repositories": [
         {

@@ -5,8 +5,8 @@ use composer::{
     ComposerBasePackage, ComposerLock, ComposerPackage, ComposerRepositories, ComposerRepository,
     ComposerRepositoryFilters, ComposerRootPackage, ComposerStability,
 };
+use indexmap::IndexMap;
 use serde_json::json;
-use std::collections::HashMap;
 use std::string::ToString;
 use url::Url;
 
@@ -103,17 +103,17 @@ pub(crate) struct PlatformJsonGeneratorInput {
     /// The desired value for the root package's `prefer-stable` field
     pub(crate) prefer_stable: bool,
     /// The direct platform requirements from the root dependencies of the source project
-    pub(crate) platform_require: HashMap<String, String>,
+    pub(crate) platform_require: IndexMap<String, String>,
     /// The direct platform dev requirements from the root dependencies of the source project
-    pub(crate) platform_require_dev: HashMap<String, String>,
+    pub(crate) platform_require_dev: IndexMap<String, String>,
     /// A list of packages from the source project's locked dependencies
     pub(crate) packages: Vec<ComposerPackage>,
     /// A list of packages from the source project's locked dev dependencies
     pub(crate) packages_dev: Vec<ComposerPackage>,
     /// A list of additional requirements to be placed into the generated package's root requirements
-    pub(crate) additional_require: Option<HashMap<String, String>>,
+    pub(crate) additional_require: Option<IndexMap<String, String>>,
     /// A list of additional requirements to be placed into the generated package's root dev requirements
-    pub(crate) additional_require_dev: Option<HashMap<String, String>>,
+    pub(crate) additional_require_dev: Option<IndexMap<String, String>>,
     /// Additional [`ComposerRepository`] entries to be placed into the generated package
     pub(crate) additional_repositories: Option<Vec<ComposerRepository>>,
 }
@@ -182,12 +182,13 @@ pub(crate) fn generate_platform_json(
     let stack_provide = stack_provide_from_stack_name(stack)?;
 
     // some fundamental stuff we want installed
-    let mut require = HashMap::from([
+    let mut require = IndexMap::from([
         // our installer plugin - individual platform packages are also supposed to require it, but hey
         // since we rely on specific behavior of the installer plugin, we require a suitable version range here
+        // because this package requires a "plain" platform package named "php", its position here has no effect on "heroku-sys/*" resolution order
         ("heroku/installer-plugin".to_string(), "^1.8.6".to_string()),
     ]);
-    let mut require_dev: HashMap<String, String> = HashMap::new();
+    let mut require_dev: IndexMap<String, String> = IndexMap::new();
 
     // disable packagist.org (we want no userland package installs here)
     let mut repositories = vec![ComposerRepository::Disabled("packagist.org".into())];
@@ -288,11 +289,12 @@ pub(crate) fn generate_platform_json(
             }
         })
         .as_object()
-        .cloned(),
+        .map(ToOwned::to_owned)
+        .map(IndexMap::from_iter),
         minimum_stability: Some(input.minimum_stability.clone()),
         prefer_stable: Some(input.prefer_stable),
         package: ComposerBasePackage {
-            provide: Some(HashMap::from([stack_provide])),
+            provide: Some(IndexMap::from([stack_provide])),
             replace: None, // TODO: blackfire
             repositories: Some(ComposerRepositories::from(repositories)),
             require: (!require.is_empty()).then_some(require),

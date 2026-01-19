@@ -1,12 +1,13 @@
 use crate::package_manager::composer;
 use crate::platform::generator;
 use crate::tests::platform::ComposerLockTestCaseConfig;
+use ::composer::ComposerRootPackage;
 use assert_json_diff::{CompareMode, Config, assert_json_matches_no_panic};
 use figment::Figment;
 use figment::providers::{Format, Serialized, Toml};
 use fs_err as fs;
 use rstest::*;
-use serde_json::{Map, Value};
+use serde_json::Value;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -190,13 +191,15 @@ fn make_platform_json(
         generated_json_package.package.require_dev.take();
     }
 
-    let mut expected_json_object: Map<String, Value> = serde_json::from_str(
+    let expected_json_package: ComposerRootPackage = serde_json::from_str(
         &fs::read_to_string(case.expected_result.unwrap().relative()).unwrap(),
     )
     .unwrap();
 
     let generated_json_value = serde_json::value::to_value(&generated_json_package).unwrap();
     let generated_json_object = generated_json_value.as_object().unwrap();
+    let mut expected_json_value = serde_json::value::to_value(&expected_json_package).unwrap();
+    let expected_json_object = expected_json_value.as_object_mut().unwrap();
 
     let generated_keys: HashSet<String> = generated_json_object.keys().cloned().collect();
     let expected_keys: HashSet<String> = expected_json_object.keys().cloned().collect();
@@ -208,6 +211,29 @@ fn make_platform_json(
         "case {}: mismatched keys (left = generated, right = expected)",
         case.name.as_ref().unwrap()
     );
+
+    // we want to check that the entries in require and require-dev match an exact order
+    // for that, we need to compare the underlying IndexMaps as slices (IndexMap PartialEq ignores order)
+    if expected_keys.contains("require") {
+        assert_eq!(
+            generated_json_package.package.require.unwrap().as_slice(),
+            expected_json_package.package.require.unwrap().as_slice(),
+        );
+    }
+    if expected_keys.contains("require-dev") {
+        assert_eq!(
+            generated_json_package
+                .package
+                .require_dev
+                .unwrap()
+                .as_slice(),
+            expected_json_package
+                .package
+                .require_dev
+                .unwrap()
+                .as_slice(),
+        );
+    }
 
     // validate each key in the generated JSON
     // we have to do this because we want to treat e.g. the "provide" key a bit differently
