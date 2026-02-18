@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.3] - 2026-02-18
+
 ### Added
 
 - PHP/8.4.18
@@ -251,7 +253,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation
 
-[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.3.2...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.3.3...HEAD
+[1.3.3]: https://github.com/heroku/buildpacks-php/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/heroku/buildpacks-php/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/heroku/buildpacks-php/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/heroku/buildpacks-php/compare/v1.2.0...v1.3.0
