@@ -38,7 +38,7 @@ impl Default for ComposerLockTestCaseConfig {
             install_dev: false,
             repositories: vec![
                 Url::parse(&format!(
-                    "https://lang-php.s3.us-east-1.amazonaws.com/dist-{stack}-cnb/packages.json",
+                    "https://lang-php.s3.dualstack.us-east-1.amazonaws.com/dist-{stack}-cnb/packages.json",
                 ))
                 .unwrap(),
             ],

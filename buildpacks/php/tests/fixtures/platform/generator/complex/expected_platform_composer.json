@@ -36,7 +36,7 @@
         },
         {
             "type": "composer",
-            "url": "https:\/\/lang-php.s3.us-east-1.amazonaws.com\/dist-heroku-20-cnb\/packages.json"
+            "url": "https:\/\/lang-php.s3.dualstack.us-east-1.amazonaws.com\/dist-heroku-20-cnb\/packages.json"
         },
         {
             "type": "package",
