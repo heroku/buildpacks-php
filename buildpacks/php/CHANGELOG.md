@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-03-02
+
 ### Changed
 
 - Changed the S3 URLs used for downloads to use AWS' dual-stack (IPv6 compatible) endpoint. ([#285](https://github.com/heroku/buildpacks-php/pull/285))
@@ -257,7 +259,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation
 
-[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.3.3...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/heroku/buildpacks-php/compare/v1.3.3...v1.4.0
 [1.3.3]: https://github.com/heroku/buildpacks-php/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/heroku/buildpacks-php/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/heroku/buildpacks-php/compare/v1.3.0...v1.3.1
