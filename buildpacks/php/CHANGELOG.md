@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- PHP/8.4.19
+- PHP/8.5.4
+- ext-blackfire/1.92.60
+- ext-ev/1.2.3
+- ext-mongodb/1.21.5
+- ext-grpc/1.78.0
+- ext-newrelic/12.5.0.30
+- ext-mongodb/2.2.1
+- Composer/2.9.5
+- nginx/1.28.2
+- librdkafka/2.13.2
+- blackfire/2026.3.0
+
 ## [1.5.0] - 2026-03-17
 
 ### Added
