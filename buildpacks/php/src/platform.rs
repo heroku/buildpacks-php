@@ -55,21 +55,18 @@ pub(crate) fn platform_base_url_for_target(target: &Target) -> Url {
         distro_version,
         ..
     } = target;
-    let stack_identifier = if let ("linux", "ubuntu", v) =
+    let stack_identifier = if let ("linux", "ubuntu", _) =
         (os.as_str(), distro_name.as_str(), distro_version.as_str())
     {
         let stack_name = heroku_stack_name_for_target(target)
             .expect("Internal error: could not determine Heroku stack name for OS/distro");
-        match v {
-            "22.04" => stack_name,
-            _ => format!("{stack_name}-{arch}"),
-        }
+        format!("{stack_name}-{arch}")
     } else {
         format!("{os}-{arch}-{distro_name}-{distro_version}")
     };
 
     Url::parse(&format!(
-        "https://lang-php.s3.dualstack.us-east-1.amazonaws.com/dist-{stack_identifier}-cnb-stable/",
+        "https://heroku-buildpack-php.s3.dualstack.us-east-1.amazonaws.com/dist-{stack_identifier}-stable/",
     ))
     .expect("Internal error: failed to generate default repository URL")
 }
