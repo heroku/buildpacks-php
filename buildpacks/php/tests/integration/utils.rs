@@ -27,6 +27,7 @@ pub(crate) fn start_container_assert_basic_http_response(
         |context| {
             let url = format!("http://{}", context.address_for_port(PORT));
 
+            #[allow(clippy::result_large_err)]
             let response_body = http_request_backoff(|| ureq::get(&url).call())
                 .expect(UREQ_RESPONSE_RESULT_EXPECT_MESSAGE)
                 .into_string()
