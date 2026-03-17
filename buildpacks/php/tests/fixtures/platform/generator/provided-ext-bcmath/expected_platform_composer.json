@@ -9,7 +9,7 @@
     "minimum-stability": "stable",
     "prefer-stable": false,
     "provide": {
-        "heroku-sys\/heroku": "20."
+        "heroku-sys\/heroku": "24."
     },
     "require": {
         "heroku/installer-plugin": "^1.8.6",
@@ -27,7 +27,7 @@
         },
         {
             "type": "composer",
-            "url": "https:\/\/lang-php.s3.dualstack.us-east-1.amazonaws.com\/dist-heroku-20-cnb\/packages.json"
+            "url": "https:\/\/heroku-buildpack-php.s3.dualstack.us-east-1.amazonaws.com\/dist-heroku-24-amd64-stable\/packages.json"
         },
         {
             "type": "package",

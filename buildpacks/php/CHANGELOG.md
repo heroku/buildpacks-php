@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Read memory limits from cgroups (v1 or v2) in boot scripts
+- Read CPU core count from cgroups (v1 or v2) via `nproc` in boot scripts
+
+### Changed
+
+- Switch to new S3 bucket for platform repositories with unified packages for CNB and Classic PHP buildpacks
+
 ## [1.4.0] - 2026-03-02
 
 ### Changed

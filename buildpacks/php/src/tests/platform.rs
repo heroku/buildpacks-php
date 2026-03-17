@@ -23,7 +23,7 @@ struct ComposerLockTestCaseConfig {
 
 impl Default for ComposerLockTestCaseConfig {
     fn default() -> Self {
-        let stack = "heroku-20";
+        let stack = "heroku-24";
         Self {
             name: None,
             description: None,
@@ -38,7 +38,7 @@ impl Default for ComposerLockTestCaseConfig {
             install_dev: false,
             repositories: vec![
                 Url::parse(&format!(
-                    "https://lang-php.s3.dualstack.us-east-1.amazonaws.com/dist-{stack}-cnb/packages.json",
+                    "https://heroku-buildpack-php.s3.dualstack.us-east-1.amazonaws.com/dist-{stack}-amd64-stable/packages.json",
                 ))
                 .unwrap(),
             ],
