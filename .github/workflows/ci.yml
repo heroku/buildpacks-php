@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        builder: ["builder:24", "builder:22"]
+        builder: ["builder:26", "builder:24", "builder:22"]
         arch: ["amd64", "arm64"]
         exclude:
           - builder: "builder:22"
@@ -87,8 +87,7 @@ jobs:
           )
           docker pull "${RUN_IMAGE}"
       # The integration tests are annotated with the `ignore` attribute, allowing us to run
-      # only those and not the unit tests, via the `--ignored` option. On the latest stack
-      # we run all integration tests, but on older stacks we only run stack-specific tests.
+      # only those and not the unit tests, via the `--ignored` option.
       - name: Run integration tests (all tests)
         run: cargo test --locked -- --ignored --test-threads $(($(nproc)+1))
 
@@ -115,8 +114,8 @@ jobs:
         uses: buildpacks/github-actions/setup-pack@06e250da5bb4ccb9a2103719a21d2a7f2252fe83 # v5.11.0
       - name: Pull builder and run images
         run: |
-          docker pull "heroku/builder:24"
-          docker pull "heroku/heroku:24"
+          docker pull "heroku/builder:26"
+          docker pull "heroku/heroku:26"
       - name: Clone getting started guide
         uses: actions/checkout@v6
         with:
@@ -127,6 +126,6 @@ jobs:
       - name: Compile buildpack
         run: cargo libcnb package --target x86_64-unknown-linux-musl
       - name: "PRINT: Getting started guide output"
-        run: pack build my-image --force-color --builder heroku/builder:24 --trust-extra-buildpacks --buildpack packaged/x86_64-unknown-linux-musl/debug/heroku_php --path tmp/guide --pull-policy never
+        run: pack build my-image --force-color --builder heroku/builder:26 --trust-builder --trust-extra-buildpacks --buildpack packaged/x86_64-unknown-linux-musl/debug/heroku_php --path tmp/guide --pull-policy never
       - name: "PRINT: Cached getting started guide output"
-        run: pack build my-image --force-color --builder heroku/builder:24 --trust-extra-buildpacks --buildpack packaged/x86_64-unknown-linux-musl/debug/heroku_php --path tmp/guide --pull-policy never
+        run: pack build my-image --force-color --builder heroku/builder:26 --trust-builder --trust-extra-buildpacks --buildpack packaged/x86_64-unknown-linux-musl/debug/heroku_php --path tmp/guide --pull-policy never

@@ -40,7 +40,7 @@ pub(crate) fn heroku_stack_name_for_target(target: &Target) -> Result<String, St
         ..
     } = target;
     match (os.as_str(), distro_name.as_str(), distro_version.as_str()) {
-        ("linux", "ubuntu", v @ ("22.04" | "24.04")) => {
+        ("linux", "ubuntu", v @ ("22.04" | "24.04" | "26.04")) => {
             Ok(format!("heroku-{}", v.strip_suffix(".04").unwrap_or(v)))
         }
         _ => Err(format!("{os}-{distro_name}-{distro_version}")),

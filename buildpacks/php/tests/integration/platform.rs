@@ -41,7 +41,7 @@ fn platform_test_polyfills() {
                   - apache {version_triple}
                   - boot-scripts {version_triple}
                 ",
-                version_triple = r"\(\d+\.\d+\.\d+\)",
+                version_triple = r"\(\d+\.\d+\.\d+(\+heroku\d+)?\)",
                 bundled = r"\(bundled with php\)",
                 enabled = r"\(already enabled\)"
             }
