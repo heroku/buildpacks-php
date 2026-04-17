@@ -109,13 +109,15 @@ pub(crate) fn smoke_test<P, B>(
 pub(crate) fn target_triple(builder_name: impl AsRef<str>) -> String {
     let target_triple = match builder_name.as_ref() {
         // Compile the buildpack for ARM64 iff the builder supports multi-arch and the host is ARM64.
-        "heroku/builder:24" if cfg!(target_arch = "aarch64") => "aarch64-unknown-linux-musl",
+        "heroku/builder:24" | "heroku/builder:26" if cfg!(target_arch = "aarch64") => {
+            "aarch64-unknown-linux-musl"
+        }
         _ => "x86_64-unknown-linux-musl",
     };
     target_triple.to_string()
 }
 
-const DEFAULT_INTEGRATION_TEST_BUILDER: &str = "heroku/builder:24";
+const DEFAULT_INTEGRATION_TEST_BUILDER: &str = "heroku/builder:26";
 
 const UREQ_RESPONSE_RESULT_EXPECT_MESSAGE: &str = "http request should be successful";
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added support for Ubuntu 26.04 (and thus Heroku-26 / `heroku/builder:26`). ([#303](https://github.com/heroku/buildpacks-php/pull/303))
+
+### Changed
+
+- Rebuilt Apache 2.4.66 with updated APR (1.6.3 -> 1.7.6) and APR-util (1.6.1 -> 1.6.3). ([#303](https://github.com/heroku/buildpacks-php/pull/303))
+
 ## [1.5.2] - 2026-04-15
 
 ### Added
