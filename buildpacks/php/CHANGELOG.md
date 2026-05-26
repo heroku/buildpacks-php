@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.3] - 2026-05-26
+
 ### Added
 
 - nginx/1.30.2
@@ -337,7 +339,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation
 
-[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.6.2...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.6.3...HEAD
+[1.6.3]: https://github.com/heroku/buildpacks-php/compare/v1.6.2...v1.6.3
 [1.6.2]: https://github.com/heroku/buildpacks-php/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/heroku/buildpacks-php/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/heroku/buildpacks-php/compare/v1.5.2...v1.6.0
