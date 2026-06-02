@@ -616,7 +616,7 @@ impl AsRef<str> for ComposerRepositoryDisablement {
 }
 impl fmt::Display for ComposerRepositoryDisablement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", &self.as_ref())
+        write!(f, "{}", self.as_ref())
     }
 }
 
