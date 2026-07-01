@@ -32,6 +32,6 @@ warned = "0.1"
 [dev-dependencies]
 assert-json-diff = "2"
 figment = { version = "0.10", features = ["toml"] }
-libcnb-test = "0.30"
+libcnb-test = "0.31"
 rstest = "0.26"
 tempfile = "3"
