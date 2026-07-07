@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.5] - 2026-07-07
+
+- No changes.
+
 ## [1.6.4] - 2026-06-09
 
 ### Added
@@ -357,7 +361,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation
 
-[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.6.4...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.6.5...HEAD
+[1.6.5]: https://github.com/heroku/buildpacks-php/compare/v1.6.4...v1.6.5
 [1.6.4]: https://github.com/heroku/buildpacks-php/compare/v1.6.3...v1.6.4
 [1.6.3]: https://github.com/heroku/buildpacks-php/compare/v1.6.2...v1.6.3
 [1.6.2]: https://github.com/heroku/buildpacks-php/compare/v1.6.1...v1.6.2
