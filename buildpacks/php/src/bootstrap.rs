@@ -8,8 +8,8 @@ use libcnb::layer_env::Scope;
 use std::path::PathBuf;
 
 #[rustfmt::skip]
-pub(crate) const PLATFORM_REPOSITORY_SNAPSHOT: &str = "4d5be69956447b79233fffac05e2a82178125a1261a49ce1af33e845c2a6c8e0";
-const PHP_VERSION: &str = "8.4.22";
+pub(crate) const PLATFORM_REPOSITORY_SNAPSHOT: &str = "0dd5d1870a4500e630ccf692ab33549c482447b64c22c83a1ef97da1aaf43788";
+const PHP_VERSION: &str = "8.4.23";
 const COMPOSER_VERSION: &str = "2.9.8";
 
 // TODO: Switch to libcnb's struct layer API.
