@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- PHP/8.2.33
+- PHP/8.3.33
+- PHP/8.4.24
+- PHP/8.5.9
+- ext-event/3.1.6
+- ext-grpc/1.83.0
+- ext-newrelic/12.9.0.38
+- ext-phalcon/5.17.0
+- ext-blackfire/2026.7.1
+- blackfire/2026.7.0
+- nginx/1.30.4
+- `ext-phalcon` is now available on Heroku-26 (PHP 8.4 and 8.5).
+
 ## [1.6.6] - 2026-07-08
 
 ### Added
