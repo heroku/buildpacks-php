@@ -241,7 +241,7 @@ fn make_platform_json(
         let generated_value = generated_json_object.get(key.as_str()).unwrap();
         let expected_value = match key.as_str() {
             k @ "provide" => {
-                if let Value::Object(obj) = &mut expected_json_object.get_mut(k).unwrap() {
+                if let Value::Object(obj) = expected_json_object.get_mut(k).unwrap() {
                     // for heroku-sys/heroku, we want to check that the generated value starts with the expected value
                     // (since the version strings are like XX.YYYY.MM.DD, with XX being the stack version number)
                     obj.entry("heroku-sys/heroku").and_modify(|exp| {
