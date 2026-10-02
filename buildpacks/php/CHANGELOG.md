@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Updated libcnb to 0.32.0, which includes OpenTelemetry crate upgrades. ([#355](https://github.com/heroku/buildpacks-php/pull/355))
+- Switched to the faster `zlib-rs` backend for decompressing downloads. ([#354](https://github.com/heroku/buildpacks-php/pull/354))
 
 ## [1.6.9] - 2026-09-25
 

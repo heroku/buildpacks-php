@@ -14,7 +14,10 @@ composer = { path = "../../composer" }
 const_format = "0.2"
 csv = "1"
 exponential-backoff = "2"
-flate2 = { version = "1", default-features = false, features = ["zlib"] }
+# We use the `zlib-rs` backend, since it's the fastest:
+# https://github.com/rust-lang/flate2-rs#backends
+# https://trifectatech.org/blog/zlib-rs-is-faster-than-c/
+flate2 = { version = "1", default-features = false, features = ["zlib-rs", "runtime_detection"] }
 fs-err = "3"
 indexmap = { version = "2", features = ["serde"] }
 indoc = "2"
