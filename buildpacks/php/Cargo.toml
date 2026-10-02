@@ -18,8 +18,8 @@ flate2 = { version = "1", default-features = false, features = ["zlib"] }
 fs-err = "3"
 indexmap = { version = "2", features = ["serde"] }
 indoc = "2"
-libcnb = { version = "=0.31.0", features = ["trace"] }
-libherokubuildpack = "=0.31.0"
+libcnb = { version = "=0.32.0", features = ["trace"] }
+libherokubuildpack = { version = "=0.32.0", default-features = false, features = ["command", "write"] }
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -32,6 +32,6 @@ warned = "0.1"
 [dev-dependencies]
 assert-json-diff = "2"
 figment = { version = "0.10", features = ["toml"] }
-libcnb-test = "=0.31.0"
+libcnb-test = "=0.32.0"
 rstest = "0.27"
 tempfile = "3"
