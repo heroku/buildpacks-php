@@ -36,5 +36,5 @@ warned = "0.1"
 assert-json-diff = "2"
 figment = { version = "0.10", features = ["toml"] }
 libcnb-test = "=0.32.0"
-rstest = "0.27"
+rstest = "0.28"
 tempfile = "3"
