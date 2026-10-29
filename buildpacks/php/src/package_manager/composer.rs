@@ -32,7 +32,6 @@ pub(crate) fn install_dependencies(
             "--no-progress",
             "--no-interaction",
             "--optimize-autoloader",
-            "--prefer-dist",
         ])
         .spawn_and_write_streams(
             write::line_mapped(std::io::stdout(), add_prefix_to_non_empty("  ")),
