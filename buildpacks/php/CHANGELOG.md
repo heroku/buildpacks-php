@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-29
+
 ### Added
 
 - Added `ext-grpc` 1.85.0. ([#365](https://github.com/heroku/buildpacks-php/pull/365))
@@ -472,7 +474,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation
 
-[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.6.11...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/heroku/buildpacks-php/compare/v1.6.11...v1.7.0
 [1.6.11]: https://github.com/heroku/buildpacks-php/compare/v1.6.10...v1.6.11
 [1.6.10]: https://github.com/heroku/buildpacks-php/compare/v1.6.9...v1.6.10
 [1.6.9]: https://github.com/heroku/buildpacks-php/compare/v1.6.8...v1.6.9
