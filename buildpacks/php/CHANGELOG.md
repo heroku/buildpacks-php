@@ -7,9 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added `ext-grpc` 1.85.0. ([#365](https://github.com/heroku/buildpacks-php/pull/365))
+- Added `ext-newrelic` 12.12.0.41. ([#365](https://github.com/heroku/buildpacks-php/pull/365))
+- Added `ext-blackfire` 2026.10.4. ([#365](https://github.com/heroku/buildpacks-php/pull/365))
+- Added `composer` 2.11.0. ([#365](https://github.com/heroku/buildpacks-php/pull/365))
+
 ### Changed
 
 - Composer's `preferred-install` config is now respected, since `composer install` is no longer run with `--prefer-dist`, so packages configured as `source` or `auto` are now installed from source (the Composer default remains `dist`). ([#364](https://github.com/heroku/buildpacks-php/pull/364))
+- Updated `composer` 2.2 to 2.2.31. ([#365](https://github.com/heroku/buildpacks-php/pull/365))
+- Updated `blackfire` to 2026.10.2. ([#365](https://github.com/heroku/buildpacks-php/pull/365))
 
 ## [1.6.11] - 2026-10-21
 
