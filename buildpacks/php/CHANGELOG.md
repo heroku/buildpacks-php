@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Composer's `preferred-install` config is now respected, since `composer install` is no longer run with `--prefer-dist`, so packages configured as `source` or `auto` are now installed from source (the Composer default remains `dist`). ([#364](https://github.com/heroku/buildpacks-php/pull/364))
+
 ## [1.6.11] - 2026-10-21
 
 ### Added
