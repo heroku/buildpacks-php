@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added `ext-blackfire` 2026.11.1. ([#369](https://github.com/heroku/buildpacks-php/pull/369))
+- Added `ext-event` 3.2.0. ([#369](https://github.com/heroku/buildpacks-php/pull/369))
+- Added `ext-mongodb` 2.5.7. ([#369](https://github.com/heroku/buildpacks-php/pull/369))
+
+### Changed
+
+- Updated `apache` to 2.4.71. ([#369](https://github.com/heroku/buildpacks-php/pull/369))
+- Updated `blackfire` to 2026.11.0. ([#369](https://github.com/heroku/buildpacks-php/pull/369))
+- Updated `composer` 2.11 to 2.11.2. ([#369](https://github.com/heroku/buildpacks-php/pull/369))
+- Updated `composer` 2.2 to 2.2.32. ([#369](https://github.com/heroku/buildpacks-php/pull/369))
+
 ## [1.7.0] - 2026-10-29
 
 ### Added
