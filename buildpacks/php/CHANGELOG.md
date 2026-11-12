@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-11-12
+
 ### Added
 
 - Added `ext-blackfire` 2026.11.1. ([#369](https://github.com/heroku/buildpacks-php/pull/369))
@@ -487,7 +489,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation
 
-[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.7.0...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-php/compare/v1.7.1...HEAD
+[1.7.1]: https://github.com/heroku/buildpacks-php/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/heroku/buildpacks-php/compare/v1.6.11...v1.7.0
 [1.6.11]: https://github.com/heroku/buildpacks-php/compare/v1.6.10...v1.6.11
 [1.6.10]: https://github.com/heroku/buildpacks-php/compare/v1.6.9...v1.6.10
