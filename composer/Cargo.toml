@@ -8,7 +8,6 @@ workspace = true
 
 [dependencies]
 derive_more = { version = "2", features = ["deref", "from"] }
-git-url-parse = "0.6.0"
 indexmap = { version = "2", features = ["serde"] }
 monostate = "1"
 serde = { version = "1", features = ["derive"] }
