@@ -10,6 +10,9 @@ use serde_with::{OneOrMany, TryFromInto, formats::PreferOne, serde_as, skip_seri
 use std::fmt;
 use std::marker::PhantomData;
 use std::path::PathBuf;
+
+mod scp_like_url;
+pub use scp_like_url::ScpLikeUrl;
 use url::Url;
 
 #[derive(Clone, Debug, Default, Deref, From, PartialEq, Serialize)]
