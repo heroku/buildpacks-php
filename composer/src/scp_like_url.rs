@@ -14,8 +14,7 @@ pub struct ScpLikeUrl {
 impl ScpLikeUrl {
     /// Parses `[user@]host:path`, returning `None` for anything else.
     ///
-    /// Inputs where the text after the first colon starts with a port number (such as `host:22/foo`) are rejected,
-    /// as are Windows drive paths (such as `user@C:\foo`).
+    /// Windows drive paths (such as `user@C:\foo`) are rejected.
     #[must_use]
     pub fn parse(input: &str) -> Option<Self> {
         let (user, rest) = match input.split_once('@') {
@@ -38,11 +37,6 @@ impl ScpLikeUrl {
             || path.starts_with("//")
             || path.contains('\0')
         {
-            return None;
-        }
-
-        let first_segment = path.split('/').next().unwrap_or_default();
-        if first_segment.parse::<u16>().is_ok() {
             return None;
         }
 
@@ -202,11 +196,10 @@ mod tests {
     }
 
     #[test]
-    fn rejects_port_like_first_path_segment() {
-        for case in ["git@host:22/foo", "git@host:2222"] {
-            assert_eq!(ScpLikeUrl::parse(case), None, "{case}");
+    fn parses_numeric_first_path_segment() {
+        for case in ["git@host:22/repository.git", "git@host:2222"] {
+            assert_eq!(ScpLikeUrl::parse(case).unwrap().to_string(), case);
         }
-        assert!(ScpLikeUrl::parse("git@host:22a/foo").is_some());
     }
 
     #[test]
