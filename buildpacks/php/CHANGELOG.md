@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated `nginx` to 1.30.7. ([#372](https://github.com/heroku/buildpacks-php/pull/372))
+
 ## [1.7.1] - 2026-11-12
 
 ### Added
