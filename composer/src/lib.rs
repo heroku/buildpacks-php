@@ -1,5 +1,4 @@
 use derive_more::{Deref, From};
-use git_url_parse::GitUrl;
 use indexmap::IndexMap;
 use monostate::MustBe;
 use serde::de::{Error, MapAccess, SeqAccess, Visitor};
@@ -10,6 +9,9 @@ use serde_with::{OneOrMany, TryFromInto, formats::PreferOne, serde_as, skip_seri
 use std::fmt;
 use std::marker::PhantomData;
 use std::path::PathBuf;
+
+mod scp_like_url;
+pub use scp_like_url::ScpLikeUrl;
 use url::Url;
 
 #[derive(Clone, Debug, Default, Deref, From, PartialEq, Serialize)]
@@ -660,7 +662,7 @@ impl From<String> for ComposerUrlOrPathUrl {
 #[serde(into = "String")]
 pub enum ComposerUrlOrScpLikeOrPathUrl {
     Url(Url),
-    ScpLike(GitUrl),
+    ScpLike(ScpLikeUrl),
     Path(PathBuf),
 }
 
@@ -678,22 +680,10 @@ impl From<String> for ComposerUrlOrScpLikeOrPathUrl {
     fn from(value: String) -> Self {
         // try and parse as a regular Url first
         // reason is that Url handles e.g. 'svn+ssh://...' correctly
-        // GitUrl really is only for the 'git@github.com:foo/bar.git' SCP style cases
         Url::parse(&value).map_or_else(
             |_| {
-                GitUrl::parse(&value).map_or_else(
-                    |_| Self::Path(PathBuf::from(&value)),
-                    |git_url| {
-                        match &git_url.scheme() {
-                            // it's a path with no leading file:// scheme
-                            // git-url-parse accepts those
-                            // in that case, we return a PathBuf instead of a Url
-                            Some("file") => Self::Path(PathBuf::from(git_url.path())),
-                            //  it's an SSH style URL, "normalize" it to url::Url
-                            _ => Self::ScpLike(git_url),
-                        }
-                    },
-                )
+                ScpLikeUrl::parse(&value)
+                    .map_or_else(|| Self::Path(PathBuf::from(&value)), Self::ScpLike)
             },
             Self::Url,
         )
