@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added PHP 8.2.36. ([#374](https://github.com/heroku/buildpacks-php/pull/374))
+- Added PHP 8.3.37. ([#374](https://github.com/heroku/buildpacks-php/pull/374))
+- Added PHP 8.4.28. ([#374](https://github.com/heroku/buildpacks-php/pull/374))
+- Added PHP 8.5.13. ([#374](https://github.com/heroku/buildpacks-php/pull/374))
+- Added `ext-blackfire` 2026.11.2. ([#374](https://github.com/heroku/buildpacks-php/pull/374))
+- Added `ext-newrelic` 12.13.0.43. ([#374](https://github.com/heroku/buildpacks-php/pull/374))
+- Added `ext-ev` 1.3.1. ([#374](https://github.com/heroku/buildpacks-php/pull/374))
+
 ## [1.8.0] - 2026-11-18
 
 ### Changed
